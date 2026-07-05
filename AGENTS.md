@@ -55,8 +55,74 @@ D:/Projects/search-agent/
 |------|------|------|
 | GET | `/api/health` | 健康检查 |
 | POST | `/api/research` | 同步研究（fire-and-forget） |
-| POST | `/api/research/stream` | **SSE 流式**研究（10 种事件类型） |
+| POST | `/api/research/stream` | **SSE 流式**研究 |
 | GET | `/api/research/{slug}` | 获取已完成的报告 |
+
+### 请求/响应格式
+
+**POST /api/research** — 入参 `{topic: str, max_sources: int}`，出参 `ResearchReport`（见下文模型）
+
+**POST /api/research/stream** — 入参同上，SSE 流式返回，事件类型：
+
+| 事件 | 触发时机 | payload |
+|------|---------|---------|
+| `plan_start` | 研究开始 | `{topic, max_sources}` |
+| `search_start` | 开始搜索 | `{query}` |
+| `search_complete` | 搜索完成 | `{count}` |
+| `fetch_start` | 开始抓取网页 | `{url}` |
+| `fetch_complete` | 网页抓取完成 | `{url, length}` |
+| `extract_start` | LLM 开始提取 | `{source_count}` |
+| `extract_complete` | 提取完成 | `{fact_count}` |
+| `dedup_complete` | 去重完成 | `{before, after}` |
+| `report_ready` | 报告生成完毕 | `{slug, topic, html_url, fact_count, citation_count}` |
+| `report_content` | 完整 Markdown | `{markdown}` |
+| `error` | 异常 | `{message}` |
+
+## 核心数据模型（详细）
+
+```python
+# models.py — 7 个 Pydantic v2 模型
+
+class ResearchRequest(BaseModel):
+    topic: str              # 3-500 字符
+    max_sources: int = 10   # 3-30
+
+class SearchResult(BaseModel):
+    url: str
+    title: str
+    snippet: str
+    full_text: str = ""     # fetch_page 后填充
+
+class ExtractedFact(BaseModel):
+    fact: str               # 事实陈述
+    source_url: str
+    source_title: str
+    quoted_text: str        # 原文引述
+    confidence: str         # high|medium|low
+
+class Citation(BaseModel):
+    index: int              # 引用编号 [¹]
+    source_name: str
+    source_url: str
+    quoted_text: str
+    highlight_anchor: str   # 原文中高亮定位的文本片段
+
+class ReportMetadata(BaseModel):
+    execution_time_seconds: float
+    source_count: int
+    topics_searched: list[str]
+    started_at: str
+    completed_at: str
+
+class ResearchReport(BaseModel):
+    topic: str
+    slug: str               # URL safe 标识
+    facts: list[ExtractedFact]
+    citations: list[Citation]
+    markdown: str           # 带 [^n] 注脚的完整报告
+    html_url: str           # 部署后的 URL
+    metadata: Optional[ReportMetadata]
+```
 
 ## 核心数据流
 
@@ -79,20 +145,29 @@ agent.run_research()
 
 ## 当前状态
 
-**Phase 1 MVP ✅ 完成**（2026-07-05，15 commits）
+**Phase 1 MVP ✅ 完成**（2026-07-05，16 commits）
 
 - [x] 完整链路可跑通
-- [x] SSE 实时流式进度
-- [x] 搜索页 + 报告页（引文侧栏）
+- [x] SSE 实时流式进度（10 种事件类型）
+- [x] 搜索页 + 报告页（引文侧栏点击验证）
 - [x] 静态 HTML 部署
 - [x] DeepSeek v4 Pro API 已调通
+- [x] Review 修复：语法错误、XSS 风险、未使用 import、StreamRequest 验证
 
 - [ ] **搜索问题**：DuckDuckGo 持续限流（202 Ratelimit），需切 Tavily/Brave
-- [ ] **搜索不足时自动扩展**：搜索切关键词 → 二次搜索 → 追加结果
-- [ ] Phase 2：Meta 深度规划模式（5 步向导）
-- [ ] Phase 3：多用户（Gmail OAuth + 自带 API Key）
+- [ ] Phase 2：Meta 深度规划模式（5 步向导：输入 → 反问澄清 → 生成方案 → 审核 → 执行）
+- [ ] Phase 3：多用户（Gmail OAuth + 用户自带 API Key）
 - [ ] Phase 4：向量知识库 + Obsidian 集成
 - [ ] 推 GitHub + 部署 Vercel
+
+## 设计哲学（为什么这样构建）
+
+做架构决策时理解这些原则。详见 `product-description.md` 和 Obsidian `design.md`。
+
+1. **确定引擎**：搜索策略、验证逻辑由代码（确定性）控制，LLM 只负责理解网页文本和表达——不替代代码做推理。这样行为可预测、可复现、可审计。
+2. **每句可验证**：报告里每条事实标注来源 URL + 原文引用 + 置信度，点击 `[¹]` 侧栏展开原文高亮——用户可自行判断可信度。
+3. **多跳搜索**：不是搜一次就回答。搜索 → 提取 → 交叉验证 → 发现盲区 → 追加搜索，直到覆盖度达标。
+4. **反爬分层**：L1 文本抓取（Jina AI）→ L2 搜索 API（Tavily/Brave）→ L3 真浏览器（Playwright+CDP）→ L4 AI 导航（Browser-Use）。逐层升级，不浪费资源。
 
 ## 本地运行
 
