@@ -1,0 +1,59 @@
+{
+  "topic": "What changed in Python 3.12",
+  "slug": "python-312",
+  "facts": [
+    {
+      "fact": "Python 3.12 improved error messages with more precise syntax error hints.",
+      "source_url": "https://docs.python.org/3/whatsnew/3.12.html",
+      "source_title": "What's New In Python 3.12",
+      "quoted_text": "Improved error messages with more precise syntax error hints.",
+      "confidence": "high"
+    },
+    {
+      "fact": "The release introduced per-interpreter GIL support as an experimental feature.",
+      "source_url": "https://docs.python.org/3/whatsnew/3.12.html",
+      "source_title": "What's New In Python 3.12",
+      "quoted_text": "Per-interpreter GIL allows each subinterpreter to have its own GIL.",
+      "confidence": "high"
+    },
+    {
+      "fact": "New type parameter syntax and typing improvements simplify generic declarations.",
+      "source_url": "https://docs.python.org/3/whatsnew/3.12.html",
+      "source_title": "What's New In Python 3.12",
+      "quoted_text": "PEP 695 introduces new syntax for type parameters.",
+      "confidence": "medium"
+    }
+  ],
+  "citations": [
+    {
+      "index": 1,
+      "source_name": "Python 3.12 docs",
+      "source_url": "https://docs.python.org/3/whatsnew/3.12.html",
+      "quoted_text": "Improved error messages with more precise syntax error hints.",
+      "highlight_anchor": "error messages"
+    },
+    {
+      "index": 2,
+      "source_name": "Python 3.12 docs",
+      "source_url": "https://docs.python.org/3/whatsnew/3.12.html",
+      "quoted_text": "Per-interpreter GIL allows each subinterpreter to have its own GIL.",
+      "highlight_anchor": "Per-interpreter GIL"
+    },
+    {
+      "index": 3,
+      "source_name": "Python 3.12 docs",
+      "source_url": "https://docs.python.org/3/whatsnew/3.12.html",
+      "quoted_text": "PEP 695 introduces new syntax for type parameters.",
+      "highlight_anchor": "PEP 695"
+    }
+  ],
+  "markdown": "# Python 3.12 release highlights\n\nPython 3.12 shipped in October 2023 with developer-experience and runtime improvements.[^1]\n\n## Better errors\n\nSyntax errors now include clearer hints about what went wrong.[^1]\n\n## Per-interpreter GIL\n\nAn experimental per-interpreter GIL enables more parallelism in subinterpreters.[^2]\n\n## Typing\n\nPEP 695 adds cleaner syntax for generic types.[^3]\n\n---\n\n*Static demo report — illustrative citations only.*",
+  "html_url": "",
+  "metadata": {
+    "execution_time_seconds": 28.0,
+    "source_count": 3,
+    "topics_searched": ["Python 3.12 new features"],
+    "started_at": "2026-07-05T11:00:00Z",
+    "completed_at": "2026-07-05T11:00:28Z"
+  }
+}

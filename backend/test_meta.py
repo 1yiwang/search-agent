@@ -24,8 +24,10 @@ async def _test_generate_clarifying_questions():
         """))
     ]
 
-    with patch("meta.client.chat.completions.create", new_callable=AsyncMock) as mock_create:
-        mock_create.return_value = mock_response
+    mock_client = MagicMock()
+    mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
+
+    with patch("meta.get_openai_client", return_value=mock_client):
         questions = await generate_clarifying_questions("EU AI Act")
 
     assert len(questions) == 2

@@ -5,15 +5,9 @@ from dataclasses import dataclass, field
 from difflib import SequenceMatcher
 from urllib.parse import urlparse
 
-from openai import AsyncOpenAI
-
 from config import config
+from llm_context import get_openai_client, get_request_keys
 from models import ExtractedFact
-
-client = AsyncOpenAI(
-    api_key=config.llm_api_key,
-    base_url=config.llm_base_url,
-)
 
 CONFIDENCE_RANK = {"low": 0, "medium": 1, "high": 2}
 
@@ -169,8 +163,8 @@ async def review_facts(
         for i, f in enumerate(facts)
     ]
 
-    response = await client.chat.completions.create(
-        model=config.llm_model,
+    response = await get_openai_client().chat.completions.create(
+        model=get_request_keys().llm_model,
         messages=[{
             "role": "user",
             "content": REVIEW_PROMPT.format(

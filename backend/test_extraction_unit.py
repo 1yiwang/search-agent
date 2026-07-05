@@ -29,14 +29,16 @@ async def _test_extract_facts_from_source():
         )
     ]
 
-    with patch("extraction.client.chat.completions.create", new_callable=AsyncMock) as mock_create:
-        mock_create.return_value = mock_response
+    mock_client = MagicMock()
+    mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
+
+    with patch("extraction.get_openai_client", return_value=mock_client):
         facts = await extract_facts_from_source("Python history", source)
 
     assert len(facts) == 1
     assert facts[0].source_url == "https://example.com"
     assert facts[0].source_title == "Example"
-    mock_create.assert_awaited_once()
+    mock_client.chat.completions.create.assert_awaited_once()
 
 
 async def _test_extract_facts_concurrent_per_source():
@@ -75,9 +77,11 @@ def test_skips_failed_fetch():
             snippet="",
             full_text="[Failed to fetch https://bad.com: 403]",
         )
-        with patch("extraction.client.chat.completions.create", new_callable=AsyncMock) as mock_create:
+        mock_client = MagicMock()
+        mock_client.chat.completions.create = AsyncMock()
+        with patch("extraction.get_openai_client", return_value=mock_client):
             facts = await extract_facts_from_source("topic", source)
-            mock_create.assert_not_awaited()
+            mock_client.chat.completions.create.assert_not_awaited()
         assert facts == []
 
     asyncio.run(run())

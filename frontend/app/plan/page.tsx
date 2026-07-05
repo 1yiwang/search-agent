@@ -11,6 +11,8 @@ import {
   type SSEEvent,
 } from "@/lib/api";
 import { formatProgressEvent } from "@/lib/formatProgress";
+import { ApiStatus } from "@/components/ApiStatus";
+import { SettingsPanel } from "@/components/SettingsPanel";
 
 type WizardStep = 1 | 2 | 3 | 4 | 5;
 
@@ -138,6 +140,10 @@ export default function PlanWizardPage() {
         <p className="mt-2 text-[var(--muted)] text-sm">
           Clarify scope → review dimensions → execute verified research.
         </p>
+        <div className="mt-3 flex flex-col gap-2">
+          <ApiStatus />
+          <SettingsPanel />
+        </div>
       </header>
 
       <nav className="mb-8 flex gap-1 text-xs uppercase tracking-wide">

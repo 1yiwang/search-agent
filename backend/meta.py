@@ -5,15 +5,8 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone, timedelta
 from uuid import uuid4
 
-from openai import AsyncOpenAI
-
-from config import config
+from llm_context import get_openai_client, get_request_keys
 from models import ResearchPlan
-
-client = AsyncOpenAI(
-    api_key=config.llm_api_key,
-    base_url=config.llm_base_url,
-)
 
 CLARIFY_PROMPT = """You help scope a deep research project before searching the web.
 
@@ -61,8 +54,8 @@ def _parse_json_object(content: str) -> dict:
 
 async def generate_clarifying_questions(topic: str) -> list[dict]:
     """LLM-generated scope questions (no web search)."""
-    response = await client.chat.completions.create(
-        model=config.llm_model,
+    response = await get_openai_client().chat.completions.create(
+        model=get_request_keys().llm_model,
         messages=[{"role": "user", "content": CLARIFY_PROMPT.format(topic=topic)}],
         temperature=0.4,
         max_tokens=512,

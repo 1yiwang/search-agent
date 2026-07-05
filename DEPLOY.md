@@ -1,115 +1,178 @@
-# Search Agent — Deployment
+# Search Agent — Deployment Plan
 
-Production layout: **Next.js on Vercel** + **FastAPI on Render** (or Docker).
+> **Default model (approved):** Mode B — local API on demand, $0, no Render required.  
+> Render / GHCR remain **optional** for later.
 
-## Live URLs (2026-07-05)
+## Target experience
 
-| Service | URL | Status |
-|---------|-----|--------|
-| **Frontend (Vercel)** | https://search-agent-seven.vercel.app | Deployed |
-| **Vercel Dashboard** | https://vercel.com/yiwangmax-6207s-projects/search-agent | Connected |
-| **GitHub** | https://github.com/1yiwang/search-agent | Source |
-| **API (temp)** | localtunnel → your machine Docker | Dev only — **replace with Render** |
+| What you want | How it works |
+|---------------|--------------|
+| Open a URL and use the app | `https://search.yiwang.dev` (password) |
+| Edit LLM model / API key in the UI | Settings panel; stored in **your browser** (localStorage), personal use |
+| LLM actually runs | Only when you run **one terminal command** on your PC |
+| Turn off LLM / API | Stop that terminal command (Ctrl+C) — website still opens, research disabled |
+| Public showcase | `https://search-demo.yiwang.dev` — static reports, no API |
 
-> **Important:** Production Vercel env currently points to a temporary tunnel for smoke testing. Deploy the API on Render (button below), then update `NEXT_PUBLIC_API_URL` to the Render URL.
+**Important:** The website is always viewable (with password). Settings are always editable.  
+**Research calls fail gracefully** when the local API is not running — no LLM spend, no abuse.
 
-## Quick deploy backend (Render)
+---
 
-[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/1yiwang/search-agent)
+## Domains (yiwang.dev)
 
-After deploy:
+| Domain | Role | API needed? |
+|--------|------|-------------|
+| `search-demo.yiwang.dev` | Static demo gallery (2–3 golden cases) | No |
+| `search.yiwang.dev` | Full app (search, deep, `/plan`) + settings | Only for research |
+| `api.search.yiwang.dev` | Cloudflare Tunnel → your PC `:8000` | Only when script is running |
 
-1. In Render dashboard, set secrets: `LLM_API_KEY`, `TAVILY_API_KEY`, optional `JINA_API_KEY`
-2. Set `CORS_ORIGINS` to:
-   ```
-   https://search-agent-seven.vercel.app,https://yiwang.dev,http://localhost:3000
-   ```
-3. Copy the Render service URL (e.g. `https://search-agent-api.onrender.com`)
-4. In [Vercel env settings](https://vercel.com/yiwangmax-6207s-projects/search-agent/settings/environment-variables), set:
-   - `NEXT_PUBLIC_API_URL` = your Render API URL
-   - `API_URL` = same
-5. Redeploy frontend: `cd frontend && vercel deploy --prod`
+DNS (one-time):
 
-## 1. Backend (API)
+- `search-demo` → Vercel (CNAME)
+- `search` → Vercel (CNAME)
+- `api.search` → Cloudflare Tunnel (created when you set up tunnel)
 
-### Option A: Render (recommended)
+Vercel env (production):
 
-Uses root [`render.yaml`](render.yaml) → builds [`backend/Dockerfile`](backend/Dockerfile).
-
-### Option B: Docker locally
-
-```bash
-cd backend
-docker build -t search-agent-api .
-docker run -p 8000:8000 --env-file .env \
-  -e CORS_ORIGINS=https://search-agent-seven.vercel.app,http://localhost:3000 \
-  -v search-agent-reports:/data/reports search-agent-api
+```
+NEXT_PUBLIC_API_URL=https://api.search.yiwang.dev
+SITE_PASSWORD=<your site password>          # server-side only
+API_AUTH_SECRET=<same random string as backend .env>
+API_TOKEN_TTL_SECONDS=86400                 # optional
 ```
 
-Health check: `GET /api/health` → `{"status":"ok"}`
+Remove any temporary `localtunnel` URLs from Vercel env.
 
-### Option C: GHCR image (after CI push)
+### Cloudflare named tunnel (one-time)
 
-```bash
-docker pull ghcr.io/1yiwang/search-agent-api:latest
+1. Install [cloudflared](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/)
+2. `cloudflared tunnel login` → pick `yiwang.dev`
+3. `cloudflared tunnel create search-agent`
+4. Add DNS: `api.search` CNAME → `<tunnel-id>.cfargotunnel.com`
+5. Create `%USERPROFILE%\.cloudflared\config.yml`:
+
+```yaml
+tunnel: search-agent
+credentials-file: C:\Users\<you>\.cloudflared\<tunnel-id>.json
+
+ingress:
+  - hostname: api.search.yiwang.dev
+    service: http://localhost:8000
+  - service: http_status:404
 ```
 
-Image is built automatically on push to `master` via [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
+6. `.\scripts\start-personal.ps1` will run `cloudflared tunnel run search-agent`
 
-## 2. Frontend (Vercel)
+---
 
-Already deployed. To redeploy from CLI:
+## Daily workflow (self-use)
 
-```bash
-cd frontend
-vercel link          # project: search-agent
-vercel deploy --prod
+```powershell
+# 1. When you want to research — one command
+.\scripts\start-personal.ps1
+#    → starts FastAPI on localhost:8000
+#    → starts Cloudflare Tunnel (api.search.yiwang.dev → :8000)
+
+# 2. Browser
+#    https://search.yiwang.dev  → enter password
+#    Settings → set LLM API Key, Base URL, Model (saved in browser)
+
+# 3. Run research as usual
+
+# 4. Done — Ctrl+C in terminal
+#    → API offline; site still loads; settings still editable; search shows "API offline"
 ```
 
-**Root Directory** (if re-importing): `frontend`
+You do **not** need to open `localhost:3000` for normal use.  
+The start script does **not** need to launch the Next.js dev server — the live UI is on Vercel.
 
-| Variable | Production value |
-|----------|------------------|
-| `NEXT_PUBLIC_API_URL` | `https://YOUR-RENDER-API.onrender.com` |
-| `API_URL` | same |
+---
 
-### Why direct `NEXT_PUBLIC_API_URL`?
+## What “question 1” meant (clarified)
 
-Research SSE runs 3–10 minutes. Calling the backend directly avoids Vercel rewrite timeouts.
+Previously we asked whether the start script should also run `pnpm dev` (local frontend).
 
-## 3. Verify production
+| Option | Meaning | Your choice |
+|--------|---------|-------------|
+| Script = API + tunnel only | You use **search.yiwang.dev** on Vercel | **Yes — this one** |
+| Script = API + tunnel + `pnpm dev` | You use **localhost:3000** instead | No (dev fallback only) |
 
-```bash
-curl https://YOUR-API.onrender.com/api/health
-# -> {"status":"ok"}
+---
 
-# Open https://search-agent-seven.vercel.app
-# Quick search / Deep research /plan wizard
-```
+## Security
 
-## 4. Reports & event logs
+| Layer | Protection |
+|-------|------------|
+| Site | Password on `search.yiwang.dev` (like jobs) |
+| API | HMAC bearer token after site login (same secret on Vercel + backend) |
+| LLM / Tavily keys | **BYOK in browser** — never on Vercel; sent per request to **your** local API |
+| Demo | No API, no keys — static JSON only |
 
-- API persists `reports/<slug>/data.json` and `events.jsonl` on backend disk (Render persistent disk in `render.yaml`).
-- Next.js report UI: `/research/[slug]` via `GET /api/research/{slug}`.
-- Event log API: `GET /api/research/{slug}/events`
+When your PC is off or script stopped: tunnel down → nobody can call your LLM, even if they know URLs.
 
-## 5. Local development
+---
 
-```bash
+## BYOK settings (Step 32 — done)
+
+Frontend settings (localStorage, personal):
+
+- LLM API Key
+- LLM Base URL (e.g. DeepSeek, OpenAI)
+- LLM Model
+- Tavily API Key (optional)
+
+Each research request sends `X-LLM-*` / `X-Tavily-API-Key` headers to your local backend.  
+Backend `.env` keys remain optional fallback for local dev without BYOK.
+
+---
+
+## Implementation steps
+
+| Step | Task | Status |
+|------|------|--------|
+| 29 | `scripts/start-personal.ps1` — API + Cloudflare Tunnel | Done |
+| 30 | Password middleware on `search.yiwang.dev` | Done |
+| 31 | API token after login | Done |
+| 32 | Settings UI + per-request LLM BYOK | Done |
+| 33 | `search-demo` static gallery | Done |
+| 34 | DNS + Vercel domain aliases; remove tunnel env junk | Manual |
+
+---
+
+## Optional: Render / Docker (not default)
+
+Use only if you later want 24/7 API without running your PC.
+
+- [Deploy to Render](https://render.com/deploy?repo=https://github.com/1yiwang/search-agent) — free tier sleeps after 15 min idle
+- [`backend/Dockerfile`](backend/Dockerfile) — for Docker / GHCR / Render
+
+Current Vercel deployment (interim): https://search-agent-seven.vercel.app  
+Will alias to `search.yiwang.dev` after DNS Step 34.
+
+---
+
+## Local development (unchanged)
+
+```powershell
 # Terminal 1
-cd backend && .venv/Scripts/python.exe main.py
+cd backend
+.\.venv\Scripts\python.exe main.py
 
 # Terminal 2
-cd frontend && pnpm dev
+cd frontend
+pnpm dev
+# → http://localhost:3000  (rewrites /api → :8000, no tunnel needed)
 ```
 
-No `NEXT_PUBLIC_API_URL` needed — `next.config.ts` rewrites `/api/*` → `localhost:8000`.
+---
 
 ## Environment reference
 
-| Service | Key variables |
-|---------|----------------|
-| Backend | `LLM_*`, `TAVILY_API_KEY`, `JINA_API_KEY`, `CORS_ORIGINS`, `REPORT_OUTPUT_DIR` |
-| Frontend | `NEXT_PUBLIC_API_URL`, `API_URL` |
+| Where | Variables |
+|-------|-----------|
+| Vercel | `SITE_PASSWORD`, `API_AUTH_SECRET`, `NEXT_PUBLIC_API_URL=https://api.search.yiwang.dev` |
+| Browser (localStorage) | LLM key, base URL, model — **you edit in UI** |
+| `backend/.env` | Optional defaults for local dev; Tavily/Jina if not BYOK yet |
+| Cloudflare | Tunnel token for `api.search.yiwang.dev` |
 
-See `backend/.env.example`.
+See [`backend/.env.example`](backend/.env.example).

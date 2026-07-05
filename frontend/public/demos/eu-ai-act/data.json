@@ -1,0 +1,59 @@
+{
+  "topic": "EU AI Act key requirements for SaaS startups",
+  "slug": "eu-ai-act",
+  "facts": [
+    {
+      "fact": "The EU AI Act entered into force in August 2024 with a phased application timeline.",
+      "source_url": "https://digital-strategy.ec.europa.eu/en/policies/regulatory-framework-ai",
+      "source_title": "EU Digital Strategy — AI Act",
+      "quoted_text": "The AI Act entered into force on 1 August 2024.",
+      "confidence": "high"
+    },
+    {
+      "fact": "High-risk AI systems face conformity assessment and documentation requirements before deployment.",
+      "source_url": "https://artificialintelligenceact.eu/",
+      "source_title": "AI Act Explorer",
+      "quoted_text": "Providers of high-risk AI systems must conduct a conformity assessment.",
+      "confidence": "high"
+    },
+    {
+      "fact": "General-purpose AI models with systemic risk have additional transparency and evaluation duties.",
+      "source_url": "https://artificialintelligenceact.eu/",
+      "source_title": "AI Act Explorer",
+      "quoted_text": "GPAI models with systemic risk are subject to additional obligations.",
+      "confidence": "medium"
+    }
+  ],
+  "citations": [
+    {
+      "index": 1,
+      "source_name": "EU Digital Strategy",
+      "source_url": "https://digital-strategy.ec.europa.eu/en/policies/regulatory-framework-ai",
+      "quoted_text": "The AI Act entered into force on 1 August 2024.",
+      "highlight_anchor": "entered into force"
+    },
+    {
+      "index": 2,
+      "source_name": "AI Act Explorer",
+      "source_url": "https://artificialintelligenceact.eu/",
+      "quoted_text": "Providers of high-risk AI systems must conduct a conformity assessment.",
+      "highlight_anchor": "conformity assessment"
+    },
+    {
+      "index": 3,
+      "source_name": "AI Act Explorer",
+      "source_url": "https://artificialintelligenceact.eu/",
+      "quoted_text": "GPAI models with systemic risk are subject to additional obligations.",
+      "highlight_anchor": "systemic risk"
+    }
+  ],
+  "markdown": "# EU AI Act — compliance snapshot\n\nThe **EU AI Act** is the first comprehensive AI regulation in the EU, with obligations phased from 2025 through 2027.[^1]\n\n## High-risk systems\n\nProviders of high-risk AI systems must complete conformity assessment and maintain technical documentation before placing systems on the market.[^2]\n\n## General-purpose AI\n\nModels classified as having systemic risk face extra evaluation and transparency requirements.[^3]\n\n---\n\n*Static demo report — illustrative citations only.*",
+  "html_url": "",
+  "metadata": {
+    "execution_time_seconds": 42.5,
+    "source_count": 4,
+    "topics_searched": ["EU AI Act SaaS compliance"],
+    "started_at": "2026-07-05T10:00:00Z",
+    "completed_at": "2026-07-05T10:00:42Z"
+  }
+}

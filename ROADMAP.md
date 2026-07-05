@@ -2,15 +2,15 @@
 
 > **Single source of truth** for implementation progress. Update this file at the end of each Step.
 
-**Current phase:** Wave 3 in progress  
-**Next step:** Step 28 — LangGraph sub-graph (optional)
+**Current phase:** Wave 3b — deploy Mode B (local API + BYOK)  
+**Next step:** DNS aliases + Vercel env cleanup (Step 34 manual)
 
 ## Usability timeline
 
 | When | What you can do |
 |------|-----------------|
 | **Now (local)** | Full stack: quick + deep search, `/plan` wizard, citations, event logs |
-| **After Step 27** | Frontend on Vercel + API on Render; see [DEPLOY.md](DEPLOY.md) |
+| **After Step 29–34** | `search.yiwang.dev` (password, BYOK settings) + local API on demand; `search-demo` static gallery — see [DEPLOY.md](DEPLOY.md) |
 
 ## Frontend roadmap
 
@@ -28,7 +28,7 @@
 | Phase 1-alpha | Done | FastAPI + Next.js pipeline: search → extract → dedup → report + SSE |
 | Wave 1 (Step 13–19) | Done | Search reliability: Tavily, fetch fallback, per-source extract, eval |
 | Wave 2 (Step 20–24) | Done | Deep research: planner, parallel sections, verifier, multihop, event log |
-| Wave 3 (Step 25–28) | In progress | Meta UI deployed; Vercel + API hosting ready |
+| Wave 3 (Step 25–34) | In progress | Meta UI, deploy Mode B (local API + BYOK) |
 
 ## Phase 1-alpha checklist (complete)
 
@@ -70,8 +70,22 @@
 |------|------|--------|
 | 25 | Meta API + human-in-the-loop (SSE) | Done |
 | 26 | Meta 5-step wizard UI | Done |
-| 27 | Vercel deployment (requires GitHub) | Done |
+| 27 | Vercel deployment (interim URL live) | Done |
 | 28 | LangGraph sub-graph for review loop (optional) | Pending |
+
+## Wave 3b — Deploy Mode B (local API, $0)
+
+> **Approved plan:** Website always on Vercel; LLM runs only when `start-personal.ps1` is active on your PC.  
+> Settings (model, API key) editable in browser; keys stay on your machine (自用).
+
+| Step | Task | Status |
+|------|------|--------|
+| 29 | `scripts/start-personal.ps1` — API + Cloudflare Tunnel | Done |
+| 30 | Site password middleware (`search.yiwang.dev`) | Done |
+| 31 | API token after login (anti-abuse when tunnel up) | Done |
+| 32 | Settings UI — LLM model / base URL / API key (BYOK, localStorage) | Done |
+| 33 | `search-demo.yiwang.dev` static demo gallery | Done |
+| 34 | DNS aliases + Vercel cleanup (remove temp tunnel env) | Pending |
 
 ## Progress ritual
 

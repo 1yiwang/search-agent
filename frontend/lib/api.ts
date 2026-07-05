@@ -1,6 +1,34 @@
 // D:/Projects/search-agent/frontend/lib/api.ts
 
+import { authHeaders } from "./auth";
+import { loadSettings, settingsHeaders } from "./settings";
+
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "";
+
+function getRequestHeaders(): Record<string, string> {
+  return {
+    "Content-Type": "application/json",
+    ...authHeaders(),
+    ...settingsHeaders(loadSettings()),
+  };
+}
+
+export async function checkApiHealth(): Promise<{
+  ok: boolean;
+  apiAuthRequired?: boolean;
+}> {
+  try {
+    const res = await fetch(`${API_BASE}/api/health`, { cache: "no-store" });
+    if (!res.ok) return { ok: false };
+    const data = await res.json();
+    return {
+      ok: data.status === "ok",
+      apiAuthRequired: Boolean(data.api_auth_required),
+    };
+  } catch {
+    return { ok: false };
+  }
+}
 
 export interface ResearchRequest {
   topic: string;
@@ -110,7 +138,7 @@ export async function* streamResearch(
 ): AsyncGenerator<SSEEvent> {
   const response = await fetch(`${API_BASE}/api/research/stream`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: getRequestHeaders(),
     body: JSON.stringify(request),
   });
   yield* parseSSEStream(response);
@@ -121,7 +149,7 @@ export async function* streamDeepResearch(
 ): AsyncGenerator<SSEEvent> {
   const response = await fetch(`${API_BASE}/api/research/deep/stream`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: getRequestHeaders(),
     body: JSON.stringify({
       max_sections: 4,
       initial_sources: 5,
@@ -135,7 +163,7 @@ export async function* streamDeepResearch(
 export async function metaClarify(topic: string): Promise<MetaClarifyResponse> {
   const response = await fetch(`${API_BASE}/api/meta/clarify`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: getRequestHeaders(),
     body: JSON.stringify({ topic }),
   });
   if (!response.ok) {
@@ -168,7 +196,7 @@ export async function* streamMetaResearch(params: {
 }): AsyncGenerator<SSEEvent> {
   const response = await fetch(`${API_BASE}/api/meta/research/stream`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: getRequestHeaders(),
     body: JSON.stringify({
       sources_per_query: 3,
       ...params,
@@ -178,7 +206,9 @@ export async function* streamMetaResearch(params: {
 }
 
 export async function getReport(slug: string): Promise<ResearchReport> {
-  const response = await fetch(`${API_BASE}/api/research/${slug}`);
+  const response = await fetch(`${API_BASE}/api/research/${slug}`, {
+    headers: authHeaders(),
+  });
   if (!response.ok) {
     throw new Error(`Report not found: ${slug}`);
   }

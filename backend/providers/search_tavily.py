@@ -2,6 +2,7 @@
 import httpx
 
 from config import config
+from llm_context import get_tavily_api_key
 from models import SearchResult
 
 from .search_ddg import DDGSearchProvider
@@ -14,7 +15,8 @@ class TavilySearchProvider:
 
     async def search(self, query: str, max_results: int) -> list[SearchResult]:
         """Search via Tavily API; fall back to DDG on missing key or failure."""
-        if not config.tavily_api_key:
+        key = get_tavily_api_key() or config.tavily_api_key
+        if not key:
             print("[search:tavily] TAVILY_API_KEY not set, falling back to ddg")
             return await DDGSearchProvider().search(query, max_results)
 
@@ -29,8 +31,9 @@ class TavilySearchProvider:
         return await DDGSearchProvider().search(query, max_results)
 
     async def _tavily_search(self, query: str, max_results: int) -> list[SearchResult]:
+        api_key = get_tavily_api_key() or config.tavily_api_key
         payload = {
-            "api_key": config.tavily_api_key,
+            "api_key": api_key,
             "query": query,
             "max_results": max_results,
             "search_depth": config.tavily_search_depth,

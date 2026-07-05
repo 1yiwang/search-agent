@@ -4,16 +4,10 @@ import re
 from datetime import datetime, timezone
 from pathlib import Path
 
-from openai import AsyncOpenAI
-
 from config import config
+from llm_context import get_openai_client, get_request_keys
 from models import ResearchDimension, ResearchPlan, SearchResult
 from search import search_and_fetch
-
-client = AsyncOpenAI(
-    api_key=config.llm_api_key,
-    base_url=config.llm_base_url,
-)
 
 _SOP_PATH = Path(__file__).parent / "prompts" / "research_sop.md"
 
@@ -132,8 +126,8 @@ async def run_initial_research(
         sources_text=_format_sources(usable),
     )
 
-    response = await client.chat.completions.create(
-        model=config.llm_model,
+    response = await get_openai_client().chat.completions.create(
+        model=get_request_keys().llm_model,
         messages=[{"role": "user", "content": prompt}],
         temperature=0.3,
         max_tokens=2048,
@@ -176,8 +170,8 @@ async def plan_sections(
     if sop:
         system_parts.append(f"Research SOP reference:\n{sop[:2000]}")
 
-    response = await client.chat.completions.create(
-        model=config.llm_model,
+    response = await get_openai_client().chat.completions.create(
+        model=get_request_keys().llm_model,
         messages=[
             {"role": "system", "content": "\n".join(system_parts)},
             {"role": "user", "content": user_prompt},

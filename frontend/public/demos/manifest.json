@@ -1,0 +1,18 @@
+[
+  {
+    "slug": "eu-ai-act",
+    "title": "EU AI Act — compliance snapshot",
+    "topic": "EU AI Act key requirements for SaaS startups",
+    "fact_count": 5,
+    "source_count": 4,
+    "summary": "High-risk system obligations, GPAI rules, and enforcement timeline for 2025–2026."
+  },
+  {
+    "slug": "python-312",
+    "title": "Python 3.12 release highlights",
+    "topic": "What changed in Python 3.12",
+    "fact_count": 4,
+    "source_count": 3,
+    "summary": "Per-interpreter GIL, improved error messages, and typing enhancements."
+  }
+]

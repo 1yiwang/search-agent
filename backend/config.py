@@ -31,8 +31,11 @@ class Config:
     )
     cors_origins: str = os.getenv(
         "CORS_ORIGINS",
-        "http://localhost:3000,https://yiwang.dev",
+        "http://localhost:3000,https://yiwang.dev,https://search.yiwang.dev,https://search-demo.yiwang.dev",
     )
+    site_password: str = os.getenv("SITE_PASSWORD", "")
+    api_auth_secret: str = os.getenv("API_AUTH_SECRET", "")
+    api_token_ttl_seconds: int = int(os.getenv("API_TOKEN_TTL_SECONDS", "86400"))
 
 
 config = Config()

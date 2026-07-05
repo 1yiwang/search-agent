@@ -58,8 +58,10 @@ async def _test_verify_and_review_applies_llm_removal():
         MagicMock(message=MagicMock(content='{"remove_indices": [1], "notes": "removed spam", "follow_up_queries": []}'))
     ]
 
-    with patch("verifier.client.chat.completions.create", new_callable=AsyncMock) as mock_create:
-        mock_create.return_value = mock_response
+    mock_client = MagicMock()
+    mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
+
+    with patch("verifier.get_openai_client", return_value=mock_client):
         verified, stats = await verify_and_review("EU AI Act", facts, max_revisions=1)
 
     assert len(verified) == 1

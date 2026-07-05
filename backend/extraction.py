@@ -3,15 +3,9 @@ import asyncio
 import json
 import re
 
-from openai import AsyncOpenAI
-
 from config import config
+from llm_context import get_openai_client, get_request_keys
 from models import ExtractedFact, SearchResult
-
-client = AsyncOpenAI(
-    api_key=config.llm_api_key,
-    base_url=config.llm_base_url,
-)
 
 SINGLE_SOURCE_PROMPT = """You are a research assistant. Extract key facts from ONE source about the research topic.
 
@@ -103,8 +97,8 @@ async def extract_facts_from_source(
         content=content,
     )
 
-    response = await client.chat.completions.create(
-        model=config.llm_model,
+    response = await get_openai_client().chat.completions.create(
+        model=get_request_keys().llm_model,
         messages=[{"role": "user", "content": prompt}],
         temperature=0.3,
         max_tokens=2048,

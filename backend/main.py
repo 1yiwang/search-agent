@@ -11,6 +11,8 @@ from report_store import load_report
 from event_log import load_events
 from streaming import stream_research
 from planner import create_research_plan
+from auth import issue_token, verify_site_password
+from middleware_auth import AuthAndKeysMiddleware
 from meta import (
     create_session,
     format_human_feedback,
@@ -25,11 +27,12 @@ _cors_origins = [o.strip() for o in config.cors_origins.split(",") if o.strip()]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_cors_origins,
-    allow_origin_regex=r"https://.*\.vercel\.app",
+    allow_origin_regex=r"https://(.*\.)?yiwang\.dev|https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(AuthAndKeysMiddleware)
 
 SSE_HEADERS = {
     "Cache-Control": "no-cache",
@@ -40,7 +43,29 @@ SSE_HEADERS = {
 
 @app.get("/api/health")
 async def health():
-    return {"status": "ok"}
+    return {"status": "ok", "api_auth_required": bool(config.api_auth_secret)}
+
+
+class AuthLoginRequest(BaseModel):
+    password: str = Field(..., min_length=1, max_length=200)
+
+
+class AuthLoginResponse(BaseModel):
+    token: str
+    expires_in_seconds: int
+
+
+@app.post("/api/auth/login", response_model=AuthLoginResponse)
+async def auth_login(request: AuthLoginRequest):
+    """Exchange site password for API token (used when personal API is running)."""
+    if config.site_password and not verify_site_password(request.password):
+        raise HTTPException(status_code=401, detail="Invalid password")
+    if not config.api_auth_secret:
+        raise HTTPException(status_code=503, detail="API_AUTH_SECRET not configured on server")
+    return AuthLoginResponse(
+        token=issue_token(),
+        expires_in_seconds=config.api_token_ttl_seconds,
+    )
 
 
 @app.post("/api/research", response_model=ResearchReport)

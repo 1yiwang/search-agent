@@ -8,6 +8,8 @@ import {
   type SSEEvent,
 } from "@/lib/api";
 import { formatProgressEvent } from "@/lib/formatProgress";
+import { ApiStatus } from "@/components/ApiStatus";
+import { SettingsPanel } from "@/components/SettingsPanel";
 
 type Mode = "quick" | "deep";
 
@@ -76,6 +78,10 @@ export default function SearchPage() {
         <p className="mt-3 text-[var(--muted)] max-w-md mx-auto">
           You define the question. We search, extract, and cite every claim.
         </p>
+        <div className="mt-4 flex flex-col items-center gap-2">
+          <ApiStatus />
+          <SettingsPanel />
+        </div>
       </header>
 
       <form onSubmit={handleSubmit} className="space-y-5">
