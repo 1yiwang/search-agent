@@ -1,6 +1,4 @@
 """Deploy research report as static HTML to the reports directory."""
-import os
-import json
 from pathlib import Path
 from datetime import datetime
 

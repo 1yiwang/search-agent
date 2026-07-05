@@ -6,7 +6,7 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from config import config
 from models import ResearchRequest, ResearchReport
@@ -43,8 +43,8 @@ async def research_sync(request: ResearchRequest):
 
 
 class StreamRequest(BaseModel):
-    topic: str
-    max_sources: int = 10
+    topic: str = Field(..., min_length=3, max_length=500)
+    max_sources: int = Field(default=10, ge=3, le=30)
 
 
 @app.post("/api/research/stream")

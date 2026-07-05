@@ -1,6 +1,5 @@
 """Report generation: assemble facts into structured Markdown with citations."""
 import re
-import os
 from datetime import datetime, timezone
 
 from models import ExtractedFact, Citation, ResearchReport, ReportMetadata
@@ -46,6 +45,9 @@ def _generate_markdown(
     medium = [f for f in facts if f.confidence == "medium"]
     low = [f for f in facts if f.confidence == "low"]
 
+    # Build index map: fact -> 1-based citation index (avoids bugs with duplicate facts)
+    fact_index_map = {id(f): i + 1 for i, f in enumerate(facts)}
+
     lines = [
         f"# Research Report: {topic}",
         "",
@@ -63,7 +65,7 @@ def _generate_markdown(
         lines.append("### High Confidence (multi-source or official data)")
         lines.append("")
         for fact in high:
-            idx = facts.index(fact) + 1
+            idx = fact_index_map[id(fact)]
             lines.append(f"- {fact.fact} [^{idx}]")
         lines.append("")
 
@@ -71,7 +73,7 @@ def _generate_markdown(
         lines.append("### Medium Confidence")
         lines.append("")
         for fact in medium:
-            idx = facts.index(fact) + 1
+            idx = fact_index_map[id(fact)]
             lines.append(f"- {fact.fact} [^{idx}]")
         lines.append("")
 
@@ -79,7 +81,7 @@ def _generate_markdown(
         lines.append("### Low Confidence (single source or implied)")
         lines.append("")
         for fact in low:
-            idx = facts.index(fact) + 1
+            idx = fact_index_map[id(fact)]
             lines.append(f"- {fact.fact} [^{idx}]")
         lines.append("")
 

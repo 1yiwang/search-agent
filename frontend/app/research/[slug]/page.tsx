@@ -21,6 +21,22 @@ export default function ReportPage() {
   }, [slug]);
 
   const renderMarkdown = useCallback((markdown: string) => {
+    // Sanitize HTML after conversion to prevent XSS
+    const sanitizeHtml = (html: string): string => {
+      return html
+        // Strip <script> tags and their content
+        .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "")
+        // Strip <iframe> tags
+        .replace(/<iframe\b[^>]*>.*?<\/iframe>/gi, "")
+        .replace(/<iframe\b[^>]*\/?>/gi, "")
+        // Strip event handler attributes (on*=)
+        .replace(/\s+on\w+\s*=\s*["'][^"']*["']/gi, "")
+        .replace(/\s+on\w+\s*=\s*[^\s>]+/gi, "")
+        // Strip javascript: URLs
+        .replace(/href\s*=\s*["']javascript:[^"']*["']/gi, 'href="#"')
+        .replace(/src\s*=\s*["']javascript:[^"']*["']/gi, 'src=""');
+    };
+
     // Convert footnote-style citations [^1] to clickable links
     let html = markdown
       // Convert citation markers [^1] to clickable spans
@@ -52,7 +68,7 @@ export default function ReportPage() {
       .replace(/^---$/gm, '<hr class="my-6 border-zinc-700"/>');
 
     html = `<p class='my-2'>${html}</p>`;
-    return html;
+    return sanitizeHtml(html);
   }, []);
 
   // Handle citation clicks
