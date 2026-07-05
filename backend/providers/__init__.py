@@ -2,7 +2,10 @@
 from config import config
 
 from .base import FetchProvider, SearchProvider
+from .fetch_chain import ChainedFetchProvider
 from .fetch_httpx import HttpxFetchProvider
+from .fetch_jina import JinaFetchProvider
+from .fetch_tavily_extract import TavilyExtractFetchProvider
 from .search_ddg import DDGSearchProvider
 from .search_tavily import TavilySearchProvider
 
@@ -12,7 +15,10 @@ _SEARCH_REGISTRY: dict[str, type] = {
 }
 
 _FETCH_REGISTRY: dict[str, type] = {
+    "chain": ChainedFetchProvider,
     "httpx": HttpxFetchProvider,
+    "jina": JinaFetchProvider,
+    "tavily_extract": TavilyExtractFetchProvider,
 }
 
 _search_instance: SearchProvider | None = None

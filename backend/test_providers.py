@@ -88,8 +88,47 @@ def test_fetch_registry():
     from providers import available_fetch_providers, get_fetch_provider
 
     reset_providers()
-    assert "httpx" in available_fetch_providers()
-    assert get_fetch_provider().name == "httpx"
+    names = set(available_fetch_providers())
+    assert {"chain", "httpx", "jina", "tavily_extract"} <= names
+    original = config.fetch_provider
+    try:
+        config.fetch_provider = "chain"
+        reset_providers()
+        assert get_fetch_provider().name == "chain"
+    finally:
+        config.fetch_provider = original
+        reset_providers()
+
+
+async def _test_chain_fallback_emits_event():
+    from providers.fetch_chain import ChainedFetchProvider
+    from providers.fetch_httpx import HttpxFetchProvider
+    from providers.fetch_jina import JinaFetchProvider
+
+    events: list[tuple[str, dict]] = []
+
+    async def capture(event: str, data: dict):
+        events.append((event, data))
+
+    provider = ChainedFetchProvider()
+    with (
+        patch.object(HttpxFetchProvider, "fetch", new_callable=AsyncMock) as mock_httpx,
+        patch.object(JinaFetchProvider, "fetch", new_callable=AsyncMock) as mock_jina,
+    ):
+        mock_httpx.return_value = "[Failed to fetch https://example.com: 403]"
+        mock_jina.return_value = "Hello from Jina markdown content."
+
+        text, fallbacks = await provider.fetch_with_meta(
+            "https://example.com",
+            event_callback=capture,
+        )
+
+    assert text.startswith("Hello from Jina")
+    assert len(fallbacks) == 1
+    assert fallbacks[0]["from"] == "httpx"
+    assert fallbacks[0]["to"] == "jina"
+    assert len(events) == 1
+    assert events[0][0] == "fetch_fallback"
 
 
 if __name__ == "__main__":
@@ -97,5 +136,6 @@ if __name__ == "__main__":
     test_get_provider_by_name()
     asyncio.run(_test_tavily_fallback_without_api_key())
     asyncio.run(_test_tavily_parses_api_response())
+    asyncio.run(_test_chain_fallback_emits_event())
     test_fetch_registry()
     print("test_providers: PASS")

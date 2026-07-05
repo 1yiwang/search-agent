@@ -159,6 +159,7 @@ export default function SearchPage() {
 const EVENT_LABELS: Record<string, string> = {
   search_start: "🔍 Searching",
   search_complete: "✅ Search done",
+  fetch_fallback: "↪️ Fetch fallback",
   dedup_complete: "🔄 Deduplication",
   extraction_start: "🧠 Extracting facts",
   extraction_complete: "✅ Extraction done",

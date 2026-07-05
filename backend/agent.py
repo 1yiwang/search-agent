@@ -31,7 +31,11 @@ async def run_research(
     await emit("search_start", {"topic": request.topic, "max_sources": request.max_sources})
 
     # Phase 1: Search
-    raw_results = await search_and_fetch(request.topic, request.max_sources)
+    raw_results = await search_and_fetch(
+        request.topic,
+        request.max_sources,
+        event_callback=emit,
+    )
     await emit("search_complete", {"results_found": len(raw_results)})
 
     # Dedup search results

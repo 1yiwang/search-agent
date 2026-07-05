@@ -12,10 +12,11 @@ class Config:
 
     search_max_results: int = int(os.getenv("SEARCH_MAX_RESULTS", "10"))
     search_provider: str = os.getenv("SEARCH_PROVIDER", "tavily")
-    fetch_provider: str = os.getenv("FETCH_PROVIDER", "httpx")
+    fetch_provider: str = os.getenv("FETCH_PROVIDER", "chain")
     fetch_max_chars: int = int(os.getenv("FETCH_MAX_CHARS", "8000"))
     tavily_api_key: str = os.getenv("TAVILY_API_KEY", "")
     tavily_search_depth: str = os.getenv("TAVILY_SEARCH_DEPTH", "basic")
+    jina_api_key: str = os.getenv("JINA_API_KEY", "")
     report_output_dir: str = os.getenv(
         "REPORT_OUTPUT_DIR",
         os.path.join(os.path.dirname(__file__), "..", "reports"),

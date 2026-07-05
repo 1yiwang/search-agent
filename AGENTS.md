@@ -69,6 +69,7 @@ D:/Projects/search-agent/
 |------|---------|---------|
 | `search_start` | 开始研究 | `{topic, max_sources}` |
 | `search_complete` | 搜索完成 | `{results_found}` |
+| `fetch_fallback` | 抓取降级（httpx→jina→tavily） | `{url, from, to, reason}` |
 | `dedup_complete` | URL 去重完成 | `{before, after, removed}` |
 | `extraction_start` | LLM 开始提取 | `{sources_with_content}` |
 | `extraction_complete` | 提取完成 | `{facts_extracted}` |

@@ -2,7 +2,7 @@
 import httpx
 from markdownify import markdownify as md
 
-from config import config
+from .fetch_utils import truncate
 
 _DEFAULT_HEADERS = {
     "User-Agent": (
@@ -20,7 +20,6 @@ class HttpxFetchProvider:
 
     async def fetch(self, url: str, timeout: int = 15) -> str:
         """Fetch a page and convert HTML to markdown text."""
-        max_chars = config.fetch_max_chars
         async with httpx.AsyncClient(timeout=timeout, follow_redirects=True) as client:
             try:
                 response = await client.get(url, headers=_DEFAULT_HEADERS)
@@ -30,8 +29,6 @@ class HttpxFetchProvider:
                     heading_style="ATX",
                     strip=["script", "style", "nav", "footer"],
                 )
-                if len(text) > max_chars:
-                    text = text[:max_chars] + "\n\n[... content truncated ...]"
-                return text.strip()
+                return truncate(text.strip())
             except Exception as e:
                 return f"[Failed to fetch {url}: {e}]"
