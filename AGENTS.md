@@ -60,6 +60,7 @@ D:/Projects/search-agent/
 | POST | `/api/plan/preview` | 广度研究 + 生成维度方案（Wave 2） |
 | POST | `/api/research/deep/stream` | 规划 + 维度并行深度研究（SSE） |
 | GET | `/api/research/{slug}` | 获取已完成的报告 |
+| GET | `/api/research/{slug}/events` | 获取研究过程 JSONL 事件日志 |
 
 ### 请求/响应格式
 
@@ -76,9 +77,17 @@ D:/Projects/search-agent/
 | `extraction_start` | LLM 开始提取 | `{sources_with_content}` |
 | `extraction_complete` | 提取完成 | `{facts_extracted}` |
 | `fact_dedup_complete` | 事实去重完成 | `{before, after}` |
+| `verify_complete` | 跨源验证 + 审查完成 | `{before, after, corroborated, boosted, demoted, removed_by_review, follow_up_queries, hop?}` |
+| `multihop_start` | 多跳追加搜索开始 | `{hop, queries}` |
+| `multihop_complete` | 多跳搜索完成 | `{hop, new_facts, queries}` |
+| `plan_start` | 深度研究开始 | `{topic, title, dimension_count}` |
+| `plan_ready` | 方案生成完毕（deep stream） | `{title, dimensions}` |
+| `dimension_start` | 维度并行搜索开始 | `{title, queries, info_type}` |
+| `dimension_complete` | 维度搜索完成 | `{title, results_found}` |
+| `session_start` | SSE 会话开始 | `{topic, mode, seq, run_id}` |
 | `report_start` | 开始生成报告 | `{fact_count}` |
 | `report_complete` | 报告对象生成 | `{slug, citation_count}` |
-| `report_ready` | 部署完成（main.py） | `{slug, topic, html_url, fact_count, citation_count}` |
+| `report_ready` | 部署完成（main.py） | `{slug, topic, html_url, fact_count, citation_count, events_path}` |
 | `report_content` | 完整 Markdown | `{markdown}` |
 | `error` | 异常 | `{message}` |
 

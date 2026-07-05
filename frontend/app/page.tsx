@@ -169,6 +169,8 @@ export default function SearchPage() {
 function formatProgressEvent(event: SSEEvent): string {
   const d = event.data || {};
   switch (event.event) {
+    case "session_start":
+      return `Session started (${d.mode || "quick"})`;
     case "search_start":
       return `Searching: “${d.topic}”`;
     case "search_complete":
@@ -183,6 +185,22 @@ function formatProgressEvent(event: SSEEvent): string {
       return `Extracted ${d.facts_extracted} facts`;
     case "fact_dedup_complete":
       return `Fact dedup: ${d.before} → ${d.after}`;
+    case "verify_complete": {
+      const hop = d.hop ? ` (hop ${d.hop})` : "";
+      return `Verified${hop}: ${d.after} facts, ${d.corroborated} corroborated`;
+    }
+    case "multihop_start":
+      return `Follow-up hop ${d.hop}: ${(d.queries as string[])?.join(", ") || ""}`;
+    case "multihop_complete":
+      return `Hop ${d.hop} done: +${d.new_facts} facts`;
+    case "plan_start":
+      return `Planning deep research: ${d.dimension_count} dimensions`;
+    case "plan_ready":
+      return `Plan ready: ${d.title || "sections defined"}`;
+    case "dimension_start":
+      return `Dimension “${d.title}”: ${(d.queries as string[])?.length || 0} queries`;
+    case "dimension_complete":
+      return `“${d.title}”: ${d.results_found} results`;
     case "report_start":
       return `Writing report (${d.fact_count} facts)`;
     case "report_complete":
