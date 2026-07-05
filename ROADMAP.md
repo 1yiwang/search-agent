@@ -4,7 +4,7 @@
 
 **Current phase:** Phase 1-alpha (skeleton complete) → Wave 1 in progress  
 **Last updated:** 2026-07-05  
-**Next step:** Step 14 — Provider abstraction layer
+**Next step:** Step 15 — Tavily default search + DDG fallback
 
 ## Phase overview
 
@@ -30,7 +30,7 @@
 | Step | Task | Status |
 |------|------|--------|
 | 13 | GitHub public repo + ROADMAP + progress baseline | Done |
-| 14 | Provider abstraction (`backend/providers/`) | Pending |
+| 14 | Provider abstraction (`backend/providers/`) | Done |
 | 15 | Tavily default search + DDG fallback | Pending |
 | 16 | Fetch chain: httpx → Jina → Tavily extract | Pending |
 | 17 | Per-source LLM extraction + Semaphore(3) | Pending |

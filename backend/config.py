@@ -11,6 +11,9 @@ class Config:
     llm_model: str = os.getenv("LLM_MODEL", "gpt-4o-mini")
 
     search_max_results: int = int(os.getenv("SEARCH_MAX_RESULTS", "10"))
+    search_provider: str = os.getenv("SEARCH_PROVIDER", "ddg")
+    fetch_provider: str = os.getenv("FETCH_PROVIDER", "httpx")
+    fetch_max_chars: int = int(os.getenv("FETCH_MAX_CHARS", "8000"))
     report_output_dir: str = os.getenv(
         "REPORT_OUTPUT_DIR",
         os.path.join(os.path.dirname(__file__), "..", "reports"),

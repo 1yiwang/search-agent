@@ -14,7 +14,7 @@
 |---|------|------|
 | 后端 | Python 3.12 + FastAPI | `backend/` |
 | 前端 | Next.js 16 + React 19 + Tailwind v4 + TypeScript | `frontend/` |
-| 搜索 | DuckDuckGo（免费，易限流）→ 计划切 Tavily | `backend/search.py` |
+| 搜索 | DuckDuckGo（免费，易限流）→ 计划切 Tavily | `backend/search.py` → `backend/providers/` |
 | LLM | OpenAI 兼容接口 → 当前用 DeepSeek v4 Pro | `backend/extraction.py` |
 | 部署 | 静态 HTML → `reports/<slug>/index.html` | `backend/deploy.py` |
 | 包管理 | pip（后端）+ pnpm（前端） |  |
@@ -31,7 +31,8 @@ D:/Projects/search-agent/
 │   ├── main.py                ← FastAPI 入口：4 个路由 + SSE 流式
 │   ├── config.py              ← 环境变量配置（LLM_API_KEY 等）
 │   ├── models.py              ← Pydantic v2 数据模型（7 个类）
-│   ├── search.py              ← 搜索 + 网页抓取（DuckDuckGo / httpx）
+│   ├── search.py              ← 搜索 + 网页抓取 facade
+│   ├── providers/             ← 可插拔 search/fetch（ddg, httpx；Step 15+ tavily）
 │   ├── extraction.py          ← LLM 结构化事实提取（OpenAI SDK）
 │   ├── dedup.py               ← URL 去重 + 文本相似度去重
 │   ├── reporter.py            ← Markdown 报告生成（[^n] 引用系统）
