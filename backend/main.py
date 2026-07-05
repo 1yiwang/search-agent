@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
+from config import config
 from models import ResearchRequest, ResearchReport, ResearchPlan
 from agent import run_research, run_deep_research
 from report_store import load_report

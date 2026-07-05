@@ -60,6 +60,6 @@ Next.js Frontend (port 3000)  <-->  FastAPI Backend (port 8000)
 
 **Phase 1-alpha** complete — see [ROADMAP.md](ROADMAP.md) for progress.
 
-**Production deploy:** [DEPLOY.md](DEPLOY.md) — Vercel (frontend) + Render/Docker (API).
+**Production deploy:** [DEPLOY.md](DEPLOY.md) — Live frontend: **https://search-agent-seven.vercel.app**
 
 See `product-description.md` for the full product vision.
