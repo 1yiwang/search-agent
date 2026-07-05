@@ -58,6 +58,8 @@ Next.js Frontend (port 3000)  <-->  FastAPI Backend (port 8000)
 
 ## Phase
 
-Currently **Phase 1 (MVP)**: Quick search mode, single-user, DuckDuckGo + LLM extraction.
+**Phase 1-alpha** complete — see [ROADMAP.md](ROADMAP.md) for Step 13+ progress.
 
-See `product-description.md` for the full product vision and roadmap.
+Quick search mode, single-user, DuckDuckGo + LLM extraction. Wave 1 adds Tavily and reliability fixes.
+
+See `product-description.md` for the full product vision.

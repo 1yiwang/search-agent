@@ -62,19 +62,19 @@ D:/Projects/search-agent/
 
 **POST /api/research** — 入参 `{topic: str, max_sources: int}`，出参 `ResearchReport`（见下文模型）
 
-**POST /api/research/stream** — 入参同上，SSE 流式返回，事件类型：
+**POST /api/research/stream** — 入参同上，SSE 流式返回，事件类型（与 `agent.py` + `main.py` 一致）：
 
 | 事件 | 触发时机 | payload |
 |------|---------|---------|
-| `plan_start` | 研究开始 | `{topic, max_sources}` |
-| `search_start` | 开始搜索 | `{query}` |
-| `search_complete` | 搜索完成 | `{count}` |
-| `fetch_start` | 开始抓取网页 | `{url}` |
-| `fetch_complete` | 网页抓取完成 | `{url, length}` |
-| `extract_start` | LLM 开始提取 | `{source_count}` |
-| `extract_complete` | 提取完成 | `{fact_count}` |
-| `dedup_complete` | 去重完成 | `{before, after}` |
-| `report_ready` | 报告生成完毕 | `{slug, topic, html_url, fact_count, citation_count}` |
+| `search_start` | 开始研究 | `{topic, max_sources}` |
+| `search_complete` | 搜索完成 | `{results_found}` |
+| `dedup_complete` | URL 去重完成 | `{before, after, removed}` |
+| `extraction_start` | LLM 开始提取 | `{sources_with_content}` |
+| `extraction_complete` | 提取完成 | `{facts_extracted}` |
+| `fact_dedup_complete` | 事实去重完成 | `{before, after}` |
+| `report_start` | 开始生成报告 | `{fact_count}` |
+| `report_complete` | 报告对象生成 | `{slug, citation_count}` |
+| `report_ready` | 部署完成（main.py） | `{slug, topic, html_url, fact_count, citation_count}` |
 | `report_content` | 完整 Markdown | `{markdown}` |
 | `error` | 异常 | `{message}` |
 
@@ -154,7 +154,7 @@ agent.run_research()
 - [x] DeepSeek v4 Pro API 已调通
 - [x] Review 修复：语法错误、XSS 风险、未使用 import、StreamRequest 验证
 
-- [ ] **搜索问题**：DuckDuckGo 持续限流（202 Ratelimit），需切 Tavily/Brave
+- [ ] **搜索问题**：DuckDuckGo 持续限流（202 Ratelimit），需切 Tavily/Brave → [ROADMAP.md](ROADMAP.md) Step 15
 - [ ] Phase 2：Meta 深度规划模式（5 步向导：输入 → 反问澄清 → 生成方案 → 审核 → 执行）
 - [ ] Phase 3：多用户（Gmail OAuth + 用户自带 API Key）
 - [ ] Phase 4：向量知识库 + Obsidian 集成
