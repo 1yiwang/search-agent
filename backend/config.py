@@ -21,6 +21,8 @@ class Config:
     planner_max_sections: int = int(os.getenv("PLANNER_MAX_SECTIONS", "5"))
     planner_initial_sources: int = int(os.getenv("PLANNER_INITIAL_SOURCES", "5"))
     deep_sources_per_query: int = int(os.getenv("DEEP_SOURCES_PER_QUERY", "3"))
+    verifier_similarity_threshold: float = float(os.getenv("VERIFIER_SIMILARITY_THRESHOLD", "0.75"))
+    verifier_max_revisions: int = int(os.getenv("VERIFIER_MAX_REVISIONS", "1"))
     report_output_dir: str = os.getenv(
         "REPORT_OUTPUT_DIR",
         os.path.join(os.path.dirname(__file__), "..", "reports"),

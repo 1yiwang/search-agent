@@ -8,6 +8,7 @@ from search import search_and_fetch
 from extraction import extract_facts
 from dedup import deduplicate_facts, deduplicate_search_results
 from reporter import generate_report
+from verifier import verify_and_review
 
 
 async def run_research(
@@ -61,9 +62,20 @@ async def run_research(
         "after": len(unique_facts),
     })
 
+    verified_facts, verify_stats = await verify_and_review(request.topic, unique_facts)
+    await emit("verify_complete", {
+        "before": len(unique_facts),
+        "after": len(verified_facts),
+        "corroborated": verify_stats.corroborated,
+        "boosted": verify_stats.boosted,
+        "demoted": verify_stats.demoted,
+        "removed_by_review": verify_stats.removed_by_review,
+        "follow_up_queries": verify_stats.follow_up_queries,
+    })
+
     # Phase 4: Generate report
-    await emit("report_start", {"fact_count": len(unique_facts)})
-    report = generate_report(request.topic, unique_facts, started_at)
+    await emit("report_start", {"fact_count": len(verified_facts)})
+    report = generate_report(request.topic, verified_facts, started_at)
     await emit("report_complete", {
         "slug": report.slug,
         "citation_count": len(report.citations),
@@ -181,8 +193,19 @@ async def run_deep_research(
         "after": len(unique_facts),
     })
 
-    await emit("report_start", {"fact_count": len(unique_facts)})
-    report = generate_report(plan.title or plan.topic, unique_facts, started_at)
+    verified_facts, verify_stats = await verify_and_review(plan.topic, unique_facts)
+    await emit("verify_complete", {
+        "before": len(unique_facts),
+        "after": len(verified_facts),
+        "corroborated": verify_stats.corroborated,
+        "boosted": verify_stats.boosted,
+        "demoted": verify_stats.demoted,
+        "removed_by_review": verify_stats.removed_by_review,
+        "follow_up_queries": verify_stats.follow_up_queries,
+    })
+
+    await emit("report_start", {"fact_count": len(verified_facts)})
+    report = generate_report(plan.title or plan.topic, verified_facts, started_at)
     if report.metadata:
         report.metadata.topics_searched = topics_searched
     await emit("report_complete", {

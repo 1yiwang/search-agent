@@ -54,6 +54,7 @@ async def _test_run_deep_research_merges_dimensions():
     with (
         patch("agent._research_dimension", new_callable=AsyncMock) as mock_dim,
         patch("agent.extract_facts", new_callable=AsyncMock) as mock_extract,
+        patch("agent.verify_and_review", new_callable=AsyncMock) as mock_verify,
         patch("agent.generate_report") as mock_report,
     ):
         mock_dim.side_effect = [
@@ -61,6 +62,10 @@ async def _test_run_deep_research_merges_dimensions():
             (plan.dimensions[1], [_result("https://b.com")]),
         ]
         mock_extract.return_value = []
+        mock_verify.side_effect = lambda topic, facts: (facts, type("S", (), {
+            "corroborated": 0, "boosted": 0, "demoted": 0,
+            "removed_by_review": 0, "follow_up_queries": [],
+        })())
 
         from models import ResearchReport, ReportMetadata
 

@@ -4,7 +4,7 @@
 
 **Current phase:** Wave 2 in progress  
 **Last updated:** 2026-07-05  
-**Next step:** Step 22 — Review-revise loop + `verifier.py`
+**Next step:** Step 23 — Deep research v1 (multi-hop, max 2 hops)
 
 ## Usability timeline
 
@@ -62,7 +62,7 @@
 |------|------|--------|
 | 20 | Initial broad research + Planner JSON sections | Done |
 | 21 | Parallel section research (`asyncio.gather`) | Done |
-| 22 | Review-revise loop + `verifier.py` cross-validation | Pending |
+| 22 | Review-revise loop + `verifier.py` cross-validation | Done |
 | 23 | Deep research v1 (multi-hop, max 2 hops) | Pending |
 | 24 | Event log JSONL + extended SSE events | Pending |
 
