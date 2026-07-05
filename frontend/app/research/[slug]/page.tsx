@@ -43,7 +43,7 @@ export default function ReportPage() {
       .replace(
         /\[\^(\d+)\]/g,
         (_, num) =>
-          `<sup><span class="citation-link" data-index="${num}" style="cursor:pointer;color:#60a5fa;font-weight:600;">[${num}]</span></sup>`
+          `<sup><span class="citation-link citation-mark" data-index="${num}" style="cursor:pointer;">[${num}]</span></sup>`
       )
       // Convert markdown headers
       .replace(/^### (.+)$/gm, '<h3 class="text-lg font-semibold mt-6 mb-2">$1</h3>')
@@ -92,8 +92,8 @@ export default function ReportPage() {
 
   if (loading) {
     return (
-      <main className="mx-auto max-w-3xl px-4 py-20 text-center text-zinc-400">
-        Loading report...
+      <main className="mx-auto max-w-3xl px-4 py-20 text-center text-[var(--muted)]">
+        Loading report…
       </main>
     );
   }
@@ -101,7 +101,7 @@ export default function ReportPage() {
   if (error || !report) {
     return (
       <main className="mx-auto max-w-3xl px-4 py-20 text-center text-red-400">
-        {error || "Report not found"}
+        {error || "Report not found. Run a new search or check the slug."}
       </main>
     );
   }

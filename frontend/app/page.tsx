@@ -32,12 +32,8 @@ export default function SearchPage() {
         max_sources: 10,
       })) {
         events.push(event);
-        const label = EVENT_LABELS[event.event] || event.event;
-        setProgress((prev) => [...prev, `${label}: ${JSON.stringify(event.data)}`]);
+        setProgress((prev) => [...prev, formatProgressEvent(event)]);
 
-        if (event.event === "report_ready" && event.data) {
-          // Don't set result yet, wait for report_content
-        }
         if (event.event === "report_content" && event.data) {
           const data = event.data as { markdown: string };
           const readyEvent = events.find((e) => e.event === "report_ready");
@@ -63,109 +59,140 @@ export default function SearchPage() {
   }
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-20">
-      <h1 className="mb-2 text-center text-3xl font-bold tracking-tight">
-        🔍 Search Agent
-      </h1>
-      <p className="mb-8 text-center text-zinc-400">
-        Controllable, verifiable deep research — you keep thinking, we execute.
-      </p>
+    <main className="mx-auto max-w-3xl px-4 py-16 md:py-24">
+      <header className="mb-10 text-center">
+        <p className="mb-2 text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
+          Verifiable research
+        </p>
+        <h1 className="font-display text-4xl md:text-5xl text-[var(--ink)]">
+          Search Agent
+        </h1>
+        <p className="mt-3 text-[var(--muted)] max-w-md mx-auto">
+          You define the question. We search, extract, and cite every claim.
+        </p>
+      </header>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-5">
         <input
           type="text"
           value={topic}
           onChange={(e) => setTopic(e.target.value)}
           placeholder="What do you want to research?"
-          className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-5 py-4 text-lg
-                     placeholder:text-zinc-500 focus:border-zinc-500 focus:outline-none"
+          className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)]
+                     px-5 py-4 text-lg text-[var(--ink)]
+                     placeholder:text-[var(--muted)] focus:border-[var(--accent-dim)]
+                     focus:outline-none focus:ring-1 focus:ring-[var(--accent-dim)]"
           disabled={loading}
         />
 
-        <div className="flex items-center justify-center gap-6">
-          <label className="flex items-center gap-2 cursor-pointer">
+        <div className="flex items-center justify-center gap-8 text-sm">
+          <label className="flex items-center gap-2 cursor-pointer text-[var(--ink)]">
             <input
               type="radio"
               name="mode"
               value="quick"
               checked={mode === "quick"}
               onChange={() => setMode("quick")}
-              className="accent-zinc-400"
+              className="accent-[var(--accent)]"
             />
-            <span>⚡ Quick Search</span>
+            <span>Quick search</span>
           </label>
-          <label className="flex items-center gap-2 cursor-pointer opacity-50">
+          <label className="flex items-center gap-2 cursor-not-allowed opacity-40 text-[var(--muted)]">
             <input
               type="radio"
               name="mode"
               value="deep"
               disabled
-              className="accent-zinc-400"
+              className="accent-[var(--accent)]"
             />
-            <span>🧠 Deep Planning (Phase 2)</span>
+            <span>Deep planning (Wave 2)</span>
           </label>
         </div>
 
-        <div className="text-center">
+        <div className="text-center pt-2">
           <button
             type="submit"
             disabled={loading || !topic.trim()}
-            className="rounded-xl bg-zinc-100 px-8 py-3 font-semibold text-zinc-900
-                       hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed
-                       transition-colors"
+            className="rounded-lg bg-[var(--accent)] px-10 py-3 font-semibold text-[#1a1408]
+                       hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed
+                       transition-all"
           >
-            {loading ? "Researching..." : "Start Research"}
+            {loading ? "Researching…" : "Start research"}
           </button>
         </div>
       </form>
 
       {progress.length > 0 && (
-        <div className="mt-8 rounded-xl border border-zinc-800 bg-zinc-900 p-4">
-          <h2 className="mb-2 font-semibold text-zinc-300">Progress</h2>
-          <div className="max-h-48 overflow-y-auto space-y-1 text-sm text-zinc-500">
-            {progress.map((p, i) => (
-              <div key={i}>{p}</div>
+        <div className="mt-10 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5">
+          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-[var(--muted)]">
+            Progress
+          </h2>
+          <ol className="max-h-56 overflow-y-auto space-y-2 text-sm">
+            {progress.map((line, i) => (
+              <li
+                key={i}
+                className={`progress-line text-[var(--muted)] ${
+                  i === progress.length - 1 && loading ? "progress-line-active text-[var(--ink)]" : ""
+                }`}
+              >
+                {line}
+              </li>
             ))}
-          </div>
+          </ol>
         </div>
       )}
 
       {result && (
-        <div className="mt-8 rounded-xl border border-zinc-800 bg-zinc-900 p-6">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-xl font-semibold">Research Complete</h2>
-            <span className="text-sm text-zinc-500">
+        <div className="mt-10 rounded-lg border border-[var(--border)] bg-[var(--surface-raised)] p-6">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+            <h2 className="font-display text-2xl text-[var(--ink)]">Research complete</h2>
+            <span className="text-sm text-[var(--muted)]">
               {result.fact_count} facts ·{" "}
               <a
                 href={`/research/${result.slug}`}
-                className="text-blue-400 hover:underline"
+                className="text-[var(--link)] hover:underline"
               >
-                View report →
+                Open report →
               </a>
             </span>
           </div>
-          <div className="prose prose-invert prose-zinc max-w-none">
-            <pre className="whitespace-pre-wrap text-sm text-zinc-400 font-mono">
-              {result.markdown.slice(0, 2000)}
-              {result.markdown.length > 2000 && "\n\n... (truncated preview)"}
-            </pre>
-          </div>
+          <pre className="whitespace-pre-wrap text-sm text-[var(--muted)] font-mono leading-relaxed max-h-64 overflow-y-auto">
+            {result.markdown.slice(0, 2000)}
+            {result.markdown.length > 2000 && "\n\n… (preview truncated)"}
+          </pre>
         </div>
       )}
     </main>
   );
 }
 
-const EVENT_LABELS: Record<string, string> = {
-  search_start: "🔍 Searching",
-  search_complete: "✅ Search done",
-  fetch_fallback: "↪️ Fetch fallback",
-  dedup_complete: "🔄 Deduplication",
-  extraction_start: "🧠 Extracting facts",
-  extraction_complete: "✅ Extraction done",
-  fact_dedup_complete: "🔄 Fact dedup",
-  report_start: "📝 Generating report",
-  report_complete: "✅ Report ready",
-  report_ready: "📄 Report ready",
-  report_content: "📄 Report content",
-};
+function formatProgressEvent(event: SSEEvent): string {
+  const d = event.data || {};
+  switch (event.event) {
+    case "search_start":
+      return `Searching: “${d.topic}”`;
+    case "search_complete":
+      return `Found ${d.results_found} sources`;
+    case "fetch_fallback":
+      return `Fetch fallback ${d.from} → ${d.to}`;
+    case "dedup_complete":
+      return `URL dedup: ${d.before} → ${d.after}`;
+    case "extraction_start":
+      return `Extracting from ${d.sources_with_content} pages`;
+    case "extraction_complete":
+      return `Extracted ${d.facts_extracted} facts`;
+    case "fact_dedup_complete":
+      return `Fact dedup: ${d.before} → ${d.after}`;
+    case "report_start":
+      return `Writing report (${d.fact_count} facts)`;
+    case "report_complete":
+    case "report_ready":
+      return `Report ready: ${d.slug || "done"}`;
+    case "report_content":
+      return "Delivering report…";
+    case "error":
+      return `Error: ${d.message}`;
+    default:
+      return event.event;
+  }
+}

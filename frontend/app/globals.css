@@ -1,6 +1,42 @@
-/* D:/Projects/search-agent/frontend/app/globals.css */
+/* Search Agent — evidence dossier theme */
 @import "tailwindcss";
 
+:root {
+  --bg: #0a0c10;
+  --surface: #12151c;
+  --surface-raised: #181c26;
+  --border: #2a3040;
+  --ink: #e8e6e1;
+  --muted: #8a909c;
+  --accent: #d4a05c;
+  --accent-dim: #9a7340;
+  --verify: #6ba88a;
+  --link: #7eb8da;
+}
+
 body {
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family: var(--font-body), system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(212, 160, 92, 0.08), transparent),
+    linear-gradient(180deg, var(--bg) 0%, #0d1016 100%);
+}
+
+.font-display {
+  font-family: var(--font-display), Georgia, serif;
+}
+
+.citation-mark {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.progress-line {
+  border-left: 2px solid var(--border);
+  padding-left: 0.75rem;
+}
+
+.progress-line-active {
+  border-left-color: var(--accent);
 }

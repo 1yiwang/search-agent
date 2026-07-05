@@ -4,7 +4,25 @@
 
 **Current phase:** Phase 1-alpha (skeleton complete) → Wave 1 in progress  
 **Last updated:** 2026-07-05  
-**Next step:** Step 18 — Report persistence via `data.json`
+**Next step:** Step 19 — Eval framework (Wave 1 completion gate)
+
+## Usability timeline
+
+| When | What you can do |
+|------|-----------------|
+| **Now (local)** | `backend: python main.py` + `frontend: pnpm dev` — full quick-search with Tavily/Jina, citation sidebar, reports survive backend restart |
+| **After Step 19 (~1–2 days)** | Wave 1 complete — automated quality gate, safe for daily research use |
+| **After Wave 2 (~2–3 weeks)** | Multi-section deep research, verifier, cross-source validation |
+| **After Step 27 (~3–4 weeks)** | Public deploy at yiwang.dev |
+
+## Frontend roadmap
+
+| Step | UI work |
+|------|---------|
+| 18 (done) | Dossier theme (Instrument Serif + DM Sans), human-readable progress feed |
+| 26 | Meta 5-step wizard + plan editor |
+| 27 | Production deploy + static report URLs |
+| Future | Report page full redesign, research history list, mobile polish |
 
 ## Phase overview
 
@@ -34,7 +52,7 @@
 | 15 | Tavily default search + DDG fallback | Done |
 | 16 | Fetch chain: httpx → Jina → Tavily extract | Done |
 | 17 | Per-source LLM extraction + Semaphore(3) | Done |
-| 18 | Report persistence via `data.json` | Pending |
+| 18 | Report persistence via `data.json` | Done |
 | 19 | `eval/golden_cases.yaml` + eval runner | Pending |
 
 **Wave 1 done when:** 3/3 golden eval cases pass consistently.
@@ -78,5 +96,5 @@
 ## Known issues
 
 - DuckDuckGo rate limiting — mitigated by Tavily primary + DDG fallback (Step 15)
-- Reports in-memory only until Step 18
+- Reports in-memory only until Step 18 — fixed: `reports/<slug>/data.json`
 - Batch LLM extraction until Step 17 — fixed: per-source extraction with concurrency limit

@@ -4,6 +4,7 @@ from datetime import datetime
 
 from models import ResearchReport
 from config import config
+from report_store import persist_report
 
 
 HTML_TEMPLATE = """<!DOCTYPE html>
@@ -166,11 +167,8 @@ async def deploy_report(report: ResearchReport) -> str:
     index_path = report_dir / "index.html"
     index_path.write_text(html, encoding="utf-8")
 
-    # Save JSON data alongside for programmatic access
-    json_path = report_dir / "data.json"
-    json_path.write_text(
-        report.model_dump_json(indent=2),
-        encoding="utf-8",
-    )
+    html_url = f"/research/{report.slug}/"
+    report.html_url = html_url
+    persist_report(report)
 
-    return f"/research/{report.slug}/"
+    return html_url
