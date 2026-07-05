@@ -58,8 +58,8 @@ Next.js Frontend (port 3000)  <-->  FastAPI Backend (port 8000)
 
 ## Phase
 
-**Phase 1-alpha** complete — see [ROADMAP.md](ROADMAP.md) for Step 13+ progress.
+**Phase 1-alpha** complete — see [ROADMAP.md](ROADMAP.md) for progress.
 
-Quick search mode, single-user, DuckDuckGo + LLM extraction. Wave 1 adds Tavily and reliability fixes.
+**Production deploy:** [DEPLOY.md](DEPLOY.md) — Vercel (frontend) + Render/Docker (API).
 
 See `product-description.md` for the full product vision.

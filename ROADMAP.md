@@ -3,15 +3,14 @@
 > **Single source of truth** for implementation progress. Update this file at the end of each Step.
 
 **Current phase:** Wave 3 in progress  
-**Next step:** Step 27 — Vercel deployment
+**Next step:** Step 28 — LangGraph sub-graph (optional)
 
 ## Usability timeline
 
 | When | What you can do |
 |------|-----------------|
-| **Now (local)** | Wave 1 complete — daily quick-search with Tavily/Jina, citations, persistence. Run `python -m eval.run` to verify. |
-| **After Wave 2 (~2–3 weeks)** | Multi-section deep research, verifier, cross-source validation |
-| **After Step 27 (~3–4 weeks)** | Public deploy at yiwang.dev |
+| **Now (local)** | Full stack: quick + deep search, `/plan` wizard, citations, event logs |
+| **After Step 27** | Frontend on Vercel + API on Render; see [DEPLOY.md](DEPLOY.md) |
 
 ## Frontend roadmap
 
@@ -19,7 +18,7 @@
 |------|---------|
 | 18 (done) | Dossier theme (Instrument Serif + DM Sans), human-readable progress feed |
 | 26 (done) | Meta 5-step wizard at `/plan` + deep mode on homepage |
-| 27 | Production deploy + static report URLs |
+| 27 (done) | Production deploy — Vercel frontend + Render/Docker API ([DEPLOY.md](DEPLOY.md)) |
 | Future | Report page full redesign, research history list, mobile polish |
 
 ## Phase overview
@@ -29,7 +28,7 @@
 | Phase 1-alpha | Done | FastAPI + Next.js pipeline: search → extract → dedup → report + SSE |
 | Wave 1 (Step 13–19) | Done | Search reliability: Tavily, fetch fallback, per-source extract, eval |
 | Wave 2 (Step 20–24) | Done | Deep research: planner, parallel sections, verifier, multihop, event log |
-| Wave 3 (Step 25–28) | Next | Meta UI, human-in-the-loop, Vercel deploy |
+| Wave 3 (Step 25–28) | In progress | Meta UI deployed; Vercel + API hosting ready |
 
 ## Phase 1-alpha checklist (complete)
 
@@ -71,7 +70,7 @@
 |------|------|--------|
 | 25 | Meta API + human-in-the-loop (SSE) | Done |
 | 26 | Meta 5-step wizard UI | Done |
-| 27 | Vercel deployment (requires GitHub) | Pending |
+| 27 | Vercel deployment (requires GitHub) | Done |
 | 28 | LangGraph sub-graph for review loop (optional) | Pending |
 
 ## Progress ritual

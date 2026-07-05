@@ -1,0 +1,32 @@
+# Render.com blueprint — optional backend hosting for Search Agent API.
+# Frontend: deploy frontend/ to Vercel (see DEPLOY.md).
+
+services:
+  - type: web
+    name: search-agent-api
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: starter
+    healthCheckPath: /api/health
+    envVars:
+      - key: LLM_API_KEY
+        sync: false
+      - key: LLM_BASE_URL
+        value: https://api.openai.com/v1
+      - key: LLM_MODEL
+        value: gpt-4o-mini
+      - key: TAVILY_API_KEY
+        sync: false
+      - key: SEARCH_PROVIDER
+        value: tavily
+      - key: FETCH_PROVIDER
+        value: chain
+      - key: CORS_ORIGINS
+        value: https://yiwang.dev,http://localhost:3000
+      - key: REPORT_OUTPUT_DIR
+        value: /data/reports
+    disk:
+      name: reports
+      mountPath: /data/reports
+      sizeGB: 1

@@ -29,6 +29,10 @@ class Config:
         "REPORT_OUTPUT_DIR",
         os.path.join(os.path.dirname(__file__), "..", "reports"),
     )
+    cors_origins: str = os.getenv(
+        "CORS_ORIGINS",
+        "http://localhost:3000,https://yiwang.dev",
+    )
 
 
 config = Config()
