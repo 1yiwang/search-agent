@@ -60,6 +60,9 @@ D:/Projects/search-agent/
 | POST | `/api/plan/preview` | 广度研究 + 生成维度方案（Wave 2） |
 | POST | `/api/research/deep/stream` | 规划 + 维度并行深度研究（SSE） |
 | GET | `/api/research/{slug}` | 获取已完成的报告 |
+| POST | `/api/meta/clarify` | 生成澄清问题 + 创建 meta session |
+| POST | `/api/meta/plan` | 带人工答案/反馈生成研究方案 |
+| POST | `/api/meta/research/stream` | 执行已批准方案（SSE） |
 | GET | `/api/research/{slug}/events` | 获取研究过程 JSONL 事件日志 |
 
 ### 请求/响应格式
@@ -168,7 +171,8 @@ agent.run_research()
 - [x] Review 修复：语法错误、XSS 风险、未使用 import、StreamRequest 验证
 
 - [x] Tavily + fetch chain + per-source extract (Wave 1)
-- [ ] Phase 2：Meta 深度规划模式（5 步向导：输入 → 反问澄清 → 生成方案 → 审核 → 执行）
+- [x] Wave 2 深度研究管线（planner、verifier、multihop）
+- [ ] Phase 2b：Meta 5 步向导 — **Step 25–26 已完成**（`/plan` + Meta API）
 - [ ] Phase 3：多用户（Gmail OAuth + 用户自带 API Key）
 - [ ] Phase 4：向量知识库 + Obsidian 集成
 - [ ] 推 GitHub + 部署 Vercel

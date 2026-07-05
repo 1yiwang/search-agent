@@ -1,8 +1,13 @@
-// D:/Projects/search-agent/frontend/app/page.tsx
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
-import { streamResearch, type SSEEvent } from "@/lib/api";
+import {
+  streamResearch,
+  streamDeepResearch,
+  type SSEEvent,
+} from "@/lib/api";
+import { formatProgressEvent } from "@/lib/formatProgress";
 
 type Mode = "quick" | "deep";
 
@@ -27,24 +32,25 @@ export default function SearchPage() {
 
     const events: SSEEvent[] = [];
     try {
-      for await (const event of streamResearch({
-        topic: topic.trim(),
-        max_sources: 10,
-      })) {
+      const stream =
+        mode === "deep"
+          ? streamDeepResearch({ topic: topic.trim(), max_sections: 4 })
+          : streamResearch({ topic: topic.trim(), max_sources: 10 });
+
+      for await (const event of stream) {
         events.push(event);
         setProgress((prev) => [...prev, formatProgressEvent(event)]);
 
         if (event.event === "report_content" && event.data) {
-          const data = event.data as { markdown: string };
-          const readyEvent = events.find((e) => e.event === "report_ready");
+          const readyEvent = events.find((ev) => ev.event === "report_ready");
           const readyData = (readyEvent?.data || {}) as {
             slug: string;
             fact_count: number;
           };
           setResult({
             slug: readyData.slug || "unknown",
-            markdown: data.markdown || "",
-            fact_count: readyData.fact_count || 0,
+            markdown: String(event.data.markdown || ""),
+            fact_count: Number(readyData.fact_count || 0),
           });
         }
       }
@@ -97,19 +103,20 @@ export default function SearchPage() {
             />
             <span>Quick search</span>
           </label>
-          <label className="flex items-center gap-2 cursor-not-allowed opacity-40 text-[var(--muted)]">
+          <label className="flex items-center gap-2 cursor-pointer text-[var(--ink)]">
             <input
               type="radio"
               name="mode"
               value="deep"
-              disabled
+              checked={mode === "deep"}
+              onChange={() => setMode("deep")}
               className="accent-[var(--accent)]"
             />
-            <span>Deep planning (Wave 2)</span>
+            <span>Deep research</span>
           </label>
         </div>
 
-        <div className="text-center pt-2">
+        <div className="text-center pt-2 space-y-3">
           <button
             type="submit"
             disabled={loading || !topic.trim()}
@@ -117,8 +124,18 @@ export default function SearchPage() {
                        hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed
                        transition-all"
           >
-            {loading ? "Researching…" : "Start research"}
+            {loading
+              ? "Researching…"
+              : mode === "deep"
+                ? "Start deep research"
+                : "Start research"}
           </button>
+          <p className="text-sm text-[var(--muted)]">
+            <Link href="/plan" className="text-[var(--link)] hover:underline">
+              Deep planning wizard
+            </Link>
+            {" "}— clarify scope before executing
+          </p>
         </div>
       </form>
 
@@ -164,53 +181,4 @@ export default function SearchPage() {
       )}
     </main>
   );
-}
-
-function formatProgressEvent(event: SSEEvent): string {
-  const d = event.data || {};
-  switch (event.event) {
-    case "session_start":
-      return `Session started (${d.mode || "quick"})`;
-    case "search_start":
-      return `Searching: “${d.topic}”`;
-    case "search_complete":
-      return `Found ${d.results_found} sources`;
-    case "fetch_fallback":
-      return `Fetch fallback ${d.from} → ${d.to}`;
-    case "dedup_complete":
-      return `URL dedup: ${d.before} → ${d.after}`;
-    case "extraction_start":
-      return `Extracting from ${d.sources_with_content} pages`;
-    case "extraction_complete":
-      return `Extracted ${d.facts_extracted} facts`;
-    case "fact_dedup_complete":
-      return `Fact dedup: ${d.before} → ${d.after}`;
-    case "verify_complete": {
-      const hop = d.hop ? ` (hop ${d.hop})` : "";
-      return `Verified${hop}: ${d.after} facts, ${d.corroborated} corroborated`;
-    }
-    case "multihop_start":
-      return `Follow-up hop ${d.hop}: ${(d.queries as string[])?.join(", ") || ""}`;
-    case "multihop_complete":
-      return `Hop ${d.hop} done: +${d.new_facts} facts`;
-    case "plan_start":
-      return `Planning deep research: ${d.dimension_count} dimensions`;
-    case "plan_ready":
-      return `Plan ready: ${d.title || "sections defined"}`;
-    case "dimension_start":
-      return `Dimension “${d.title}”: ${(d.queries as string[])?.length || 0} queries`;
-    case "dimension_complete":
-      return `“${d.title}”: ${d.results_found} results`;
-    case "report_start":
-      return `Writing report (${d.fact_count} facts)`;
-    case "report_complete":
-    case "report_ready":
-      return `Report ready: ${d.slug || "done"}`;
-    case "report_content":
-      return "Delivering report…";
-    case "error":
-      return `Error: ${d.message}`;
-    default:
-      return event.event;
-  }
 }

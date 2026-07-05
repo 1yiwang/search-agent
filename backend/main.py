@@ -10,6 +10,12 @@ from report_store import load_report
 from event_log import load_events
 from streaming import stream_research
 from planner import create_research_plan
+from meta import (
+    create_session,
+    format_human_feedback,
+    generate_clarifying_questions,
+    get_session,
+)
 
 app = FastAPI(title="Search Agent", version="0.1.0")
 
@@ -131,6 +137,96 @@ async def get_report_events(slug: str):
     if events is None:
         raise HTTPException(status_code=404, detail="Event log not found")
     return {"slug": slug, "events": events}
+
+
+# --- Meta / human-in-the-loop (Step 25) ---
+
+
+class MetaClarifyRequest(BaseModel):
+    topic: str = Field(..., min_length=3, max_length=500)
+
+
+class MetaClarifyResponse(BaseModel):
+    session_id: str
+    topic: str
+    questions: list[dict]
+
+
+@app.post("/api/meta/clarify", response_model=MetaClarifyResponse)
+async def meta_clarify(request: MetaClarifyRequest):
+    """Step 1-2: generate clarifying questions and open a meta session."""
+    questions = await generate_clarifying_questions(request.topic)
+    session = create_session(request.topic, questions)
+    return MetaClarifyResponse(
+        session_id=session.session_id,
+        topic=session.topic,
+        questions=session.questions,
+    )
+
+
+class MetaPlanRequest(BaseModel):
+    session_id: str
+    answers: dict[str, str] = Field(default_factory=dict)
+    feedback: str | None = Field(default=None, max_length=2000)
+    max_sections: int = Field(default=5, ge=2, le=8)
+    initial_sources: int = Field(default=5, ge=3, le=15)
+
+
+@app.post("/api/meta/plan", response_model=ResearchPlan)
+async def meta_plan(request: MetaPlanRequest):
+    """Step 3-4: broad research + dimension plan with human answers/feedback."""
+    session = get_session(request.session_id)
+    if session is None:
+        raise HTTPException(status_code=404, detail="Session not found or expired")
+
+    session.answers = request.answers
+    human_feedback = format_human_feedback(request.answers, session.questions)
+    if request.feedback:
+        human_feedback = (human_feedback + "\n\nRevision feedback:\n" + request.feedback).strip()
+
+    plan = await create_research_plan(
+        topic=session.topic,
+        max_sections=request.max_sections,
+        initial_sources=request.initial_sources,
+        human_feedback=human_feedback or None,
+    )
+    session.plan = plan
+    return plan
+
+
+class MetaResearchRequest(BaseModel):
+    session_id: str
+    sources_per_query: int = Field(default=3, ge=2, le=10)
+
+
+@app.post("/api/meta/research/stream")
+async def meta_research_stream(request: MetaResearchRequest):
+    """Step 5: execute approved plan with SSE streaming."""
+    session = get_session(request.session_id)
+    if session is None:
+        raise HTTPException(status_code=404, detail="Session not found or expired")
+    if session.plan is None:
+        raise HTTPException(status_code=400, detail="No plan in session; call /api/meta/plan first")
+
+    plan = session.plan
+
+    async def run_pipeline(event_callback):
+        await event_callback("plan_ready", {
+            "title": plan.title,
+            "dimensions": [d.model_dump() for d in plan.dimensions],
+            "session_id": session.session_id,
+        })
+        return await run_deep_research(
+            plan,
+            sources_per_query=request.sources_per_query,
+            event_callback=event_callback,
+        )
+
+    return StreamingResponse(
+        stream_research(session.topic, "meta", run_pipeline),
+        media_type="text/event-stream",
+        headers=SSE_HEADERS,
+    )
 
 
 if __name__ == "__main__":

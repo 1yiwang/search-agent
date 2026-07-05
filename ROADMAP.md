@@ -2,9 +2,8 @@
 
 > **Single source of truth** for implementation progress. Update this file at the end of each Step.
 
-**Current phase:** Wave 2 complete → Wave 3 next  
-**Last updated:** 2026-07-05  
-**Next step:** Step 25 — Meta API + human-in-the-loop (SSE)
+**Current phase:** Wave 3 in progress  
+**Next step:** Step 27 — Vercel deployment
 
 ## Usability timeline
 
@@ -19,7 +18,7 @@
 | Step | UI work |
 |------|---------|
 | 18 (done) | Dossier theme (Instrument Serif + DM Sans), human-readable progress feed |
-| 26 | Meta 5-step wizard + plan editor |
+| 26 (done) | Meta 5-step wizard at `/plan` + deep mode on homepage |
 | 27 | Production deploy + static report URLs |
 | Future | Report page full redesign, research history list, mobile polish |
 
@@ -70,8 +69,8 @@
 
 | Step | Task | Status |
 |------|------|--------|
-| 25 | Meta API + human-in-the-loop (SSE) | Pending |
-| 26 | Meta 5-step wizard UI | Pending |
+| 25 | Meta API + human-in-the-loop (SSE) | Done |
+| 26 | Meta 5-step wizard UI | Done |
 | 27 | Vercel deployment (requires GitHub) | Pending |
 | 28 | LangGraph sub-graph for review loop (optional) | Pending |
 
