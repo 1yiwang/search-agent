@@ -11,6 +11,7 @@ from pydantic import BaseModel
 from config import config
 from models import ResearchRequest, ResearchReport
 from agent import run_research
+from deploy import deploy_report
 
 app = FastAPI(title="Search Agent", version="0.1.0")
 
@@ -36,6 +37,8 @@ async def research_sync(request: ResearchRequest):
     """Run research synchronously and return the complete report."""
     report = await run_research(request)
     _reports[report.slug] = report
+    html_url = await deploy_report(report)
+    report.html_url = html_url
     return report
 
 
@@ -74,6 +77,8 @@ async def research_stream(request: StreamRequest):
         try:
             report = await task
             _reports[report.slug] = report
+            html_url = await deploy_report(report)
+            report.html_url = html_url
 
             # Send the report data as the final event
             final_event = {
@@ -81,6 +86,7 @@ async def research_stream(request: StreamRequest):
                 "data": {
                     "slug": report.slug,
                     "topic": report.topic,
+                    "html_url": html_url,
                     "fact_count": len(report.facts),
                     "citation_count": len(report.citations),
                 },
