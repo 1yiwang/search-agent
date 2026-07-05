@@ -9,24 +9,35 @@ from models import SearchResult
 
 
 async def search_web(query: str, max_results: int = None) -> list[SearchResult]:
-    """Search the web using DuckDuckGo and return structured results."""
+    """Search the web using DuckDuckGo with rate-limit backoff."""
     if max_results is None:
         max_results = config.search_max_results
 
     loop = asyncio.get_event_loop()
-    raw_results = await loop.run_in_executor(
-        None,
-        lambda: list(DDGS().text(query, max_results=max_results)),
-    )
+    last_error = None
 
-    results = []
-    for r in raw_results:
-        results.append(SearchResult(
-            url=r.get("href", ""),
-            title=r.get("title", ""),
-            snippet=r.get("body", ""),
-        ))
-    return results
+    for attempt in range(3):
+        try:
+            raw_results = await loop.run_in_executor(
+                None,
+                lambda: list(DDGS().text(query, max_results=max_results)),
+            )
+            results = []
+            for r in raw_results:
+                results.append(SearchResult(
+                    url=r.get("href", ""),
+                    title=r.get("title", ""),
+                    snippet=r.get("body", ""),
+                ))
+            return results
+        except Exception as e:
+            last_error = e
+            wait = (attempt + 1) * 3  # 3s, 6s, 9s backoff
+            print(f"[search] attempt {attempt + 1}/3 failed ({e}), retrying in {wait}s...")
+            await asyncio.sleep(wait)
+
+    print(f"[search] all retries exhausted: {last_error}")
+    return []
 
 
 async def fetch_page(url: str, timeout: int = 15) -> str:
