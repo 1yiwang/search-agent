@@ -14,6 +14,11 @@ def _normalize_url(url: str) -> str:
     return f"{host}{path}{parsed.query}"
 
 
+def normalize_url(url: str) -> str:
+    """Public URL normalizer for dedup and multihop tracking."""
+    return _normalize_url(url)
+
+
 def deduplicate_search_results(results: list) -> list:
     """Remove duplicate search results by normalized URL."""
     seen = set()

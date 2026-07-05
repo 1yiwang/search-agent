@@ -6,9 +6,9 @@ from config import config
 from models import ResearchDimension, ResearchPlan, ResearchRequest, ResearchReport
 from search import search_and_fetch
 from extraction import extract_facts
-from dedup import deduplicate_facts, deduplicate_search_results
+from dedup import deduplicate_search_results
 from reporter import generate_report
-from verifier import verify_and_review
+from multihop import finalize_facts, urls_from_results
 
 
 async def run_research(
@@ -55,27 +55,25 @@ async def run_research(
     facts = await extract_facts(request.topic, successful_fetches)
     await emit("extraction_complete", {"facts_extracted": len(facts)})
 
-    # Phase 3: Dedup facts
-    unique_facts = deduplicate_facts(facts)
-    await emit("fact_dedup_complete", {
-        "before": len(facts),
-        "after": len(unique_facts),
-    })
+    # Phase 3: Dedup, verify, multi-hop follow-up
+    seen_urls = urls_from_results(unique_results)
+    topics_searched = [request.topic]
+    sources_per_query = min(config.multihop_sources_per_query, request.max_sources)
 
-    verified_facts, verify_stats = await verify_and_review(request.topic, unique_facts)
-    await emit("verify_complete", {
-        "before": len(unique_facts),
-        "after": len(verified_facts),
-        "corroborated": verify_stats.corroborated,
-        "boosted": verify_stats.boosted,
-        "demoted": verify_stats.demoted,
-        "removed_by_review": verify_stats.removed_by_review,
-        "follow_up_queries": verify_stats.follow_up_queries,
-    })
+    verified_facts, _ = await finalize_facts(
+        request.topic,
+        facts,
+        seen_urls,
+        topics_searched,
+        sources_per_query,
+        emit,
+    )
 
     # Phase 4: Generate report
     await emit("report_start", {"fact_count": len(verified_facts)})
     report = generate_report(request.topic, verified_facts, started_at)
+    if report.metadata:
+        report.metadata.topics_searched = topics_searched
     await emit("report_complete", {
         "slug": report.slug,
         "citation_count": len(report.citations),
@@ -187,22 +185,15 @@ async def run_deep_research(
 
     await emit("extraction_complete", {"facts_extracted": len(facts)})
 
-    unique_facts = deduplicate_facts(facts)
-    await emit("fact_dedup_complete", {
-        "before": len(facts),
-        "after": len(unique_facts),
-    })
-
-    verified_facts, verify_stats = await verify_and_review(plan.topic, unique_facts)
-    await emit("verify_complete", {
-        "before": len(unique_facts),
-        "after": len(verified_facts),
-        "corroborated": verify_stats.corroborated,
-        "boosted": verify_stats.boosted,
-        "demoted": verify_stats.demoted,
-        "removed_by_review": verify_stats.removed_by_review,
-        "follow_up_queries": verify_stats.follow_up_queries,
-    })
+    seen_urls = urls_from_results(unique_results)
+    verified_facts, _ = await finalize_facts(
+        plan.topic,
+        facts,
+        seen_urls,
+        topics_searched,
+        sources_per_query,
+        emit,
+    )
 
     await emit("report_start", {"fact_count": len(verified_facts)})
     report = generate_report(plan.title or plan.topic, verified_facts, started_at)
