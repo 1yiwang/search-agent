@@ -17,6 +17,7 @@ class Config:
     tavily_api_key: str = os.getenv("TAVILY_API_KEY", "")
     tavily_search_depth: str = os.getenv("TAVILY_SEARCH_DEPTH", "basic")
     jina_api_key: str = os.getenv("JINA_API_KEY", "")
+    extract_concurrency: int = int(os.getenv("EXTRACT_CONCURRENCY", "3"))
     report_output_dir: str = os.getenv(
         "REPORT_OUTPUT_DIR",
         os.path.join(os.path.dirname(__file__), "..", "reports"),

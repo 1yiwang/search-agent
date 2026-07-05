@@ -4,7 +4,7 @@
 
 **Current phase:** Phase 1-alpha (skeleton complete) → Wave 1 in progress  
 **Last updated:** 2026-07-05  
-**Next step:** Step 17 — Per-source LLM extraction + Semaphore(3)
+**Next step:** Step 18 — Report persistence via `data.json`
 
 ## Phase overview
 
@@ -33,7 +33,7 @@
 | 14 | Provider abstraction (`backend/providers/`) | Done |
 | 15 | Tavily default search + DDG fallback | Done |
 | 16 | Fetch chain: httpx → Jina → Tavily extract | Done |
-| 17 | Per-source LLM extraction + Semaphore(3) | Pending |
+| 17 | Per-source LLM extraction + Semaphore(3) | Done |
 | 18 | Report persistence via `data.json` | Pending |
 | 19 | `eval/golden_cases.yaml` + eval runner | Pending |
 
@@ -79,4 +79,4 @@
 
 - DuckDuckGo rate limiting — mitigated by Tavily primary + DDG fallback (Step 15)
 - Reports in-memory only until Step 18
-- Batch LLM extraction until Step 17
+- Batch LLM extraction until Step 17 — fixed: per-source extraction with concurrency limit
