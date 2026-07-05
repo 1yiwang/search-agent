@@ -57,6 +57,8 @@ D:/Projects/search-agent/
 | GET | `/api/health` | 健康检查 |
 | POST | `/api/research` | 同步研究（fire-and-forget） |
 | POST | `/api/research/stream` | **SSE 流式**研究 |
+| POST | `/api/plan/preview` | 广度研究 + 生成维度方案（Wave 2） |
+| POST | `/api/research/deep/stream` | 规划 + 维度并行深度研究（SSE） |
 | GET | `/api/research/{slug}` | 获取已完成的报告 |
 
 ### 请求/响应格式

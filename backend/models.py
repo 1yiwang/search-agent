@@ -10,6 +10,27 @@ class ResearchRequest(BaseModel):
     max_sources: int = Field(default=10, ge=3, le=30, description="Maximum sources to fetch")
 
 
+class ResearchDimension(BaseModel):
+    """A single research dimension with targeted search queries."""
+    title: str = Field(..., min_length=2, max_length=200)
+    queries: list[str] = Field(..., min_length=1, max_length=5)
+    priority: int = Field(default=1, ge=1, le=10)
+    info_type: str = Field(
+        default="facts",
+        description="facts | cases | criticism | trends",
+    )
+
+
+class ResearchPlan(BaseModel):
+    """Structured research plan produced by the planner."""
+    topic: str
+    title: str
+    date: str
+    initial_research_summary: str = ""
+    dimensions: list[ResearchDimension] = Field(default_factory=list)
+    max_sections: int = 5
+
+
 class SearchResult(BaseModel):
     """A single search result from DuckDuckGo or other engines."""
     url: str

@@ -18,6 +18,9 @@ class Config:
     tavily_search_depth: str = os.getenv("TAVILY_SEARCH_DEPTH", "basic")
     jina_api_key: str = os.getenv("JINA_API_KEY", "")
     extract_concurrency: int = int(os.getenv("EXTRACT_CONCURRENCY", "3"))
+    planner_max_sections: int = int(os.getenv("PLANNER_MAX_SECTIONS", "5"))
+    planner_initial_sources: int = int(os.getenv("PLANNER_INITIAL_SOURCES", "5"))
+    deep_sources_per_query: int = int(os.getenv("DEEP_SOURCES_PER_QUERY", "3"))
     report_output_dir: str = os.getenv(
         "REPORT_OUTPUT_DIR",
         os.path.join(os.path.dirname(__file__), "..", "reports"),

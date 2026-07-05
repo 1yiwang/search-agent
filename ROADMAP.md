@@ -2,9 +2,9 @@
 
 > **Single source of truth** for implementation progress. Update this file at the end of each Step.
 
-**Current phase:** Wave 1 complete → Wave 2 next  
+**Current phase:** Wave 2 in progress  
 **Last updated:** 2026-07-05  
-**Next step:** Step 20 — Initial research + Planner JSON sections
+**Next step:** Step 22 — Review-revise loop + `verifier.py`
 
 ## Usability timeline
 
@@ -29,7 +29,7 @@
 |-------|--------|-------------|
 | Phase 1-alpha | Done | FastAPI + Next.js pipeline: search → extract → dedup → report + SSE |
 | Wave 1 (Step 13–19) | Done | Search reliability: Tavily, fetch fallback, per-source extract, eval |
-| Wave 2 (Step 20–24) | Next | Deep research: planner, parallel sections, verifier |
+| Wave 2 (Step 20–24) | In progress | Deep research: planner, parallel sections, verifier |
 | Wave 3 (Step 25–28) | Planned | Meta UI, human-in-the-loop, Vercel deploy |
 
 ## Phase 1-alpha checklist (complete)
@@ -60,8 +60,8 @@
 
 | Step | Task | Status |
 |------|------|--------|
-| 20 | Initial broad research + Planner JSON sections | Pending |
-| 21 | Parallel section research (`asyncio.gather`) | Pending |
+| 20 | Initial broad research + Planner JSON sections | Done |
+| 21 | Parallel section research (`asyncio.gather`) | Done |
 | 22 | Review-revise loop + `verifier.py` cross-validation | Pending |
 | 23 | Deep research v1 (multi-hop, max 2 hops) | Pending |
 | 24 | Event log JSONL + extended SSE events | Pending |
