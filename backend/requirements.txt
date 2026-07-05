@@ -1,0 +1,9 @@
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+pydantic==2.10.5
+duckduckgo_search==7.5.1
+openai==1.68.2
+httpx==0.28.1
+markdownify==1.1.0
+sse-starlette==2.2.1
+python-dotenv==1.0.1
