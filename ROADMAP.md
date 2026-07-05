@@ -4,7 +4,7 @@
 
 **Current phase:** Phase 1-alpha (skeleton complete) → Wave 1 in progress  
 **Last updated:** 2026-07-05  
-**Next step:** Step 15 — Tavily default search + DDG fallback
+**Next step:** Step 16 — Fetch chain: httpx → Jina fallback
 
 ## Phase overview
 
@@ -31,7 +31,7 @@
 |------|------|--------|
 | 13 | GitHub public repo + ROADMAP + progress baseline | Done |
 | 14 | Provider abstraction (`backend/providers/`) | Done |
-| 15 | Tavily default search + DDG fallback | Pending |
+| 15 | Tavily default search + DDG fallback | Done |
 | 16 | Fetch chain: httpx → Jina → Tavily extract | Pending |
 | 17 | Per-source LLM extraction + Semaphore(3) | Pending |
 | 18 | Report persistence via `data.json` | Pending |
@@ -77,6 +77,6 @@
 
 ## Known issues
 
-- DuckDuckGo rate limiting (202) — fix in Step 15 (Tavily)
+- DuckDuckGo rate limiting — mitigated by Tavily primary + DDG fallback (Step 15)
 - Reports in-memory only until Step 18
 - Batch LLM extraction until Step 17

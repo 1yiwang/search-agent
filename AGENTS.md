@@ -14,7 +14,7 @@
 |---|------|------|
 | 后端 | Python 3.12 + FastAPI | `backend/` |
 | 前端 | Next.js 16 + React 19 + Tailwind v4 + TypeScript | `frontend/` |
-| 搜索 | DuckDuckGo（免费，易限流）→ 计划切 Tavily | `backend/search.py` → `backend/providers/` |
+| 搜索 | Tavily（主）+ DuckDuckGo（降级） | `backend/providers/` |
 | LLM | OpenAI 兼容接口 → 当前用 DeepSeek v4 Pro | `backend/extraction.py` |
 | 部署 | 静态 HTML → `reports/<slug>/index.html` | `backend/deploy.py` |
 | 包管理 | pip（后端）+ pnpm（前端） |  |
@@ -32,7 +32,7 @@ D:/Projects/search-agent/
 │   ├── config.py              ← 环境变量配置（LLM_API_KEY 等）
 │   ├── models.py              ← Pydantic v2 数据模型（7 个类）
 │   ├── search.py              ← 搜索 + 网页抓取 facade
-│   ├── providers/             ← 可插拔 search/fetch（ddg, httpx；Step 15+ tavily）
+│   ├── providers/             ← 可插拔 search/fetch（tavily, ddg, httpx）
 │   ├── extraction.py          ← LLM 结构化事实提取（OpenAI SDK）
 │   ├── dedup.py               ← URL 去重 + 文本相似度去重
 │   ├── reporter.py            ← Markdown 报告生成（[^n] 引用系统）
@@ -155,7 +155,7 @@ agent.run_research()
 - [x] DeepSeek v4 Pro API 已调通
 - [x] Review 修复：语法错误、XSS 风险、未使用 import、StreamRequest 验证
 
-- [ ] **搜索问题**：DuckDuckGo 持续限流（202 Ratelimit），需切 Tavily/Brave → [ROADMAP.md](ROADMAP.md) Step 15
+- [ ] **搜索问题**：DuckDuckGo 限流时 Tavily 主搜 + DDG 自动降级（Step 15 ✅）；抓取分层见 Step 16
 - [ ] Phase 2：Meta 深度规划模式（5 步向导：输入 → 反问澄清 → 生成方案 → 审核 → 执行）
 - [ ] Phase 3：多用户（Gmail OAuth + 用户自带 API Key）
 - [ ] Phase 4：向量知识库 + Obsidian 集成

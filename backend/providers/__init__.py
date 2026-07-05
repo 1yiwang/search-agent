@@ -4,9 +4,11 @@ from config import config
 from .base import FetchProvider, SearchProvider
 from .fetch_httpx import HttpxFetchProvider
 from .search_ddg import DDGSearchProvider
+from .search_tavily import TavilySearchProvider
 
 _SEARCH_REGISTRY: dict[str, type] = {
     "ddg": DDGSearchProvider,
+    "tavily": TavilySearchProvider,
 }
 
 _FETCH_REGISTRY: dict[str, type] = {
