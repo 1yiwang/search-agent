@@ -156,7 +156,7 @@ agent.run_research()
 - [x] DeepSeek v4 Pro API 已调通
 - [x] Review 修复：语法错误、XSS 风险、未使用 import、StreamRequest 验证
 
-- [ ] **搜索问题**：DuckDuckGo 限流时 Tavily 主搜 + DDG 自动降级（Step 15 ✅）；抓取分层见 Step 16
+- [x] Tavily + fetch chain + per-source extract (Wave 1)
 - [ ] Phase 2：Meta 深度规划模式（5 步向导：输入 → 反问澄清 → 生成方案 → 审核 → 执行）
 - [ ] Phase 3：多用户（Gmail OAuth + 用户自带 API Key）
 - [ ] Phase 4：向量知识库 + Obsidian 集成
@@ -171,7 +171,14 @@ agent.run_research()
 3. **多跳搜索**：不是搜一次就回答。搜索 → 提取 → 交叉验证 → 发现盲区 → 追加搜索，直到覆盖度达标。
 4. **反爬分层**：L1 文本抓取（Jina AI）→ L2 搜索 API（Tavily/Brave）→ L3 真浏览器（Playwright+CDP）→ L4 AI 导航（Browser-Use）。逐层升级，不浪费资源。
 
-## 本地运行
+## Eval (Wave 1 quality gate)
+
+```bash
+# From repo root — requires LLM_API_KEY + TAVILY_API_KEY in backend/.env
+backend/.venv/Scripts/python.exe -m eval.run
+backend/.venv/Scripts/python.exe -m eval.run --case tavily-smoke
+```
+
 
 ```bash
 # 1. 后端

@@ -2,16 +2,15 @@
 
 > **Single source of truth** for implementation progress. Update this file at the end of each Step.
 
-**Current phase:** Phase 1-alpha (skeleton complete) → Wave 1 in progress  
+**Current phase:** Wave 1 complete → Wave 2 next  
 **Last updated:** 2026-07-05  
-**Next step:** Step 19 — Eval framework (Wave 1 completion gate)
+**Next step:** Step 20 — Initial research + Planner JSON sections
 
 ## Usability timeline
 
 | When | What you can do |
 |------|-----------------|
-| **Now (local)** | `backend: python main.py` + `frontend: pnpm dev` — full quick-search with Tavily/Jina, citation sidebar, reports survive backend restart |
-| **After Step 19 (~1–2 days)** | Wave 1 complete — automated quality gate, safe for daily research use |
+| **Now (local)** | Wave 1 complete — daily quick-search with Tavily/Jina, citations, persistence. Run `python -m eval.run` to verify. |
 | **After Wave 2 (~2–3 weeks)** | Multi-section deep research, verifier, cross-source validation |
 | **After Step 27 (~3–4 weeks)** | Public deploy at yiwang.dev |
 
@@ -29,8 +28,8 @@
 | Phase | Status | Description |
 |-------|--------|-------------|
 | Phase 1-alpha | Done | FastAPI + Next.js pipeline: search → extract → dedup → report + SSE |
-| Wave 1 (Step 13–19) | In progress | Search reliability: Tavily, fetch fallback, per-source extract, eval |
-| Wave 2 (Step 20–24) | Planned | Deep research: planner, parallel sections, verifier (GPT Researcher patterns) |
+| Wave 1 (Step 13–19) | Done | Search reliability: Tavily, fetch fallback, per-source extract, eval |
+| Wave 2 (Step 20–24) | Next | Deep research: planner, parallel sections, verifier |
 | Wave 3 (Step 25–28) | Planned | Meta UI, human-in-the-loop, Vercel deploy |
 
 ## Phase 1-alpha checklist (complete)
@@ -53,9 +52,9 @@
 | 16 | Fetch chain: httpx → Jina → Tavily extract | Done |
 | 17 | Per-source LLM extraction + Semaphore(3) | Done |
 | 18 | Report persistence via `data.json` | Done |
-| 19 | `eval/golden_cases.yaml` + eval runner | Pending |
+| 19 | `eval/golden_cases.yaml` + eval runner | Done |
 
-**Wave 1 done when:** 3/3 golden eval cases pass consistently.
+**Wave 1 done when:** 3/3 golden eval cases pass consistently. **Status: 3/3 passed (2026-07-05).**
 
 ## Wave 2 — Deep research intelligence
 

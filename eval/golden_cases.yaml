@@ -1,0 +1,27 @@
+# Golden evaluation cases for Search Agent Wave 1.
+# Run: backend/.venv/Scripts/python.exe -m eval.run
+
+cases:
+  - id: python-312
+    topic: "Python 3.12 major new features"
+    max_sources: 10
+    min_sources: 2
+    min_facts: 4
+    required_keywords:
+      - "3.12"
+
+  - id: eu-ai-act
+    topic: "EU AI Act key requirements overview"
+    max_sources: 10
+    min_sources: 2
+    min_facts: 3
+    required_keywords:
+      - "AI"
+
+  - id: tavily-smoke
+    topic: "What is FastAPI Python web framework"
+    max_sources: 8
+    min_sources: 2
+    min_facts: 3
+    required_keywords:
+      - "FastAPI"
