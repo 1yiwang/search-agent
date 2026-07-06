@@ -31,7 +31,7 @@ class Config:
     )
     cors_origins: str = os.getenv(
         "CORS_ORIGINS",
-        "http://localhost:3000,https://yiwang.dev,https://search.yiwang.dev,https://search-demo.yiwang.dev",
+        "http://localhost:3000,https://yiwang.dev,https://search.yiwang.dev,https://search-demo.yiwang.dev,https://search-agent-seven.vercel.app",
     )
     site_password: str = os.getenv("SITE_PASSWORD", "")
     api_auth_secret: str = os.getenv("API_AUTH_SECRET", "")

@@ -9,7 +9,7 @@
 $ErrorActionPreference = "Stop"
 
 $TunnelName = "search-agent"
-$Hostname = "api.search.yiwang.dev"
+$Hostname = "api-search.yiwang.dev"
 $CloudflaredDir = Join-Path $env:USERPROFILE ".cloudflared"
 $ConfigPath = Join-Path $CloudflaredDir "config.yml"
 
@@ -50,5 +50,5 @@ Set-Content -Path $ConfigPath -Value $yaml -Encoding UTF8
 Write-Host "Wrote $ConfigPath" -ForegroundColor Green
 Write-Host "  credentials: $($credFile.Name)"
 Write-Host ""
-Write-Host "DNS: not touched (you already configured api.search)." -ForegroundColor Cyan
+Write-Host "DNS: not touched (you already configured api-search)." -ForegroundColor Cyan
 Write-Host "Test: .\scripts\start-personal.ps1" -ForegroundColor Cyan

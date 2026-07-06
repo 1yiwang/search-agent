@@ -24,18 +24,18 @@
 |--------|------|-------------|
 | `search-demo.yiwang.dev` | Static demo gallery (2–3 golden cases) | No |
 | `search.yiwang.dev` | Full app (search, deep, `/plan`) + settings | Only for research |
-| `api.search.yiwang.dev` | Cloudflare Tunnel → your PC `:8000` | Only when script is running |
+| `api-search.yiwang.dev` | Cloudflare Tunnel → your PC `:8000` | Only when script is running |
 
 DNS (one-time):
 
 - `search-demo` → Vercel (CNAME)
 - `search` → Vercel (CNAME)
-- `api.search` → Cloudflare Tunnel (created when you set up tunnel)
+- `api-search` → Cloudflare Tunnel (created when you set up tunnel)
 
 Vercel env (production):
 
 ```
-NEXT_PUBLIC_API_URL=https://api.search.yiwang.dev
+NEXT_PUBLIC_API_URL=https://api-search.yiwang.dev
 SITE_PASSWORD=<your site password>          # server-side only
 API_AUTH_SECRET=<same random string as backend .env>
 API_TOKEN_TTL_SECONDS=86400                 # optional
@@ -97,11 +97,11 @@ Also enable **Git auto-deploy**: Vercel → Settings → Git → connected repo 
 | 能删吗？ | 点 **Clear all keys** 清空 |
 | 换电脑/浏览器？ | 需要重新填（故意设计：Key 不上传 Vercel） |
 
-研究时：网站把 Key 通过请求头发给你本机 API（`api.search.yiwang.dev`），不经第三方服务器存储。
+研究时：网站把 Key 通过请求头发给你本机 API（`api-search.yiwang.dev`），不经第三方服务器存储。
 
 ---
 
-### C. Cloudflare Tunnel：`api.search.yiwang.dev` → 你电脑 `:8000`
+### C. Cloudflare Tunnel：`api-search.yiwang.dev` → 你电脑 `:8000`
 
 **DNS 你已经加好的话，不要再跑 `setup-cloudflare-tunnel.ps1`**（它会打开「授权 zone」的浏览器链接）。
 
@@ -112,7 +112,7 @@ Also enable **Git auto-deploy**: Vercel → Settings → Git → connected repo 
 1. 打开 [Cloudflare Zero Trust](https://one.dash.cloudflare.com/) → **Networks** → **Tunnels** → **Create a tunnel**
 2. 名称：`search-agent` → 下一步
 3. **Public Hostname**（若你 DNS 已手动指好，这里也要填一致）：
-   - Subdomain: `api.search` / Domain: `yiwang.dev`
+   - Subdomain: `api-search` / Domain: `yiwang.dev`
    - **Type: HTTP**（不是 HTTPS）
    - URL: `localhost:8000`
 
@@ -164,7 +164,7 @@ Also enable **Git auto-deploy**: Vercel → Settings → Git → connected repo 
 |------|--------|------|
 | `search.yiwang.dev` | `noindex` | 私密站，可搜到登录页但不被收录 |
 | `search-demo.yiwang.dev` | 允许 `/demo` | 公开展示 demo |
-| `api.search.yiwang.dev` | 无页面 | 仅 API，隧道按需开 |
+| `api-search.yiwang.dev` | 无页面 | 仅 API，隧道按需开 |
 
 #### 不想在 yiwang.dev 上开任何 Tunnel？
 
@@ -173,8 +173,8 @@ Also enable **Git auto-deploy**: Vercel → Settings → Git → connected repo 
 | 方案 | 说明 |
 |------|------|
 | **A. 仅本机** | `pnpm dev` + 本机 API，不暴露公网 API；`search.yiwang.dev` 只能看页面，研究在本机做 |
-| **B. Tailscale** | API 只在你的设备 mesh 内可达，公网无 `api.search` 记录 |
-| **C. 单独子域** | 保持 `api.search.yiwang.dev`（只一条 DNS，与主站逻辑隔离） |
+| **B. Tailscale** | API 只在你的设备 mesh 内可达，公网无 `api-search` 记录 |
+| **C. 单独子域** | 保持 `api-search.yiwang.dev`（只一条 DNS，与主站逻辑隔离） |
 | **D. 当前 Tunnel** | 按需开关，关脚本即断 |
 
 对个人自用，**C + 按需开关** 或 **B** 通常足够；A 最简单但无法在外用手机调 API。
@@ -205,9 +205,9 @@ winget install Cloudflare.cloudflared
 
 4. **自动添加 DNS**（比手填 CNAME 省事）  
    ```powershell
-   cloudflared tunnel route dns search-agent api.search.yiwang.dev
+   cloudflared tunnel route dns search-agent api-search.yiwang.dev
    ```
-   这会在 Cloudflare DNS 里创建 `api.search` → `<tunnel-id>.cfargotunnel.com`。
+   这会在 Cloudflare DNS 里创建 `api-search` → `<tunnel-id>.cfargotunnel.com`。
 
 5. **写配置文件** `%USERPROFILE%\.cloudflared\config.yml`（可参考 [`scripts/cloudflared.config.example.yml`](scripts/cloudflared.config.example.yml)）：
 
@@ -216,7 +216,7 @@ winget install Cloudflare.cloudflared
    credentials-file: C:\Users\<你>\.cloudflared\<uuid>.json
 
    ingress:
-     - hostname: api.search.yiwang.dev
+     - hostname: api-search.yiwang.dev
        service: http://localhost:8000
      - service: http_status:404
    ```
@@ -225,7 +225,7 @@ winget install Cloudflare.cloudflared
    ```powershell
    .\scripts\start-personal.ps1
    # 另一个终端：
-   curl https://api.search.yiwang.dev/api/health
+   curl https://api-search.yiwang.dev/api/health
    ```
    应返回 `{"status":"ok",...}`。
 
@@ -234,7 +234,8 @@ winget install Cloudflare.cloudflared
 | 现象 | 处理 |
 |------|------|
 | `connection refused` | 先确认本机 `http://localhost:8000/api/health` 正常 |
-| DNS 未生效 / curl 超时 | `api.search` CNAME 必须 **橙云 Proxied**；灰云会解析到内部 `fd10:` 地址，外网连不上 |
+| DNS 未生效 / curl 超时 | `api-search` CNAME 必须 **橙云 Proxied**；灰云会解析到内部 `fd10:` 地址，外网连不上 |
+| HTTPS 握手失败 (curl 35) | 不要用 `api.search`（三级子域），免费 SSL 不覆盖；改用 **`api-search.yiwang.dev`** |
 | 隧道起不来 | 检查 `config.yml` 里 `credentials-file` 路径是否正确 |
 | 没 config 时 | `start-personal.ps1` 会退化为 quick tunnel（随机 URL，仅临时测试用） |
 
@@ -246,7 +247,7 @@ winget install Cloudflare.cloudflared
 # 1. When you want to research — one command
 .\scripts\start-personal.ps1
 #    → starts FastAPI on localhost:8000
-#    → starts Cloudflare Tunnel (api.search.yiwang.dev → :8000)
+#    → starts Cloudflare Tunnel (api-search.yiwang.dev → :8000)
 
 # 2. Browser
 #    https://search.yiwang.dev  → enter password
@@ -345,9 +346,9 @@ pnpm dev
 
 | Where | Variables |
 |-------|-----------|
-| Vercel | `SITE_PASSWORD`, `API_AUTH_SECRET`, `NEXT_PUBLIC_API_URL=https://api.search.yiwang.dev` |
+| Vercel | `SITE_PASSWORD`, `API_AUTH_SECRET`, `NEXT_PUBLIC_API_URL=https://api-search.yiwang.dev` |
 | Browser (localStorage) | LLM key, base URL, model — **you edit in UI** |
 | `backend/.env` | Optional defaults for local dev; Tavily/Jina if not BYOK yet |
-| Cloudflare | Tunnel token for `api.search.yiwang.dev` |
+| Cloudflare | Tunnel token for `api-search.yiwang.dev` |
 
 See [`backend/.env.example`](backend/.env.example).

@@ -1,7 +1,7 @@
-# One-time Cloudflare Tunnel setup for api.search.yiwang.dev
+# One-time Cloudflare Tunnel setup for api-search.yiwang.dev
 # Usage:
 #   .\scripts\setup-cloudflare-tunnel.ps1           # default: manual DNS (you add one CNAME)
-#   .\scripts\setup-cloudflare-tunnel.ps1 -AutoDns  # auto-add api.search CNAME via cloudflared
+#   .\scripts\setup-cloudflare-tunnel.ps1 -AutoDns  # auto-add api-search CNAME via cloudflared
 
 param(
     [switch]$AutoDns
@@ -11,7 +11,7 @@ $ErrorActionPreference = "Stop"
 . (Join-Path $PSScriptRoot "_cloudflared.ps1")
 
 $TunnelName = "search-agent"
-$Hostname = "api.search.yiwang.dev"
+$Hostname = "api-search.yiwang.dev"
 $CloudflaredDir = Join-Path $env:USERPROFILE ".cloudflared"
 $ConfigPath = Join-Path $CloudflaredDir "config.yml"
 $ManualDns = -not $AutoDns
@@ -68,9 +68,9 @@ if ($ManualDns) {
     $tunnelInfo = & $Cloudflared tunnel info $TunnelName 2>&1 | Out-String
     if ($tunnelInfo -match "([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})") {
         $uuid = $Matches[1]
-        Write-Host "  Type: CNAME  Name: api.search  Target: $uuid.cfargotunnel.com  Proxy: DNS only" -ForegroundColor Cyan
+        Write-Host "  Type: CNAME  Name: api-search  Target: $uuid.cfargotunnel.com  Proxy: DNS only" -ForegroundColor Cyan
     } else {
-        Write-Host "  Type: CNAME  Name: api.search  Target: <tunnel-uuid>.cfargotunnel.com  Proxy: DNS only" -ForegroundColor Cyan
+        Write-Host "  Type: CNAME  Name: api-search  Target: <tunnel-uuid>.cfargotunnel.com  Proxy: DNS only" -ForegroundColor Cyan
         Write-Host "  Run: cloudflared tunnel info $TunnelName" -ForegroundColor Cyan
     }
 } else {

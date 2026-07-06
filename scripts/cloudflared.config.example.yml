@@ -5,6 +5,6 @@ tunnel: search-agent
 credentials-file: C:\Users\<YOU>\.cloudflared\<TUNNEL-UUID>.json
 
 ingress:
-  - hostname: api.search.yiwang.dev
+  - hostname: api-search.yiwang.dev
     service: http://localhost:8000
   - service: http_status:404

@@ -63,14 +63,14 @@ $namedConfig = Join-Path $env:USERPROFILE ".cloudflared\config.yml"
 
 if ($Cloudflared -and (Test-Path $tokenPath)) {
     $token = (Get-Content $tokenPath -Raw).Trim()
-    Write-Host "Starting tunnel via token (api.search.yiwang.dev)..." -ForegroundColor Cyan
+    Write-Host "Starting tunnel via token (api-search.yiwang.dev)..." -ForegroundColor Cyan
     & $Cloudflared tunnel run --token $token
 } elseif (Test-Path $namedConfig) {
     if (-not $Cloudflared) {
         Write-Host "cloudflared not found but config.yml exists." -ForegroundColor Red
         exit 1
     }
-    Write-Host "Starting named Cloudflare tunnel (api.search.yiwang.dev)..." -ForegroundColor Cyan
+    Write-Host "Starting named Cloudflare tunnel (api-search.yiwang.dev)..." -ForegroundColor Cyan
     & $Cloudflared tunnel run search-agent
 } elseif ($Cloudflared) {
     Write-Host "No named tunnel config at $namedConfig" -ForegroundColor Yellow
