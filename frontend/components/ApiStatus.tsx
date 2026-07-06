@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "";
+import { getApiBase } from "@/lib/apiBase";
 
 export function ApiStatus() {
   const [online, setOnline] = useState<boolean | null>(null);
@@ -11,8 +10,7 @@ export function ApiStatus() {
     let cancelled = false;
     async function check() {
       try {
-        const base = API_BASE || "";
-        const res = await fetch(`${base}/api/health`, { cache: "no-store" });
+        const res = await fetch(`${getApiBase()}/api/health`, { cache: "no-store" });
         if (!cancelled) setOnline(res.ok);
       } catch {
         if (!cancelled) setOnline(false);

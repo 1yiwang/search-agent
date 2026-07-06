@@ -8,6 +8,8 @@ import {
   type SSEEvent,
 } from "@/lib/api";
 import { formatProgressEvent } from "@/lib/formatProgress";
+import { getApiToken } from "@/lib/auth";
+import { loadSettings } from "@/lib/settings";
 import { ApiStatus } from "@/components/ApiStatus";
 import { SettingsPanel } from "@/components/SettingsPanel";
 
@@ -31,6 +33,17 @@ export default function SearchPage() {
     setLoading(true);
     setProgress([]);
     setResult(null);
+
+    if (!getApiToken()) {
+      setProgress(["Error: Not signed in to API — log out and sign in again."]);
+      setLoading(false);
+      return;
+    }
+    if (!loadSettings().llmApiKey.trim()) {
+      setProgress(["Error: Add your LLM API key in Settings before researching."]);
+      setLoading(false);
+      return;
+    }
 
     const events: SSEEvent[] = [];
     try {

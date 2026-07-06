@@ -1,9 +1,8 @@
 // D:/Projects/search-agent/frontend/lib/api.ts
 
 import { authHeaders } from "./auth";
+import { getApiBase } from "./apiBase";
 import { loadSettings, settingsHeaders } from "./settings";
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "";
 
 function getRequestHeaders(): Record<string, string> {
   return {
@@ -18,7 +17,7 @@ export async function checkApiHealth(): Promise<{
   apiAuthRequired?: boolean;
 }> {
   try {
-    const res = await fetch(`${API_BASE}/api/health`, { cache: "no-store" });
+    const res = await fetch(`${getApiBase()}/api/health`, { cache: "no-store" });
     if (!res.ok) return { ok: false };
     const data = await res.json();
     return {
@@ -104,9 +103,26 @@ export interface SSEEvent {
   data: Record<string, unknown>;
 }
 
+async function apiFetch(path: string, init: RequestInit): Promise<Response> {
+  const base = getApiBase();
+  const url = `${base}${path}`;
+  try {
+    return await fetch(url, init);
+  } catch (err) {
+    const hint = base
+      ? `Cannot reach ${base}. Start backend + tunnel (scripts/start-tunnel.ps1).`
+      : "Cannot reach API. Start backend on :8000 or set NEXT_PUBLIC_API_URL.";
+    const msg = err instanceof Error ? err.message : "Network error";
+    throw new Error(`${msg} — ${hint}`);
+  }
+}
+
 async function* parseSSEStream(response: Response): AsyncGenerator<SSEEvent> {
+  if (response.status === 401) {
+    throw new Error("Unauthorized — log out and sign in again to refresh API token.");
+  }
   if (!response.ok) {
-    throw new Error(`Request failed: ${response.statusText}`);
+    throw new Error(`Request failed (${response.status}): ${response.statusText}`);
   }
 
   const reader = response.body!.getReader();
@@ -136,7 +152,7 @@ async function* parseSSEStream(response: Response): AsyncGenerator<SSEEvent> {
 export async function* streamResearch(
   request: ResearchRequest
 ): AsyncGenerator<SSEEvent> {
-  const response = await fetch(`${API_BASE}/api/research/stream`, {
+  const response = await apiFetch("/api/research/stream", {
     method: "POST",
     headers: getRequestHeaders(),
     body: JSON.stringify(request),
@@ -147,7 +163,7 @@ export async function* streamResearch(
 export async function* streamDeepResearch(
   request: DeepResearchRequest
 ): AsyncGenerator<SSEEvent> {
-  const response = await fetch(`${API_BASE}/api/research/deep/stream`, {
+  const response = await apiFetch("/api/research/deep/stream", {
     method: "POST",
     headers: getRequestHeaders(),
     body: JSON.stringify({
@@ -161,7 +177,7 @@ export async function* streamDeepResearch(
 }
 
 export async function metaClarify(topic: string): Promise<MetaClarifyResponse> {
-  const response = await fetch(`${API_BASE}/api/meta/clarify`, {
+  const response = await apiFetch("/api/meta/clarify", {
     method: "POST",
     headers: getRequestHeaders(),
     body: JSON.stringify({ topic }),
@@ -179,9 +195,9 @@ export async function metaPlan(params: {
   max_sections?: number;
   initial_sources?: number;
 }): Promise<ResearchPlan> {
-  const response = await fetch(`${API_BASE}/api/meta/plan`, {
+  const response = await apiFetch("/api/meta/plan", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: getRequestHeaders(),
     body: JSON.stringify(params),
   });
   if (!response.ok) {
@@ -194,7 +210,7 @@ export async function* streamMetaResearch(params: {
   session_id: string;
   sources_per_query?: number;
 }): AsyncGenerator<SSEEvent> {
-  const response = await fetch(`${API_BASE}/api/meta/research/stream`, {
+  const response = await apiFetch("/api/meta/research/stream", {
     method: "POST",
     headers: getRequestHeaders(),
     body: JSON.stringify({
@@ -206,7 +222,7 @@ export async function* streamMetaResearch(params: {
 }
 
 export async function getReport(slug: string): Promise<ResearchReport> {
-  const response = await fetch(`${API_BASE}/api/research/${slug}`, {
+  const response = await apiFetch(`/api/research/${slug}`, {
     headers: authHeaders(),
   });
   if (!response.ok) {
