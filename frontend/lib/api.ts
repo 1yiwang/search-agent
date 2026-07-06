@@ -222,11 +222,52 @@ export async function* streamMetaResearch(params: {
 }
 
 export async function getReport(slug: string): Promise<ResearchReport> {
-  const response = await apiFetch(`/api/research/${slug}`, {
+  const response = await fetch(`/api/research/${encodeURIComponent(slug)}`, {
+    cache: "no-store",
+    credentials: "include",
     headers: authHeaders(),
   });
+  if (response.status === 401) {
+    throw new Error("Not signed in — log in again to view reports.");
+  }
+  if (response.status === 503) {
+    const data = await response.json().catch(() => ({}));
+    throw new Error(
+      String(data.error || "Personal API offline — start backend + tunnel."),
+    );
+  }
   if (!response.ok) {
     throw new Error(`Report not found: ${slug}`);
   }
   return response.json();
+}
+
+export interface ReportSummary {
+  slug: string;
+  topic: string;
+  fact_count: number;
+  completed_at: string;
+  html_url: string;
+}
+
+export async function listReports(limit = 30): Promise<ReportSummary[]> {
+  const response = await fetch(`/api/reports?limit=${limit}`, {
+    cache: "no-store",
+    credentials: "include",
+    headers: authHeaders(),
+  });
+  if (response.status === 401) {
+    throw new Error("Not signed in — log in again to view saved reports.");
+  }
+  if (response.status === 503) {
+    const data = await response.json().catch(() => ({}));
+    throw new Error(
+      String(data.error || "Personal API offline — start backend + tunnel."),
+    );
+  }
+  if (!response.ok) {
+    throw new Error("Failed to load saved reports");
+  }
+  const data = await response.json();
+  return (data.reports ?? []) as ReportSummary[];
 }

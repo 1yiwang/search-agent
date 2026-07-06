@@ -11,8 +11,11 @@ def _slugify(text: str) -> str:
     slug = text.lower().strip()
     slug = re.sub(r"[^\w\s-]", "", slug)
     slug = re.sub(r"[\s_]+", "-", slug)
-    slug = re.sub(r"-+", "-", slug)
-    return slug[:80]
+    slug = re.sub(r"-+", "-", slug).strip("-")
+    if not slug:
+        slug = "research"
+    slug = slug[:60]
+    return f"{slug}-{now.strftime('%Y%m%d-%H%M%S')}"
 
 
 def _build_citations(facts: list[ExtractedFact]) -> list[Citation]:

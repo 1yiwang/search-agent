@@ -20,6 +20,8 @@ export function formatProgressEvent(event: SSEEvent): string {
       return `Extracted ${d.facts_extracted} facts`;
     case "fact_dedup_complete":
       return `Fact dedup: ${d.before} → ${d.after}`;
+    case "verify_start":
+      return `Verifying ${d.fact_count} facts…`;
     case "verify_complete": {
       const hop = d.hop ? ` (hop ${d.hop})` : "";
       return `Verified${hop}: ${d.after} facts, ${d.corroborated} corroborated`;

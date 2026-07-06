@@ -1,4 +1,5 @@
 """Persist and load research reports from disk + memory cache."""
+import json
 from pathlib import Path
 
 from config import config
@@ -42,3 +43,35 @@ def load_report(slug: str) -> ResearchReport | None:
 def clear_cache() -> None:
     """Clear memory cache (for tests)."""
     _cache.clear()
+
+
+def list_reports(limit: int = 30) -> list[dict]:
+    """List saved reports newest first (from reports/*/data.json)."""
+    base = Path(config.report_output_dir)
+    if not base.is_dir():
+        return []
+
+    candidates = [
+        d for d in base.iterdir()
+        if d.is_dir() and (d / "data.json").is_file()
+    ]
+    candidates.sort(
+        key=lambda p: (p / "data.json").stat().st_mtime,
+        reverse=True,
+    )
+
+    summaries: list[dict] = []
+    for report_dir in candidates[:limit]:
+        try:
+            raw = json.loads((report_dir / "data.json").read_text(encoding="utf-8"))
+            meta = raw.get("metadata") or {}
+            summaries.append({
+                "slug": raw.get("slug") or report_dir.name,
+                "topic": raw.get("topic") or report_dir.name,
+                "fact_count": len(raw.get("facts") or []),
+                "completed_at": meta.get("completed_at") or "",
+                "html_url": raw.get("html_url") or f"/research/{report_dir.name}/",
+            })
+        except (json.JSONDecodeError, OSError):
+            continue
+    return summaries

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import {
   metaClarify,
@@ -11,6 +12,7 @@ import {
   type SSEEvent,
 } from "@/lib/api";
 import { formatProgressEvent } from "@/lib/formatProgress";
+import { researchReportPath, slugFromReportReady } from "@/lib/researchNav";
 import { ApiStatus } from "@/components/ApiStatus";
 import { SettingsPanel } from "@/components/SettingsPanel";
 
@@ -19,6 +21,7 @@ type WizardStep = 1 | 2 | 3 | 4 | 5;
 const STEP_LABELS = ["Topic", "Clarify", "Plan", "Review", "Execute"];
 
 export default function PlanWizardPage() {
+  const router = useRouter();
   const [step, setStep] = useState<WizardStep>(1);
   const [topic, setTopic] = useState("");
   const [sessionId, setSessionId] = useState("");
@@ -108,17 +111,9 @@ export default function PlanWizardPage() {
         events.push(event);
         setProgress((prev) => [...prev, formatProgressEvent(event)]);
 
-        if (event.event === "report_content" && event.data) {
-          const readyEvent = events.find((e) => e.event === "report_ready");
-          const readyData = (readyEvent?.data || {}) as {
-            slug: string;
-            fact_count: number;
-          };
-          setResult({
-            slug: readyData.slug || "unknown",
-            markdown: String(event.data.markdown || ""),
-            fact_count: Number(readyData.fact_count || 0),
-          });
+        const slug = slugFromReportReady(event);
+        if (slug) {
+          router.push(researchReportPath(slug));
         }
       }
     } catch (err) {

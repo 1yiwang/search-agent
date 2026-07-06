@@ -4,11 +4,14 @@ const apiUrl = process.env.API_URL || "http://localhost:8000";
 
 const nextConfig: NextConfig = {
   /**
-   * Proxy /api/* to the FastAPI backend in dev/preview when NEXT_PUBLIC_API_URL is unset.
-   * For long SSE research streams in production, prefer setting NEXT_PUBLIC_API_URL
-   * to the public backend URL (avoids Vercel rewrite timeouts).
+   * Dev: proxy unmatched /api/* to local FastAPI (SSE streams, health).
+   * Vercel: no rewrites — App Router owns /api/reports & /api/research/[slug];
+   * research streams call api-search.yiwang.dev directly from the browser.
    */
   async rewrites() {
+    if (process.env.VERCEL) {
+      return [];
+    }
     return [
       {
         source: "/api/:path*",

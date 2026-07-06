@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import {
   streamResearch,
@@ -10,21 +11,18 @@ import {
 import { formatProgressEvent } from "@/lib/formatProgress";
 import { getApiToken } from "@/lib/auth";
 import { loadSettings } from "@/lib/settings";
+import { researchReportPath, slugFromReportReady } from "@/lib/researchNav";
 import { ApiStatus } from "@/components/ApiStatus";
 import { SettingsPanel } from "@/components/SettingsPanel";
 
 type Mode = "quick" | "deep";
 
 export default function SearchPage() {
+  const router = useRouter();
   const [topic, setTopic] = useState("");
   const [mode, setMode] = useState<Mode>("quick");
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState<string[]>([]);
-  const [result, setResult] = useState<{
-    slug: string;
-    markdown: string;
-    fact_count: number;
-  } | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -32,7 +30,6 @@ export default function SearchPage() {
 
     setLoading(true);
     setProgress([]);
-    setResult(null);
 
     if (!getApiToken()) {
       setProgress(["Error: Not signed in to API — log out and sign in again."]);
@@ -56,18 +53,17 @@ export default function SearchPage() {
         events.push(event);
         setProgress((prev) => [...prev, formatProgressEvent(event)]);
 
-        if (event.event === "report_content" && event.data) {
-          const readyEvent = events.find((ev) => ev.event === "report_ready");
-          const readyData = (readyEvent?.data || {}) as {
-            slug: string;
-            fact_count: number;
-          };
-          setResult({
-            slug: readyData.slug || "unknown",
-            markdown: String(event.data.markdown || ""),
-            fact_count: Number(readyData.fact_count || 0),
-          });
+        const slug = slugFromReportReady(event);
+        if (slug) {
+          router.push(researchReportPath(slug));
         }
+      }
+
+      const fallbackSlug = events
+        .map(slugFromReportReady)
+        .find((s): s is string => Boolean(s));
+      if (fallbackSlug) {
+        router.push(researchReportPath(fallbackSlug));
       }
     } catch (err) {
       setProgress((prev) => [
@@ -94,6 +90,9 @@ export default function SearchPage() {
         <div className="mt-4 flex flex-col items-center gap-2">
           <ApiStatus />
           <SettingsPanel />
+          <Link href="/history" className="text-sm text-[var(--link)] hover:underline">
+            Saved reports
+          </Link>
         </div>
       </header>
 
@@ -178,26 +177,6 @@ export default function SearchPage() {
         </div>
       )}
 
-      {result && (
-        <div className="mt-10 rounded-lg border border-[var(--border)] bg-[var(--surface-raised)] p-6">
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-            <h2 className="font-display text-2xl text-[var(--ink)]">Research complete</h2>
-            <span className="text-sm text-[var(--muted)]">
-              {result.fact_count} facts ·{" "}
-              <a
-                href={`/research/${result.slug}`}
-                className="text-[var(--link)] hover:underline"
-              >
-                Open report →
-              </a>
-            </span>
-          </div>
-          <pre className="whitespace-pre-wrap text-sm text-[var(--muted)] font-mono leading-relaxed max-h-64 overflow-y-auto">
-            {result.markdown.slice(0, 2000)}
-            {result.markdown.length > 2000 && "\n\n… (preview truncated)"}
-          </pre>
-        </div>
-      )}
     </main>
   );
 }

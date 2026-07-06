@@ -29,7 +29,14 @@ export function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const publicPaths = ["/login", "/api/auth/login", "/demo", "/robots.txt"];
+  const publicPaths = [
+    "/login",
+    "/api/auth/login",
+    "/demo",
+    "/robots.txt",
+    "/api/reports",
+    "/api/research",
+  ];
   if (publicPaths.some((p) => pathname === p || pathname.startsWith(`${p}/`))) {
     return withRobotsTag(NextResponse.next(), host);
   }

@@ -71,6 +71,7 @@ async def finalize_facts(
         "after": len(unique_facts),
     })
 
+    await emit("verify_start", {"fact_count": len(unique_facts)})
     verified_facts, verify_stats = await verify_and_review(topic, unique_facts)
     await _emit_verify(emit, unique_facts, verified_facts, verify_stats)
 

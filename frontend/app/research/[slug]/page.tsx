@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { getReport, type ResearchReport, type Citation } from "@/lib/api";
@@ -114,6 +115,12 @@ export default function ReportPage() {
           <a href="/" className="text-sm text-zinc-500 hover:text-zinc-300 mb-4 inline-block">
             ← New search
           </a>
+          <Link
+            href="/history"
+            className="text-sm text-zinc-500 hover:text-zinc-300 mb-4 ml-4 inline-block"
+          >
+            Saved reports
+          </Link>
 
           {/* Trust signals */}
           {report.metadata && (

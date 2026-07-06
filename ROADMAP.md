@@ -2,15 +2,16 @@
 
 > **Single source of truth** for implementation progress. Update this file at the end of each Step.
 
-**Current phase:** Wave 3b — deploy Mode B (local API + BYOK)  
-**Next step:** Cloudflare DNS for `search-demo` + run `setup-cloudflare-tunnel.ps1`
+**Current phase:** Wave 3b — deploy Mode B (local API + BYOK) **live on search.yiwang.dev**  
+**Next step:** `search-demo.yiwang.dev` DNS + optional LangGraph (Step 28)
 
 ## Usability timeline
 
 | When | What you can do |
 |------|-----------------|
 | **Now (local)** | Full stack: quick + deep search, `/plan` wizard, citations, event logs |
-| **After Step 29–34** | `search.yiwang.dev` (password, BYOK settings) + local API on demand; `search-demo` static gallery — see [DEPLOY.md](DEPLOY.md) |
+| **Now (production)** | `search.yiwang.dev` — password gate, BYOK settings, research + **Saved reports** (`/history`); API via `api-search.yiwang.dev` tunnel when `start-tunnel.ps1` runs — see [DEPLOY.md](DEPLOY.md) |
+| **Pending** | `search-demo.yiwang.dev` static gallery DNS |
 
 ## Frontend roadmap
 
@@ -18,8 +19,9 @@
 |------|---------|
 | 18 (done) | Dossier theme (Instrument Serif + DM Sans), human-readable progress feed |
 | 26 (done) | Meta 5-step wizard at `/plan` + deep mode on homepage |
-| 27 (done) | Production deploy — Vercel frontend + Render/Docker API ([DEPLOY.md](DEPLOY.md)) |
-| Future | Report page full redesign, research history list, mobile polish |
+| 27 (done) | Production deploy — Vercel frontend + local API tunnel ([DEPLOY.md](DEPLOY.md)) |
+| 35 (done) | Saved reports `/history` + same-origin API proxy on Vercel |
+| Future | Report page full redesign, mobile polish |
 
 ## Phase overview
 
@@ -28,7 +30,7 @@
 | Phase 1-alpha | Done | FastAPI + Next.js pipeline: search → extract → dedup → report + SSE |
 | Wave 1 (Step 13–19) | Done | Search reliability: Tavily, fetch fallback, per-source extract, eval |
 | Wave 2 (Step 20–24) | Done | Deep research: planner, parallel sections, verifier, multihop, event log |
-| Wave 3 (Step 25–34) | In progress | Meta UI, deploy Mode B (local API + BYOK) |
+| Wave 3 (Step 25–35) | Done | Meta UI, deploy Mode B (local API + BYOK), saved reports |
 
 ## Phase 1-alpha checklist (complete)
 
@@ -85,7 +87,8 @@
 | 31 | API token after login (anti-abuse when tunnel up) | Done |
 | 32 | Settings UI — LLM model / base URL / API key (BYOK, localStorage) | Done |
 | 33 | `search-demo.yiwang.dev` static demo gallery | Done |
-| 34 | DNS aliases + Vercel cleanup (remove temp tunnel env) | In progress |
+| 34 | DNS aliases + Vercel env (`api-search.yiwang.dev`, BYOK) | Done |
+| 35 | Saved reports `/history` + Vercel API proxy (`/api/reports`, `/api/research/[slug]`) | Done |
 
 ## Progress ritual
 
@@ -109,3 +112,5 @@
 - DuckDuckGo rate limiting — mitigated by Tavily primary + DDG fallback (Step 15)
 - Reports in-memory only until Step 18 — fixed: `reports/<slug>/data.json`
 - Batch LLM extraction until Step 17 — fixed: per-source extraction with concurrency limit
+- Vercel must not rewrite `/api/research/*` — fixed Step 35: rewrites disabled on Vercel; use App Router proxy routes
+- Run only one backend on `:8000` — duplicate `python main.py` causes CORS / stale-process bugs

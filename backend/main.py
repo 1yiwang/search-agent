@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 from config import config
 from models import ResearchRequest, ResearchReport, ResearchPlan
 from agent import run_research, run_deep_research
-from report_store import load_report
+from report_store import load_report, list_reports
 from event_log import load_events
 from streaming import stream_research
 from planner import create_research_plan
@@ -148,6 +148,12 @@ async def research_stream(request: StreamRequest):
         media_type="text/event-stream",
         headers=SSE_HEADERS,
     )
+
+
+@app.get("/api/reports")
+async def reports_list(limit: int = 30):
+    """List saved research reports (newest first)."""
+    return {"reports": list_reports(limit=min(max(limit, 1), 100))}
 
 
 @app.get("/api/research/{slug}", response_model=ResearchReport)
