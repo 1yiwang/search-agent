@@ -49,8 +49,14 @@ if (-not $healthOk) {
 Write-Host "Backend is up." -ForegroundColor Green
 
 $Cloudflared = Get-CloudflaredExe
+$tokenPath = Join-Path $env:USERPROFILE ".cloudflared\token.txt"
 $namedConfig = Join-Path $env:USERPROFILE ".cloudflared\config.yml"
-if (Test-Path $namedConfig) {
+
+if ($Cloudflared -and (Test-Path $tokenPath)) {
+    $token = (Get-Content $tokenPath -Raw).Trim()
+    Write-Host "Starting tunnel via token (api.search.yiwang.dev)..." -ForegroundColor Cyan
+    & $Cloudflared tunnel run --token $token
+} elseif (Test-Path $namedConfig) {
     if (-not $Cloudflared) {
         Write-Host "cloudflared not found but config.yml exists." -ForegroundColor Red
         exit 1
@@ -59,7 +65,8 @@ if (Test-Path $namedConfig) {
     & $Cloudflared tunnel run search-agent
 } elseif ($Cloudflared) {
     Write-Host "No named tunnel config at $namedConfig" -ForegroundColor Yellow
-    Write-Host "Run: .\scripts\setup-cloudflare-tunnel.ps1" -ForegroundColor Yellow
+    Write-Host "Run: .\scripts\write-tunnel-config.ps1" -ForegroundColor Yellow
+    Write-Host "  (or put Dashboard run-token in %USERPROFILE%\.cloudflared\token.txt)" -ForegroundColor Yellow
     Write-Host "Using quick tunnel (random URL) for now..." -ForegroundColor Yellow
     Write-Host ""
     & $Cloudflared tunnel --url http://localhost:8000

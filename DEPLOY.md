@@ -103,36 +103,57 @@ Also enable **Git auto-deploy**: Vercel → Settings → Git → connected repo 
 
 ### C. Cloudflare Tunnel：`api.search.yiwang.dev` → 你电脑 `:8000`
 
-**原理：** 你电脑上跑 FastAPI（8000 端口）+ `cloudflared` 客户端。Cloudflare 把公网域名 `api.search.yiwang.dev` 的流量，通过加密隧道转到你本机。**脚本关掉 = 隧道断 = 外人调不了你的 LLM。**
+**DNS 你已经加好的话，不要再跑 `setup-cloudflare-tunnel.ps1`**（它会打开「授权 zone」的浏览器链接）。
 
-#### 会不会影响 yiwang.dev 上其他网站？
+改用下面 **Dashboard 方式** — 不动其他 DNS、不需要 CLI `tunnel login`：
 
-**不会动到其他站点**，原因：
+#### 推荐：Cloudflare 控制台创建隧道（无需 CLI 授权主域）
 
-| 操作 | 实际影响范围 |
-|------|----------------|
-| `tunnel login` | 授权本机管理隧道（选 zone 时只勾选 `yiwang.dev`） |
-| `tunnel create` | 新建一条隧道，不改现有 DNS |
-| `tunnel route dns` | **只加一条** `api.search` 的 CNAME |
-| `config.yml` ingress | **只转发** `api.search.yiwang.dev` → `:8000`，其余 hostname 走 `http_status:404` |
+1. 打开 [Cloudflare Zero Trust](https://one.dash.cloudflare.com/) → **Networks** → **Tunnels** → **Create a tunnel**
+2. 名称：`search-agent` → 下一步
+3. **Public Hostname**（若你 DNS 已手动指好，这里也要填一致）：
+   - Subdomain: `api.search` / Domain: `yiwang.dev`
+   - Service: `http://localhost:8000`
+4. 在 **Install connector** 页面二选一：
 
-`search.yiwang.dev` / `search-demo.yiwang.dev` / 你其他子站 **走 Vercel 或各自配置**，与隧道无关。
+**方式 A — Run token（最简单）**
 
-若仍不放心自动改 DNS，默认已是 **手动模式**（推荐）：
+复制那一长串 token，保存到：
 
-```powershell
-.\scripts\setup-cloudflare-tunnel.ps1
-# 只创建隧道 + config.yml；DNS 自己在 Cloudflare 加一条 api.search CNAME
-
-# 若你明确想用自动 DNS：
-.\scripts\setup-cloudflare-tunnel.ps1 -AutoDns
+```
+%USERPROFILE%\.cloudflared\token.txt
 ```
 
-| Type | Name | Target | Proxy |
-|------|------|--------|-------|
-| CNAME | `api.search` | `<tunnel-uuid>.cfargotunnel.com` | 灰云 |
+（文件里只有一行 token，无引号）
 
-`<tunnel-uuid>` 用 `cloudflared tunnel info search-agent` 查看。
+然后：
+
+```powershell
+.\scripts\start-personal.ps1
+```
+
+**方式 B — 凭证 JSON**
+
+把下载的 `<uuid>.json` 放到 `%USERPROFILE%\.cloudflared\`，再运行：
+
+```powershell
+.\scripts\write-tunnel-config.ps1
+.\scripts\start-personal.ps1
+```
+
+全程 **不会** 再弹出「授权 yiwang.dev zone」的 CLI 链接。
+
+#### `tunnel login` 那个链接到底是什么？
+
+只有跑 **CLI** `cloudflared tunnel login` 时才会出现。它授权的是「本机命令行创建隧道」，**不是**把主域交给别人管，也**不会**改你现有 DNS。
+
+你已自己加好 DNS → **跳过 CLI 登录**，用上面 Dashboard 流程即可。
+
+#### 旧方式（仅当 Dashboard 搞不定时）
+
+```powershell
+.\scripts\setup-cloudflare-tunnel.ps1   # 会触发 tunnel login，不推荐你已加 DNS 时用
+```
 
 #### SEO / 收录策略（已实现）
 
