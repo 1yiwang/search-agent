@@ -14,7 +14,7 @@ def format_sse(event: dict) -> str:
     return f"data: {json.dumps(event)}\n\n"
 
 
-async def stream_research(
+def stream_research(
     topic: str,
     mode: str,
     run_pipeline: RunPipeline,
