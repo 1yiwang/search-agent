@@ -6,10 +6,12 @@ import re
 from config import config
 from llm_context import get_openai_client, get_request_keys
 from models import ExtractedFact, SearchResult
+from sources.registry import has_dach_intent
 
 SINGLE_SOURCE_PROMPT = """You are a research assistant. Extract key facts from ONE source about the research topic.
 
 Research topic: {topic}
+Recency window: prefer facts from the last {recency_days} days when dates are present.
 
 Source:
 Title: {title}
@@ -21,8 +23,9 @@ Instructions:
 1. Extract ONLY facts directly supported by the source text. Do NOT use your own knowledge.
 2. For each fact, include the EXACT quoted text from the source that supports it.
 3. Rate confidence: "high" (explicitly stated with data), "medium" (stated but without precise data), "low" (implied or vague).
-4. Skip facts that are off-topic or advertising/sponsored content.
-5. Return a JSON array of objects with keys: fact, quoted_text, confidence.
+4. If the source states when an event happened, set event_date (YYYY, YYYY-MM, or YYYY-MM-DD); otherwise use "".
+5. Skip facts that are off-topic or advertising/sponsored content.
+6. Return a JSON array of objects with keys: fact, quoted_text, confidence, event_date.
    Do NOT invent source_url or source_title — they are fixed for this source.
 
 Return ONLY valid JSON, no other text:
@@ -31,7 +34,8 @@ Return ONLY valid JSON, no other text:
   {{
     "fact": "...",
     "quoted_text": "...",
-    "confidence": "high|medium|low"
+    "confidence": "high|medium|low",
+    "event_date": "2026-05 or empty string"
   }}
 ]
 ```"""
@@ -75,6 +79,7 @@ def _to_extracted_facts(
                 source_url=source.url,
                 source_title=source.title,
                 quoted_text=quoted,
+                event_date=str(item.get("event_date") or "").strip(),
                 confidence=item.get("confidence", "medium"),
             )
         )
@@ -90,8 +95,10 @@ async def extract_facts_from_source(
     if not content or content.startswith("[Failed"):
         return []
 
+    recency_days = config.research_recency_days if has_dach_intent(topic) else 365
     prompt = SINGLE_SOURCE_PROMPT.format(
         topic=topic,
+        recency_days=recency_days,
         title=source.title,
         url=source.url,
         content=content,

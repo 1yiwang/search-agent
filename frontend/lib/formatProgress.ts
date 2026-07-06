@@ -6,6 +6,8 @@ export function formatProgressEvent(event: SSEEvent): string {
   switch (event.event) {
     case "session_start":
       return `Session started (${d.mode || "quick"})`;
+    case "dach_seeds_start":
+      return `DACH seeds: ${d.seed_count} site: queries (${d.recency_days ?? 90}d window)`;
     case "search_start":
       return `Searching: “${d.topic}”`;
     case "search_complete":

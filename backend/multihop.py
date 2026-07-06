@@ -7,7 +7,7 @@ from config import config
 from dedup import deduplicate_facts, normalize_url
 from extraction import extract_facts
 from models import ExtractedFact, SearchResult
-from search import search_and_fetch
+from search import search_topic_with_seeds
 from verifier import VerificationStats, verify_and_review
 
 EmitCallback = Callable[[str, dict[str, Any]], Awaitable[None]]
@@ -27,11 +27,12 @@ async def _fetch_follow_up_facts(
     """Search follow-up queries and extract facts from new URLs only."""
 
     async def search_one(query: str) -> list[SearchResult]:
-        return await search_and_fetch(
+        results, _ = await search_topic_with_seeds(
             query,
             sources_per_query,
             event_callback=emit,
         )
+        return results
 
     batches = await asyncio.gather(*[search_one(q) for q in queries])
     new_results: list[SearchResult] = []

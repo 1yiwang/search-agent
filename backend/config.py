@@ -25,6 +25,10 @@ class Config:
     verifier_max_revisions: int = int(os.getenv("VERIFIER_MAX_REVISIONS", "1"))
     multihop_max_hops: int = int(os.getenv("MULTIHOP_MAX_HOPS", "2"))
     multihop_sources_per_query: int = int(os.getenv("MULTIHOP_SOURCES_PER_QUERY", "3"))
+    research_recency_days: int = int(os.getenv("RESEARCH_RECENCY_DAYS", "90"))
+    dach_seeds_enabled: bool = os.getenv("DACH_SEEDS_ENABLED", "true").lower() in ("1", "true", "yes")
+    dach_max_seed_queries: int = int(os.getenv("DACH_MAX_SEED_QUERIES", "5"))
+    dach_seed_results_per_query: int = int(os.getenv("DACH_SEED_RESULTS_PER_QUERY", "3"))
     report_output_dir: str = os.getenv(
         "REPORT_OUTPUT_DIR",
         os.path.join(os.path.dirname(__file__), "..", "reports"),

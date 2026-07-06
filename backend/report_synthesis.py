@@ -121,7 +121,7 @@ def fallback_synthesis(
         StructuredFinding(
             entity=fact.fact[:60].split("—")[0].strip() or fact.source_title[:40],
             signal=fact.fact,
-            date="",
+            date=getattr(fact, "event_date", "") or "",
             confidence=fact.confidence,
             citation_index=i + 1,
         )
@@ -154,6 +154,7 @@ async def synthesize_report(
             "citation_index": i + 1,
             "fact": f.fact,
             "confidence": f.confidence,
+            "event_date": f.event_date,
             "source_title": f.source_title,
             "source_url": f.source_url,
             "quoted_excerpt": f.quoted_text[:200],

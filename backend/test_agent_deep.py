@@ -26,12 +26,12 @@ async def _test_research_dimension_parallel_queries():
     async def emit(event_type: str, data: dict):
         events.append((event_type, data))
 
-    with patch("agent.search_and_fetch", new_callable=AsyncMock) as mock_search:
+    with patch("agent.search_topic_with_seeds", new_callable=AsyncMock) as mock_search:
         mock_search.side_effect = [
-            [_result("https://a.com")],
-            [_result("https://b.com")],
+            ([_result("https://a.com")], ["query A"]),
+            ([_result("https://b.com")], ["query B"]),
         ]
-        _, results = await _research_dimension(dim, sources_per_query=2, emit=emit)
+        _, results = await _research_dimension(dim, sources_per_query=2, emit=emit, plan_topic="EU AI Act")
 
     assert len(results) == 2
     assert mock_search.await_count == 2
@@ -55,8 +55,15 @@ async def _test_run_deep_research_merges_dimensions():
         patch("agent._research_dimension", new_callable=AsyncMock) as mock_dim,
         patch("agent.extract_facts", new_callable=AsyncMock) as mock_extract,
         patch("agent.finalize_facts", new_callable=AsyncMock) as mock_finalize,
+        patch("agent.synthesize_report", new_callable=AsyncMock) as mock_synth,
         patch("agent.generate_report") as mock_report,
     ):
+        mock_synth.return_value = type("Syn", (), {
+            "executive_summary": "summary",
+            "structured_findings": [],
+            "coverage": "",
+            "gaps": "",
+        })()
         mock_dim.side_effect = [
             (plan.dimensions[0], [_result("https://a.com")]),
             (plan.dimensions[1], [_result("https://b.com")]),
@@ -86,7 +93,7 @@ async def _test_run_deep_research_merges_dimensions():
     assert mock_dim.await_count == 2
     assert mock_extract.await_count == 2
     assert report.slug == "eu-ai-act-report"
-    assert report.metadata.topics_searched == ["q1", "q2"]
+    assert mock_report.call_args.kwargs["topics_searched"] == ["q1", "q2"]
 
 
 if __name__ == "__main__":

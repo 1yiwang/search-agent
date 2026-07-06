@@ -7,7 +7,7 @@ from pathlib import Path
 from config import config
 from llm_context import get_openai_client, get_request_keys
 from models import ResearchDimension, ResearchPlan, SearchResult
-from search import search_and_fetch
+from search import search_topic_with_seeds
 
 _SOP_PATH = Path(__file__).parent / "prompts" / "research_sop.md"
 
@@ -110,7 +110,7 @@ async def run_initial_research(
     if max_sources is None:
         max_sources = config.planner_initial_sources
 
-    results = await search_and_fetch(topic, max_sources)
+    results, _ = await search_topic_with_seeds(topic, max_sources)
     usable = [
         r for r in results
         if (r.full_text and not r.full_text.startswith("[Failed")) or r.snippet

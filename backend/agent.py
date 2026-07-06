@@ -4,12 +4,13 @@ from datetime import datetime, timezone
 
 from config import config
 from models import ResearchDimension, ResearchPlan, ResearchRequest, ResearchReport
-from search import search_and_fetch
+from search import search_topic_with_seeds
 from extraction import extract_facts
 from dedup import deduplicate_search_results
 from reporter import generate_report
 from report_synthesis import synthesize_report
 from multihop import finalize_facts, urls_from_results
+from sources.registry import augment_queries
 
 
 async def run_research(
@@ -34,7 +35,7 @@ async def run_research(
     await emit("search_start", {"topic": request.topic, "max_sources": request.max_sources})
 
     # Phase 1: Search
-    raw_results = await search_and_fetch(
+    raw_results, seed_topics = await search_topic_with_seeds(
         request.topic,
         request.max_sources,
         event_callback=emit,
@@ -58,7 +59,7 @@ async def run_research(
 
     # Phase 3: Dedup, verify, multi-hop follow-up
     seen_urls = urls_from_results(unique_results)
-    topics_searched = [request.topic]
+    topics_searched = seed_topics
     sources_per_query = min(config.multihop_sources_per_query, request.max_sources)
 
     verified_facts, _ = await finalize_facts(
@@ -93,6 +94,7 @@ async def _research_dimension(
     dimension: ResearchDimension,
     sources_per_query: int,
     emit,
+    plan_topic: str,
 ) -> tuple[ResearchDimension, list]:
     """Search all queries for one dimension in parallel."""
     await emit("dimension_start", {
@@ -101,14 +103,17 @@ async def _research_dimension(
         "info_type": dimension.info_type,
     })
 
+    queries = augment_queries(plan_topic, dimension.queries)
+
     async def search_query(query: str):
-        return await search_and_fetch(
+        results, _ = await search_topic_with_seeds(
             query,
             sources_per_query,
             event_callback=emit,
         )
+        return results
 
-    query_batches = await asyncio.gather(*[search_query(q) for q in dimension.queries])
+    query_batches = await asyncio.gather(*[search_query(q) for q in queries])
     results = []
     for batch in query_batches:
         results.extend(batch)
@@ -148,7 +153,7 @@ async def run_deep_research(
         )
 
     dimension_pairs = await asyncio.gather(*[
-        _research_dimension(dim, sources_per_query, emit)
+        _research_dimension(dim, sources_per_query, emit, plan.topic)
         for dim in plan.dimensions
     ])
 

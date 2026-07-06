@@ -161,21 +161,17 @@ agent.run_research()
 
 ## 当前状态
 
-**Phase 1 MVP ✅ 完成**（2026-07-05，16 commits）
+**Wave 3b–5 ✅ 生产可用**（2026-07-06）— 详见 [ROADMAP.md](ROADMAP.md)
 
-- [x] 完整链路可跑通
-- [x] SSE 实时流式进度（10 种事件类型）
-- [x] 搜索页 + 报告页（引文侧栏点击验证）
-- [x] 静态 HTML 部署
-- [x] DeepSeek v4 Pro API 已调通
-- [x] Review 修复：语法错误、XSS 风险、未使用 import、StreamRequest 验证
+- [x] Phase 1-alpha MVP + Wave 1–2（搜索可靠性、深度研究）
+- [x] Wave 3b：search.yiwang.dev + BYOK + Saved reports `/history`
+- [x] **DACH Phase 0**：执行摘要 + 结构化 findings 表 + ReportView 情报简报 UI
+- [x] **引文预览**：`source_snapshots` + 侧栏高亮（Word/PDF 不自动下载）
+- [x] **DACH Phase 1**：`sources/dach_registry.yaml` + `site:` 种子查询 + 90 天新鲜度
 
-- [x] Tavily + fetch chain + per-source extract (Wave 1)
-- [x] Wave 2 深度研究管线（planner、verifier、multihop）
-- [ ] Phase 2b：Meta 5 步向导 — **Step 25–26 已完成**（`/plan` + Meta API）
-- [ ] Phase 3：多用户（Gmail OAuth + 用户自带 API Key）
-- [ ] Phase 4：向量知识库 + Obsidian 集成
-- [ ] 推 GitHub + 部署 Vercel
+- [ ] **Phase 2**：Entity/Signal 模型 + job_brief / investor_brief 双线报告
+- [ ] Phase 3：Watchlist + 周刊增量
+- [ ] `search-demo.yiwang.dev` DNS（demo 公开展示）
 
 ## 设计哲学（为什么这样构建）
 

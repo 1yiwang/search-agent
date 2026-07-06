@@ -18,7 +18,7 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install -r requirements.txt
-      - run: python test_verifier.py && python test_meta.py && python test_event_log.py
+      - run: python test_verifier.py && python test_meta.py && python test_event_log.py && python test_dach_registry.py
 
   frontend-build:
     runs-on: ubuntu-latest

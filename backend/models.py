@@ -45,6 +45,10 @@ class ExtractedFact(BaseModel):
     source_url: str
     source_title: str
     quoted_text: str = Field(..., description="The original text supporting this fact")
+    event_date: str = Field(
+        default="",
+        description="Event date if stated in source (YYYY, YYYY-MM, or YYYY-MM-DD)",
+    )
     confidence: str = Field(default="medium", pattern="^(high|medium|low)$")
 
 

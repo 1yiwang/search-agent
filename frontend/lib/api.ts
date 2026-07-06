@@ -82,6 +82,7 @@ export interface ExtractedFact {
   source_url: string;
   source_title: string;
   quoted_text: string;
+  event_date?: string;
   confidence: "high" | "medium" | "low";
 }
 

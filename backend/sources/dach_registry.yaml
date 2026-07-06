@@ -1,0 +1,186 @@
+# DACH / Swiss startup & PE intelligence — seeded search registry (Phase 1)
+# Each entry: domain + site: query templates. {topic} is replaced with the research topic.
+
+version: 1
+
+intent_keywords:
+  geo:
+    - switzerland
+    - swiss
+    - schweiz
+    - suisse
+    - svizzera
+    - zurich
+    - zürich
+    - zug
+    - basel
+    - geneva
+    - genf
+    - bern
+    - dach
+    - deutschland
+    - germany
+    - austria
+    - österreich
+    - oesterreich
+    - liechtenstein
+    - europe
+    - european
+    - 瑞士
+    - 苏黎世
+    - 德语区
+    - 欧洲
+  venture:
+    - startup
+    - startups
+    - vc
+    - venture
+    - funding
+    - fundraise
+    - fundraising
+    - investment
+    - investor
+    - investors
+    - private equity
+    - family office
+    - deal
+    - round
+    - series
+    - 融资
+    - 创投
+    - 初创
+    - 投资
+    - 基金
+  sectors:
+    - robotics
+    - robot
+    - deep tech
+    - deeptech
+    - spin-off
+    - spinoff
+    - 机器人
+    - 深科技
+
+sources:
+  - id: startupticker
+    domain: startupticker.ch
+    language: de
+    category: media
+    tags: [geo, venture]
+    search_templates:
+      - "site:startupticker.ch {topic}"
+      - "site:startupticker.ch Finanzierung OR funding"
+
+  - id: swissfundraising
+    domain: swissfundraising.ch
+    language: de
+    category: media
+    tags: [geo, venture]
+    search_templates:
+      - "site:swissfundraising.ch {topic}"
+
+  - id: venturelab
+    domain: venturelab.ch
+    language: de
+    category: events
+    tags: [geo, venture]
+    search_templates:
+      - "site:venturelab.ch {topic}"
+      - "site:venturelab.ch startup OR Venture Leaders"
+
+  - id: swissnex
+    domain: swissnex.org
+    language: en
+    category: university
+    tags: [geo, venture, sectors]
+    search_templates:
+      - "site:swissnex.org {topic}"
+      - "site:swissnex.org Swiss startup OR deep tech"
+
+  - id: eth_spinoff
+    domain: ethz.ch
+    language: en
+    category: university
+    tags: [geo, venture, sectors]
+    search_templates:
+      - "site:ethz.ch spin-off OR startup {topic}"
+
+  - id: epfl_innovation
+    domain: epfl.ch
+    language: en
+    category: university
+    tags: [geo, venture, sectors]
+    search_templates:
+      - "site:epfl.ch startup OR spin-off {topic}"
+
+  - id: finews
+    domain: finews.ch
+    language: de
+    category: media
+    tags: [geo, venture]
+    search_templates:
+      - "site:finews.ch startup OR Venture Capital {topic}"
+
+  - id: handelszeitung
+    domain: handelszeitung.ch
+    language: de
+    category: media
+    tags: [geo, venture]
+    search_templates:
+      - "site:handelszeitung.ch startup OR Investment {topic}"
+
+  - id: bilan
+    domain: bilan.ch
+    language: fr
+    category: media
+    tags: [geo, venture]
+    search_templates:
+      - "site:bilan.ch startup OR financement {topic}"
+
+  - id: letemps
+    domain: letemps.ch
+    language: fr
+    category: media
+    tags: [geo, venture]
+    search_templates:
+      - "site:letemps.ch startup OR investissement {topic}"
+
+  - id: sifted
+    domain: sifted.eu
+    language: en
+    category: media
+    tags: [venture, sectors]
+    search_templates:
+      - "site:sifted.eu Switzerland OR DACH {topic}"
+
+  - id: tech_eu
+    domain: tech.eu
+    language: en
+    category: media
+    tags: [venture, sectors]
+    search_templates:
+      - "site:tech.eu Switzerland OR Swiss {topic}"
+
+  - id: eu_startups
+    domain: eu-startups.com
+    language: en
+    category: media
+    tags: [venture]
+    search_templates:
+      - "site:eu-startups.com Switzerland OR Swiss {topic}"
+
+  - id: greaterzurich
+    domain: greaterzuricharea.com
+    language: en
+    category: registry
+    tags: [geo, venture]
+    search_templates:
+      - "site:greaterzuricharea.com startup OR investment {topic}"
+
+  - id: innovaud
+    domain: innovaud.ch
+    language: fr
+    category: registry
+    tags: [geo, venture]
+    search_templates:
+      - "site:innovaud.ch startup OR financement {topic}"

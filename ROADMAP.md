@@ -2,8 +2,8 @@
 
 > **Single source of truth** for implementation progress. Update this file at the end of each Step.
 
-**Current phase:** Wave 4 — DACH intelligence Phase 0 **complete**  
-**Next step:** Phase 1 — DACH source registry + seeded `site:` queries (Step 37)
+**Current phase:** Wave 5 — DACH intelligence Phase 1 **complete**  
+**Next step:** Phase 2 — Entity/Signal model + job_brief / investor_brief (Step 38)
 
 ## Usability timeline
 
@@ -32,6 +32,7 @@
 | Wave 2 (Step 20–24) | Done | Deep research: planner, parallel sections, verifier, multihop, event log |
 | Wave 3 (Step 25–35) | Done | Meta UI, deploy Mode B (local API + BYOK), saved reports |
 | Wave 4 (Step 36) | Done | Phase 0: report synthesis, intelligence brief UI, Swiss robotics demo |
+| Wave 5 (Step 37) | Done | Phase 1: DACH source registry + site: seed queries + 90d recency |
 
 ## Phase 1-alpha checklist (complete)
 
@@ -100,6 +101,17 @@
 | 36 | Swiss robotics demo in `public/demos/swiss-robotics-2026/` | Done |
 
 **Phase 0 done when:** Any research run produces summary → table → clickable citations; `/history` retains reports. **Status: complete (2026-07-06).**
+
+## Wave 5 — DACH intelligence Phase 1
+
+| Step | Task | Status |
+|------|------|--------|
+| 37 | `sources/dach_registry.yaml` — Swiss/DACH/FR media, universities, VC events | Done |
+| 37 | `search_topic_with_seeds()` — site: seed layer + Tavily `days` recency | Done |
+| 37 | `agent.py` / `planner.py` / `multihop.py` seed injection | Done |
+| 37 | Extraction `event_date` + `RESEARCH_RECENCY_DAYS` (default 90) | Done |
+
+**Phase 1 done when:** DACH-topics hit more vertical Swiss/EU sources than broad-only search. **Status: complete (2026-07-06).**
 
 ## Progress ritual
 

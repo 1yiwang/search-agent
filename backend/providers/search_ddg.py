@@ -9,7 +9,7 @@ from models import SearchResult
 class DDGSearchProvider:
     name = "ddg"
 
-    async def search(self, query: str, max_results: int) -> list[SearchResult]:
+    async def search(self, query: str, max_results: int, **kwargs) -> list[SearchResult]:
         """Search via DuckDuckGo with rate-limit backoff."""
         loop = asyncio.get_event_loop()
         last_error = None
