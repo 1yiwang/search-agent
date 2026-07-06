@@ -93,6 +93,13 @@ export interface StructuredFinding {
   citation_index: number;
 }
 
+export interface SourceSnapshot {
+  url: string;
+  title: string;
+  content_kind: "html" | "document" | "empty";
+  text: string;
+}
+
 export interface ResearchReport {
   topic: string;
   slug: string;
@@ -104,6 +111,7 @@ export interface ResearchReport {
   structured_findings?: StructuredFinding[];
   coverage?: string;
   gaps?: string;
+  source_snapshots?: SourceSnapshot[];
   metadata?: {
     execution_time_seconds: number;
     source_count: number;

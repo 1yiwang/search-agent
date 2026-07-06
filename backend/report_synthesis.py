@@ -17,10 +17,10 @@ Instructions:
 1. Write in the SAME language as the research topic (Chinese topic → Chinese prose).
 2. Preserve German/French proper nouns and terms from sources when they are more precise.
 3. Use ONLY the facts above — do not add outside knowledge.
-4. executive_summary: 3–5 sentences answering the topic directly.
+4. executive_summary: 3–5 sentences answering the topic directly. If facts are off-topic, outdated, or explicitly say the answer was not found, say so plainly instead of inventing an answer.
 5. structured_findings: one row per distinct entity/signal; map each row to citation_index from facts.
 6. coverage: what was searched and what types of sources were covered.
-7. gaps: what may still be missing or unverified.
+7. gaps: what may still be missing, wrong timeframe, paywalled, or unverified — be specific when facts contradict the topic.
 
 Return ONLY valid JSON:
 ```json

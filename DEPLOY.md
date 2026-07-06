@@ -43,7 +43,12 @@ API_TOKEN_TTL_SECONDS=86400                 # optional
 
 Remove any temporary `localtunnel` URLs from Vercel env.
 
-Also enable **Git auto-deploy**: Vercel → Settings → Git → connected repo `1yiwang/search-agent`, branch `master`, **Root Directory = `frontend`**.
+Also enable **Git auto-deploy** (pick one):
+
+1. **Vercel Git integration (recommended)** — Vercel → Settings → Git → repo `1yiwang/search-agent`, branch `master`, **Root Directory = `frontend`**. Every `git push` to `master` deploys automatically.
+2. **GitHub Actions** — workflow `.github/workflows/deploy-frontend.yml` runs `vercel --prod` on push when `frontend/` changes. Add repo secrets:
+   - `VERCEL_TOKEN` — [Vercel account tokens](https://vercel.com/account/tokens)
+   - `VERCEL_ORG_ID` / `VERCEL_PROJECT_ID` — run `cd frontend && npx vercel link` locally, then read `.vercel/project.json`
 
 ---
 

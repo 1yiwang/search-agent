@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import type { Citation, ResearchReport, StructuredFinding } from "@/lib/api";
+import { CitationPanel } from "@/components/CitationPanel";
+import { snapshotForUrl } from "@/lib/sourcePreview";
 
 type SortKey = "confidence" | "date" | "entity";
 type SortDir = "asc" | "desc";
@@ -310,14 +312,13 @@ export function ReportView({
                       [{c.index}]
                     </span>
                     <div>
-                      <a
-                        href={c.source_url}
-                        target="_blank"
-                        rel="noopener"
-                        className="text-[var(--link)] hover:underline"
+                      <button
+                        type="button"
+                        onClick={() => openCitation(c.index)}
+                        className="text-[var(--link)] hover:underline text-left"
                       >
                         {c.source_name}
-                      </a>
+                      </button>
                       <p className="text-[var(--muted)] mt-1 italic leading-relaxed">
                         &ldquo;{c.quoted_text.slice(0, 200)}
                         {c.quoted_text.length > 200 ? "…" : ""}&rdquo;
@@ -330,38 +331,20 @@ export function ReportView({
           </article>
 
           {/* Citation panel */}
-          <aside className="lg:w-80 shrink-0">
+          <aside className="lg:w-[28rem] shrink-0">
             <div className="lg:sticky lg:top-24">
               {activeCitation ? (
-                <div className="rounded-xl border border-[var(--accent)]/30 bg-[var(--surface-raised)] p-5 shadow-lg">
-                  <div className="flex items-start justify-between gap-2 mb-3">
-                    <h3 className="text-sm font-semibold text-[var(--ink)]">
-                      [{activeCitation.index}] {activeCitation.source_name}
-                    </h3>
-                    <button
-                      type="button"
-                      onClick={onCitationClose}
-                      className="text-[var(--muted)] hover:text-[var(--ink)] text-lg leading-none"
-                      aria-label="Close"
-                    >
-                      ×
-                    </button>
-                  </div>
-                  <blockquote className="border-l-2 border-[var(--accent)] pl-3 text-sm text-[var(--muted)] italic mb-4 leading-relaxed">
-                    &ldquo;{activeCitation.quoted_text}&rdquo;
-                  </blockquote>
-                  <a
-                    href={activeCitation.source_url}
-                    target="_blank"
-                    rel="noopener"
-                    className="text-sm text-[var(--link)] hover:underline"
-                  >
-                    Open source →
-                  </a>
-                </div>
+                <CitationPanel
+                  citation={activeCitation}
+                  snapshot={snapshotForUrl(
+                    report.source_snapshots,
+                    activeCitation.source_url
+                  )}
+                  onClose={onCitationClose}
+                />
               ) : (
                 <p className="text-xs text-[var(--muted)] border border-dashed border-[var(--border)] rounded-lg p-4 text-center">
-                  Click a [{` `}n{` `}] reference to verify against the original quote
+                  点击 [{` `}n{` `}] 引用，在右侧预览原文并高亮对应片段
                 </p>
               )}
             </div>

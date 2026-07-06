@@ -60,6 +60,18 @@ class Citation(BaseModel):
     )
 
 
+class SourceSnapshot(BaseModel):
+    """Fetched source text saved with the report for citation preview."""
+    url: str
+    title: str = ""
+    content_kind: str = Field(
+        default="html",
+        pattern="^(html|document|empty)$",
+        description="html page, office/pdf document, or empty/failed fetch",
+    )
+    text: str = ""
+
+
 class ReportMetadata(BaseModel):
     """Execution metadata for the report."""
     execution_time_seconds: float
@@ -99,6 +111,7 @@ class ResearchReport(BaseModel):
     structured_findings: list[StructuredFinding] = Field(default_factory=list)
     coverage: str = ""
     gaps: str = ""
+    source_snapshots: list[SourceSnapshot] = Field(default_factory=list)
 
 
 class SSEEvent(BaseModel):

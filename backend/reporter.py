@@ -8,8 +8,10 @@ from models import (
     ResearchReport,
     ReportMetadata,
     ReportSynthesis,
+    SearchResult,
 )
 from report_synthesis import fallback_synthesis
+from source_snapshots import build_source_snapshots
 
 
 def _slugify(text: str, now: datetime) -> str:
@@ -156,6 +158,7 @@ def generate_report(
     started_at: datetime = None,
     synthesis: ReportSynthesis | None = None,
     topics_searched: list[str] | None = None,
+    fetched_results: list[SearchResult] | None = None,
 ) -> ResearchReport:
     """Generate a complete ResearchReport from extracted facts."""
     now = datetime.now(timezone.utc)
@@ -179,6 +182,8 @@ def generate_report(
         completed_at=now.isoformat(),
     )
 
+    snapshots = build_source_snapshots(fetched_results or [])
+
     return ResearchReport(
         topic=topic,
         slug=slug,
@@ -189,5 +194,6 @@ def generate_report(
         structured_findings=synthesis.structured_findings,
         coverage=synthesis.coverage,
         gaps=synthesis.gaps,
+        source_snapshots=snapshots,
         metadata=metadata,
     )

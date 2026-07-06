@@ -79,6 +79,7 @@ async def run_research(
         started_at,
         synthesis=synthesis,
         topics_searched=topics_searched,
+        fetched_results=unique_results,
     )
     await emit("report_complete", {
         "slug": report.slug,
@@ -210,6 +211,7 @@ async def run_deep_research(
         started_at,
         synthesis=synthesis,
         topics_searched=topics_searched,
+        fetched_results=unique_results,
     )
     await emit("report_complete", {
         "slug": report.slug,
