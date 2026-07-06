@@ -14,6 +14,10 @@ class AuthAndKeysMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         path = request.url.path
 
+        # Browsers send OPTIONS before cross-origin POST/SSE; must not require auth.
+        if request.method == "OPTIONS":
+            return await call_next(request)
+
         if path.startswith("/api/") and path not in PUBLIC_PATHS:
             if config.api_auth_secret:
                 auth = request.headers.get("authorization", "")
