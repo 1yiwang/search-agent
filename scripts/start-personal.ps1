@@ -24,29 +24,38 @@ Write-Host "  Backend:  http://localhost:8000"
 Write-Host "  Health:   http://localhost:8000/api/health"
 Write-Host ""
 Write-Host "  Open https://search.yiwang.dev (or localhost:3000) after tunnel is up."
-Write-Host "  Press Ctrl+C to stop tunnel and shut down API." -ForegroundColor Yellow
+Write-Host "  Press Ctrl+C to stop tunnel (backend in other window keeps running)." -ForegroundColor Yellow
 Write-Host ""
 
-# Backend (separate window so you see logs)
-$backendCmd = "Set-Location '$Backend'; & '$Python' -m uvicorn main:app --host 0.0.0.0 --port 8000"
-Start-Process powershell -ArgumentList "-NoExit", "-Command", $backendCmd
-
-Start-Sleep -Seconds 2
-
-$healthOk = $false
-foreach ($i in 1..15) {
+function Test-BackendHealth {
     try {
-        $r = Invoke-RestMethod -Uri "http://localhost:8000/api/health" -TimeoutSec 2
-        if ($r.status -eq "ok") { $healthOk = $true; break }
-    } catch { Start-Sleep -Seconds 1 }
+        $r = Invoke-RestMethod -Uri "http://127.0.0.1:8000/api/health" -TimeoutSec 3
+        return ($r.status -eq "ok")
+    } catch {
+        return $false
+    }
 }
 
-if (-not $healthOk) {
-    Write-Host "Backend did not start. Check the backend window for errors." -ForegroundColor Red
-    exit 1
+# Check if backend already running (e.g. python main.py in another terminal)
+if (Test-BackendHealth) {
+    Write-Host "Backend already running on :8000 (reusing it)." -ForegroundColor Green
+} else {
+    Write-Host "Starting backend on :8000..." -ForegroundColor Cyan
+    $backendCmd = "Set-Location '$Backend'; & '$Python' -m uvicorn main:app --host 127.0.0.1 --port 8000"
+    Start-Process powershell -ArgumentList "-NoExit", "-Command", $backendCmd
+    Start-Sleep -Seconds 3
+    $healthOk = $false
+    foreach ($i in 1..20) {
+        if (Test-BackendHealth) { $healthOk = $true; break }
+        Start-Sleep -Seconds 1
+    }
+    if (-not $healthOk) {
+        Write-Host "Backend did not start. If :8000 is already in use, run:" -ForegroundColor Red
+        Write-Host "  .\scripts\start-tunnel.ps1" -ForegroundColor Yellow
+        exit 1
+    }
+    Write-Host "Backend is up." -ForegroundColor Green
 }
-
-Write-Host "Backend is up." -ForegroundColor Green
 
 $Cloudflared = Get-CloudflaredExe
 $tokenPath = Join-Path $env:USERPROFILE ".cloudflared\token.txt"

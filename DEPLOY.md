@@ -113,7 +113,10 @@ Also enable **Git auto-deploy**: Vercel → Settings → Git → connected repo 
 2. 名称：`search-agent` → 下一步
 3. **Public Hostname**（若你 DNS 已手动指好，这里也要填一致）：
    - Subdomain: `api.search` / Domain: `yiwang.dev`
-   - Service: `http://localhost:8000`
+   - **Type: HTTP**（不是 HTTPS）
+   - URL: `localhost:8000`
+
+   > 若误选 **HTTPS**，隧道会连 `https://localhost:8000`，本机 FastAPI 是 HTTP，外网会一直超时。
 4. 在 **Install connector** 页面二选一：
 
 **方式 A — Run token（最简单）**
