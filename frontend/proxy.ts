@@ -1,16 +1,14 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { isDemoHost, isPrivateAppHost } from "@/lib/hosts";
 
 const COOKIE_NAME = "sa_site_auth";
 
-function isDemoHost(host: string): boolean {
-  return host.startsWith("search-demo.") || host.includes("search-demo-");
-}
-
-function isProtectedAppHost(host: string): boolean {
-  if (isDemoHost(host)) return false;
-  if (host.includes("localhost") || host.startsWith("127.0.0.1")) return false;
-  return host.includes("search.") || host.includes("search-agent");
+function withRobotsTag(response: NextResponse, host: string): NextResponse {
+  if (isPrivateAppHost(host)) {
+    response.headers.set("X-Robots-Tag", "noindex, nofollow");
+  }
+  return response;
 }
 
 export function proxy(request: NextRequest) {
@@ -27,27 +25,27 @@ export function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  if (!isProtectedAppHost(host)) {
+  if (!isPrivateAppHost(host)) {
     return NextResponse.next();
   }
 
   const publicPaths = ["/login", "/api/auth/login", "/demo"];
   if (publicPaths.some((p) => pathname === p || pathname.startsWith(`${p}/`))) {
-    return NextResponse.next();
+    return withRobotsTag(NextResponse.next(), host);
   }
 
   if (!process.env.SITE_PASSWORD) {
-    return NextResponse.next();
+    return withRobotsTag(NextResponse.next(), host);
   }
 
   const authed = request.cookies.get(COOKIE_NAME)?.value === "1";
   if (!authed) {
     const login = new URL("/login", request.url);
     login.searchParams.set("next", pathname);
-    return NextResponse.redirect(login);
+    return withRobotsTag(NextResponse.redirect(login), host);
   }
 
-  return NextResponse.next();
+  return withRobotsTag(NextResponse.next(), host);
 }
 
 export const config = {

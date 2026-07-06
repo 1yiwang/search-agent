@@ -1,6 +1,11 @@
 # One-time Cloudflare Tunnel setup for api.search.yiwang.dev
-# Usage: .\scripts\setup-cloudflare-tunnel.ps1
-# Requires: cloudflared (winget install Cloudflare.cloudflared)
+# Usage:
+#   .\scripts\setup-cloudflare-tunnel.ps1           # default: manual DNS (you add one CNAME)
+#   .\scripts\setup-cloudflare-tunnel.ps1 -AutoDns  # auto-add api.search CNAME via cloudflared
+
+param(
+    [switch]$AutoDns
+)
 
 $ErrorActionPreference = "Stop"
 . (Join-Path $PSScriptRoot "_cloudflared.ps1")
@@ -9,6 +14,7 @@ $TunnelName = "search-agent"
 $Hostname = "api.search.yiwang.dev"
 $CloudflaredDir = Join-Path $env:USERPROFILE ".cloudflared"
 $ConfigPath = Join-Path $CloudflaredDir "config.yml"
+$ManualDns = -not $AutoDns
 
 $Cloudflared = Get-CloudflaredExe
 if (-not $Cloudflared) {
@@ -21,6 +27,7 @@ Write-Host ""
 Write-Host "Search Agent — Cloudflare Tunnel setup" -ForegroundColor Cyan
 Write-Host "  cloudflared: $Cloudflared"
 Write-Host "  Hostname: $Hostname -> localhost:8000"
+Write-Host "  DNS mode: $(if ($ManualDns) { 'manual (default)' } else { 'auto' })"
 Write-Host ""
 
 if (-not (Test-Path $CloudflaredDir)) {
@@ -56,8 +63,20 @@ if (-not $credFile) {
 }
 
 Write-Host ""
-Write-Host "Step 3/4: Route DNS $Hostname ..." -ForegroundColor Cyan
-& $Cloudflared tunnel route dns $TunnelName $Hostname
+if ($ManualDns) {
+    Write-Host "Step 3/4: Manual DNS (default). Add this record in Cloudflare DNS:" -ForegroundColor Yellow
+    $tunnelInfo = & $Cloudflared tunnel info $TunnelName 2>&1 | Out-String
+    if ($tunnelInfo -match "([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})") {
+        $uuid = $Matches[1]
+        Write-Host "  Type: CNAME  Name: api.search  Target: $uuid.cfargotunnel.com  Proxy: DNS only" -ForegroundColor Cyan
+    } else {
+        Write-Host "  Type: CNAME  Name: api.search  Target: <tunnel-uuid>.cfargotunnel.com  Proxy: DNS only" -ForegroundColor Cyan
+        Write-Host "  Run: cloudflared tunnel info $TunnelName" -ForegroundColor Cyan
+    }
+} else {
+    Write-Host "Step 3/4: Route DNS $Hostname (only this subdomain)..." -ForegroundColor Cyan
+    & $Cloudflared tunnel route dns $TunnelName $Hostname
+}
 
 Write-Host ""
 Write-Host "Step 4/4: Write $ConfigPath ..." -ForegroundColor Cyan

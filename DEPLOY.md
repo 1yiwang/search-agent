@@ -105,20 +105,63 @@ Also enable **Git auto-deploy**: Vercel → Settings → Git → connected repo 
 
 **原理：** 你电脑上跑 FastAPI（8000 端口）+ `cloudflared` 客户端。Cloudflare 把公网域名 `api.search.yiwang.dev` 的流量，通过加密隧道转到你本机。**脚本关掉 = 隧道断 = 外人调不了你的 LLM。**
 
-#### 方式 1：一键脚本（推荐）
+#### 会不会影响 yiwang.dev 上其他网站？
+
+**不会动到其他站点**，原因：
+
+| 操作 | 实际影响范围 |
+|------|----------------|
+| `tunnel login` | 授权本机管理隧道（选 zone 时只勾选 `yiwang.dev`） |
+| `tunnel create` | 新建一条隧道，不改现有 DNS |
+| `tunnel route dns` | **只加一条** `api.search` 的 CNAME |
+| `config.yml` ingress | **只转发** `api.search.yiwang.dev` → `:8000`，其余 hostname 走 `http_status:404` |
+
+`search.yiwang.dev` / `search-demo.yiwang.dev` / 你其他子站 **走 Vercel 或各自配置**，与隧道无关。
+
+若仍不放心自动改 DNS，默认已是 **手动模式**（推荐）：
 
 ```powershell
-# 1. 安装 cloudflared（只需一次）
-winget install Cloudflare.cloudflared
-
-# 2. 一键配置隧道 + DNS + config.yml
 .\scripts\setup-cloudflare-tunnel.ps1
+# 只创建隧道 + config.yml；DNS 自己在 Cloudflare 加一条 api.search CNAME
 
-# 3. 日常启动
-.\scripts\start-personal.ps1
+# 若你明确想用自动 DNS：
+.\scripts\setup-cloudflare-tunnel.ps1 -AutoDns
 ```
 
-脚本会：登录 Cloudflare → 创建隧道 `search-agent` → 自动添加 `api.search` DNS → 写入 `%USERPROFILE%\.cloudflared\config.yml`。
+| Type | Name | Target | Proxy |
+|------|------|--------|-------|
+| CNAME | `api.search` | `<tunnel-uuid>.cfargotunnel.com` | 灰云 |
+
+`<tunnel-uuid>` 用 `cloudflared tunnel info search-agent` 查看。
+
+#### SEO / 收录策略（已实现）
+
+| 域名 | robots | 说明 |
+|------|--------|------|
+| `search.yiwang.dev` | `noindex` | 私密站，可搜到登录页但不被收录 |
+| `search-demo.yiwang.dev` | 允许 `/demo` | 公开展示 demo |
+| `api.search.yiwang.dev` | 无页面 | 仅 API，隧道按需开 |
+
+#### 不想在 yiwang.dev 上开任何 Tunnel？
+
+可选替代（按隔离程度从高到低）：
+
+| 方案 | 说明 |
+|------|------|
+| **A. 仅本机** | `pnpm dev` + 本机 API，不暴露公网 API；`search.yiwang.dev` 只能看页面，研究在本机做 |
+| **B. Tailscale** | API 只在你的设备 mesh 内可达，公网无 `api.search` 记录 |
+| **C. 单独子域** | 保持 `api.search.yiwang.dev`（只一条 DNS，与主站逻辑隔离） |
+| **D. 当前 Tunnel** | 按需开关，关脚本即断 |
+
+对个人自用，**C + 按需开关** 或 **B** 通常足够；A 最简单但无法在外用手机调 API。
+
+#### 方式 1：一键脚本
+
+```powershell
+winget install Cloudflare.cloudflared
+.\scripts\setup-cloudflare-tunnel.ps1
+.\scripts\start-personal.ps1
+```
 
 #### 方式 2：手动步骤
 
