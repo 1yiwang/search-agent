@@ -29,6 +29,10 @@ export function saveSettings(settings: LLMSettings): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
 }
 
+export function clearSettings(): void {
+  localStorage.removeItem(STORAGE_KEY);
+}
+
 export function settingsHeaders(settings: LLMSettings): Record<string, string> {
   const h: Record<string, string> = {};
   if (settings.llmApiKey) h["X-LLM-API-Key"] = settings.llmApiKey;

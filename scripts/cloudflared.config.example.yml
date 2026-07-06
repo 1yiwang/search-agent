@@ -1,0 +1,10 @@
+# Copy to: %USERPROFILE%\.cloudflared\config.yml
+# Replace <TUNNEL-UUID> with your tunnel id (filename of the .json credential).
+
+tunnel: search-agent
+credentials-file: C:\Users\<YOU>\.cloudflared\<TUNNEL-UUID>.json
+
+ingress:
+  - hostname: api.search.yiwang.dev
+    service: http://localhost:8000
+  - service: http_status:404

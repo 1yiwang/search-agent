@@ -3,7 +3,7 @@
 > **Single source of truth** for implementation progress. Update this file at the end of each Step.
 
 **Current phase:** Wave 3b — deploy Mode B (local API + BYOK)  
-**Next step:** DNS aliases + Vercel env cleanup (Step 34 manual)
+**Next step:** Cloudflare DNS for `search-demo` + run `setup-cloudflare-tunnel.ps1`
 
 ## Usability timeline
 
@@ -85,7 +85,7 @@
 | 31 | API token after login (anti-abuse when tunnel up) | Done |
 | 32 | Settings UI — LLM model / base URL / API key (BYOK, localStorage) | Done |
 | 33 | `search-demo.yiwang.dev` static demo gallery | Done |
-| 34 | DNS aliases + Vercel cleanup (remove temp tunnel env) | Pending |
+| 34 | DNS aliases + Vercel cleanup (remove temp tunnel env) | In progress |
 
 ## Progress ritual
 

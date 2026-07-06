@@ -4,6 +4,7 @@
 
 $ErrorActionPreference = "Stop"
 $Root = Split-Path -Parent $PSScriptRoot
+. (Join-Path $PSScriptRoot "_cloudflared.ps1")
 $Backend = Join-Path $Root "backend"
 $Python = Join-Path $Backend ".venv\Scripts\python.exe"
 
@@ -47,13 +48,24 @@ if (-not $healthOk) {
 
 Write-Host "Backend is up." -ForegroundColor Green
 
+$Cloudflared = Get-CloudflaredExe
 $namedConfig = Join-Path $env:USERPROFILE ".cloudflared\config.yml"
 if (Test-Path $namedConfig) {
+    if (-not $Cloudflared) {
+        Write-Host "cloudflared not found but config.yml exists." -ForegroundColor Red
+        exit 1
+    }
     Write-Host "Starting named Cloudflare tunnel (api.search.yiwang.dev)..." -ForegroundColor Cyan
-    cloudflared tunnel run search-agent
-} else {
-    Write-Host "No named tunnel config found at $namedConfig" -ForegroundColor Yellow
-    Write-Host "Using quick tunnel (random URL). For a fixed api.search.yiwang.dev see DEPLOY.md" -ForegroundColor Yellow
+    & $Cloudflared tunnel run search-agent
+} elseif ($Cloudflared) {
+    Write-Host "No named tunnel config at $namedConfig" -ForegroundColor Yellow
+    Write-Host "Run: .\scripts\setup-cloudflare-tunnel.ps1" -ForegroundColor Yellow
+    Write-Host "Using quick tunnel (random URL) for now..." -ForegroundColor Yellow
     Write-Host ""
-    cloudflared tunnel --url http://localhost:8000
+    & $Cloudflared tunnel --url http://localhost:8000
+} else {
+    Write-Host "cloudflared not installed. API only on http://localhost:8000" -ForegroundColor Yellow
+    Write-Host "Install: winget install Cloudflare.cloudflared" -ForegroundColor Yellow
+    Write-Host "Press Ctrl+C to stop."
+    while ($true) { Start-Sleep -Seconds 3600 }
 }
