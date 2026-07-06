@@ -234,7 +234,7 @@ winget install Cloudflare.cloudflared
 | 现象 | 处理 |
 |------|------|
 | `connection refused` | 先确认本机 `http://localhost:8000/api/health` 正常 |
-| DNS 未生效 | `api.search` CNAME 在 Cloudflare 设为 **DNS only**（灰云） |
+| DNS 未生效 / curl 超时 | `api.search` CNAME 必须 **橙云 Proxied**；灰云会解析到内部 `fd10:` 地址，外网连不上 |
 | 隧道起不来 | 检查 `config.yml` 里 `credentials-file` 路径是否正确 |
 | 没 config 时 | `start-personal.ps1` 会退化为 quick tunnel（随机 URL，仅临时测试用） |
 
