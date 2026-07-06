@@ -2,8 +2,8 @@
 
 > **Single source of truth** for implementation progress. Update this file at the end of each Step.
 
-**Current phase:** Wave 3b — deploy Mode B (local API + BYOK) **live on search.yiwang.dev**  
-**Next step:** `search-demo.yiwang.dev` DNS + optional LangGraph (Step 28)
+**Current phase:** Wave 4 — DACH intelligence Phase 0 **complete**  
+**Next step:** Phase 1 — DACH source registry + seeded `site:` queries (Step 37)
 
 ## Usability timeline
 
@@ -21,7 +21,7 @@
 | 26 (done) | Meta 5-step wizard at `/plan` + deep mode on homepage |
 | 27 (done) | Production deploy — Vercel frontend + local API tunnel ([DEPLOY.md](DEPLOY.md)) |
 | 35 (done) | Saved reports `/history` + same-origin API proxy on Vercel |
-| Future | Report page full redesign, mobile polish |
+| 36 (done) | Phase 0: executive summary + structured findings table + report page redesign |
 
 ## Phase overview
 
@@ -31,6 +31,7 @@
 | Wave 1 (Step 13–19) | Done | Search reliability: Tavily, fetch fallback, per-source extract, eval |
 | Wave 2 (Step 20–24) | Done | Deep research: planner, parallel sections, verifier, multihop, event log |
 | Wave 3 (Step 25–35) | Done | Meta UI, deploy Mode B (local API + BYOK), saved reports |
+| Wave 4 (Step 36) | Done | Phase 0: report synthesis, intelligence brief UI, Swiss robotics demo |
 
 ## Phase 1-alpha checklist (complete)
 
@@ -89,6 +90,16 @@
 | 33 | `search-demo.yiwang.dev` static demo gallery | Done |
 | 34 | DNS aliases + Vercel env (`api-search.yiwang.dev`, BYOK) | Done |
 | 35 | Saved reports `/history` + Vercel API proxy (`/api/reports`, `/api/research/[slug]`) | Done |
+
+## Wave 4 — DACH intelligence Phase 0
+
+| Step | Task | Status |
+|------|------|--------|
+| 36 | Executive summary + structured findings (`report_synthesis.py`, `ResearchReport` fields) | Done |
+| 36 | Report page redesign (`ReportView.tsx` — summary card, sortable table, citation sidebar) | Done |
+| 36 | Swiss robotics demo in `public/demos/swiss-robotics-2026/` | Done |
+
+**Phase 0 done when:** Any research run produces summary → table → clickable citations; `/history` retains reports. **Status: complete (2026-07-06).**
 
 ## Progress ritual
 

@@ -1,11 +1,14 @@
 """Smoke test for report generation."""
+from datetime import datetime, timezone
+
 from models import ExtractedFact
 from reporter import generate_report, _slugify
 
 
 def test_slugify():
-    assert _slugify("Hello World") == "hello-world"
-    assert _slugify("Python: FastAPI & LLMs!") == "python-fastapi-llms"
+    now = datetime(2026, 7, 6, 12, 0, 0, tzinfo=timezone.utc)
+    assert _slugify("Hello World", now) == "hello-world-20260706-120000"
+    assert _slugify("Python: FastAPI & LLMs!", now) == "python-fastapi-llms-20260706-120000"
     print("test_slugify: PASS")
 
 
@@ -27,12 +30,13 @@ def test_generate_report():
         ),
     ]
     report = generate_report("Python web frameworks", facts)
-    assert report.slug == "python-web-frameworks"
+    assert report.slug.startswith("python-web-frameworks-")
     assert len(report.citations) == 2
     assert "[^1]" in report.markdown
-    assert "[^2]" in report.markdown
+    assert report.summary
+    assert report.structured_findings
+    assert "## Executive Summary" in report.markdown
     print("test_generate_report: PASS")
-    print(f"\nGenerated Markdown preview:\n{report.markdown[:500]}...")
 
 
 if __name__ == "__main__":

@@ -69,6 +69,23 @@ class ReportMetadata(BaseModel):
     completed_at: str
 
 
+class StructuredFinding(BaseModel):
+    """One row in the structured findings table (Phase 0)."""
+    entity: str = Field(default="", description="Company, fund, or organization")
+    signal: str = Field(default="", description="What happened or was discovered")
+    date: str = Field(default="", description="Event date if known, else empty")
+    confidence: str = Field(default="medium", pattern="^(high|medium|low)$")
+    citation_index: int = Field(default=0, ge=0, description="[^n] citation index")
+
+
+class ReportSynthesis(BaseModel):
+    """LLM-generated report narrative (expression only, facts are fixed)."""
+    executive_summary: str = ""
+    structured_findings: list[StructuredFinding] = Field(default_factory=list)
+    coverage: str = ""
+    gaps: str = ""
+
+
 class ResearchReport(BaseModel):
     """Final research report."""
     topic: str
@@ -78,6 +95,10 @@ class ResearchReport(BaseModel):
     markdown: str = ""
     html_url: str = ""
     metadata: Optional[ReportMetadata] = None
+    summary: str = ""
+    structured_findings: list[StructuredFinding] = Field(default_factory=list)
+    coverage: str = ""
+    gaps: str = ""
 
 
 class SSEEvent(BaseModel):

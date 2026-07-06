@@ -85,6 +85,14 @@ export interface ExtractedFact {
   confidence: "high" | "medium" | "low";
 }
 
+export interface StructuredFinding {
+  entity: string;
+  signal: string;
+  date: string;
+  confidence: "high" | "medium" | "low";
+  citation_index: number;
+}
+
 export interface ResearchReport {
   topic: string;
   slug: string;
@@ -92,9 +100,14 @@ export interface ResearchReport {
   citations: Citation[];
   markdown: string;
   html_url: string;
+  summary?: string;
+  structured_findings?: StructuredFinding[];
+  coverage?: string;
+  gaps?: string;
   metadata?: {
     execution_time_seconds: number;
     source_count: number;
+    topics_searched?: string[];
   };
 }
 

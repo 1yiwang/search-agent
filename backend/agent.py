@@ -8,6 +8,7 @@ from search import search_and_fetch
 from extraction import extract_facts
 from dedup import deduplicate_search_results
 from reporter import generate_report
+from report_synthesis import synthesize_report
 from multihop import finalize_facts, urls_from_results
 
 
@@ -69,11 +70,16 @@ async def run_research(
         emit,
     )
 
-    # Phase 4: Generate report
+    # Phase 4: Synthesize narrative + generate report
     await emit("report_start", {"fact_count": len(verified_facts)})
-    report = generate_report(request.topic, verified_facts, started_at)
-    if report.metadata:
-        report.metadata.topics_searched = topics_searched
+    synthesis = await synthesize_report(request.topic, verified_facts, topics_searched)
+    report = generate_report(
+        request.topic,
+        verified_facts,
+        started_at,
+        synthesis=synthesis,
+        topics_searched=topics_searched,
+    )
     await emit("report_complete", {
         "slug": report.slug,
         "citation_count": len(report.citations),
@@ -196,9 +202,15 @@ async def run_deep_research(
     )
 
     await emit("report_start", {"fact_count": len(verified_facts)})
-    report = generate_report(plan.title or plan.topic, verified_facts, started_at)
-    if report.metadata:
-        report.metadata.topics_searched = topics_searched
+    report_topic = plan.title or plan.topic
+    synthesis = await synthesize_report(report_topic, verified_facts, topics_searched)
+    report = generate_report(
+        report_topic,
+        verified_facts,
+        started_at,
+        synthesis=synthesis,
+        topics_searched=topics_searched,
+    )
     await emit("report_complete", {
         "slug": report.slug,
         "citation_count": len(report.citations),
