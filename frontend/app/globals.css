@@ -41,46 +41,81 @@ body {
   border-left-color: var(--accent);
 }
 
-/* Investor brief typography */
-.investor-brief .brief-title {
-  font-size: 2rem;
-  line-height: 1.2;
+/* Report document — editorial dossier */
+.report-doc {
+  --report-rule: color-mix(in srgb, var(--border) 85%, transparent);
 }
 
-@media (min-width: 768px) {
-  .investor-brief .brief-title {
-    font-size: 2rem;
-  }
+.report-doc .brief-title {
+  font-size: clamp(1.75rem, 2.4vw, 2.25rem);
+  line-height: 1.25;
+  letter-spacing: -0.02em;
 }
 
-.investor-brief .brief-summary {
+.report-doc .brief-summary {
   font-family: var(--font-body), system-ui, sans-serif;
-  font-size: 17px;
-  line-height: 1.65;
-}
-
-.investor-brief .brief-body {
-  font-size: 15px;
+  font-size: 1.0625rem;
   line-height: 1.7;
 }
 
-.investor-brief .brief-section-title {
-  font-size: 1.375rem;
+.report-doc .brief-body {
+  font-size: 0.9375rem;
+  line-height: 1.75;
+}
+
+.report-doc .brief-section-title {
+  font-size: 1.25rem;
   line-height: 1.3;
+  letter-spacing: -0.01em;
 }
 
-.investor-brief .brief-subsection {
-  font-size: 1.125rem;
-  line-height: 1.35;
+.report-doc .findings-table {
+  font-size: 0.875rem;
 }
 
-.investor-brief .findings-table {
-  font-size: 13px;
-}
-
-.investor-brief .findings-table th,
-.investor-brief .findings-table td {
+.report-doc .findings-table th,
+.report-doc .findings-table td {
   font-variant-numeric: tabular-nums;
+}
+
+.report-section {
+  padding-top: 2.25rem;
+  margin-top: 2.25rem;
+  border-top: 1px solid var(--report-rule);
+}
+
+.report-section:first-of-type {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
+.report-section-label {
+  display: block;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 0.75rem;
+}
+
+.report-lead {
+  border-left: 3px solid var(--accent);
+  padding: 0.25rem 0 0.25rem 1.25rem;
+  margin-top: 0.5rem;
+}
+
+.report-meta-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+  font-size: 0.8125rem;
+  color: var(--muted);
+  padding: 0.875rem 0;
+  border-top: 1px solid var(--report-rule);
+  border-bottom: 1px solid var(--report-rule);
+  margin: 1.5rem 0 0;
 }
 
 /* Citation reader (markdown in sidebar) */

@@ -7,12 +7,13 @@ import { CitationModal } from "@/components/CitationModal";
 import { countUniqueDomains, normalizeUrl } from "@/lib/normalizeUrl";
 import { snapshotForUrl } from "@/lib/sourcePreview";
 
-type SortKey = "confidence" | "date" | "entity";
+type SortKey = "confidence" | "date" | "signal";
 type SortDir = "asc" | "desc";
 
 const CONF_RANK: Record<string, number> = { high: 3, medium: 2, low: 1 };
 
-const PAGE_GUTTER = "mx-auto w-full max-w-3xl px-6 sm:px-10";
+/** Editorial column: wide enough for tables, with side gutters. */
+const PAGE_GUTTER = "mx-auto w-full max-w-5xl px-5 sm:px-8 lg:px-10";
 
 function confidenceBadge(conf: string) {
   const styles: Record<string, string> = {
@@ -31,52 +32,12 @@ function confidenceBadge(conf: string) {
   );
 }
 
-function CitationIndexBar({
-  citations,
-  activeIndex,
-  onSelect,
-}: {
-  citations: Citation[];
-  activeIndex: number | null;
-  onSelect: (index: number) => void;
-}) {
-  if (citations.length === 0) return null;
-
-  return (
-    <nav
-      className="flex flex-wrap items-center gap-2 py-4 border-b border-[var(--border)]"
-      aria-label="引用索引"
-    >
-      <span className="text-xs uppercase tracking-wider text-[var(--muted)] mr-1">
-        Refs
-      </span>
-      {citations.map((c) => (
-        <button
-          key={c.index}
-          type="button"
-          onClick={() => onSelect(c.index)}
-          className={`min-w-[2rem] rounded-md px-2 py-1 text-xs font-semibold transition-colors ${
-            activeIndex === c.index
-              ? "bg-[var(--accent)]/20 text-[var(--accent)] border border-[var(--accent)]/40"
-              : "citation-mark border border-transparent hover:border-[var(--accent)]/30 hover:bg-[var(--surface)]"
-          }`}
-          title={c.source_name}
-        >
-          {c.index}
-        </button>
-      ))}
-    </nav>
-  );
-}
-
 function FindingsTable({
   rows,
   onCitationClick,
-  compact,
 }: {
   rows: StructuredFinding[];
   onCitationClick: (index: number) => void;
-  compact?: boolean;
 }) {
   const [sortKey, setSortKey] = useState<SortKey>("confidence");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
@@ -90,7 +51,7 @@ function FindingsTable({
       } else if (sortKey === "date") {
         cmp = a.date.localeCompare(b.date);
       } else {
-        cmp = a.entity.localeCompare(b.entity);
+        cmp = a.signal.localeCompare(b.signal);
       }
       return sortDir === "asc" ? cmp : -cmp;
     });
@@ -110,25 +71,20 @@ function FindingsTable({
     "text-left text-xs uppercase tracking-wider text-[var(--muted)] py-3 px-3 cursor-pointer hover:text-[var(--ink)] select-none";
 
   return (
-    <div
-      className={`overflow-x-auto rounded-lg border border-[var(--border)]${
-        compact ? " findings-table" : ""
-      }`}
-    >
-      <table className={`w-full ${compact ? "text-[13px] tabular-nums" : "text-sm"}`}>
+    <div className="overflow-x-auto rounded-lg border border-[var(--border)] findings-table bg-[var(--surface)]/40">
+      <table className="w-full text-sm tabular-nums">
         <thead className="bg-[var(--surface)] border-b border-[var(--border)]">
           <tr>
-            <th className={thClass} onClick={() => toggleSort("entity")}>
-              Entity {sortKey === "entity" ? (sortDir === "asc" ? "↑" : "↓") : ""}
+            <th className={thClass} onClick={() => toggleSort("signal")}>
+              Signal {sortKey === "signal" ? (sortDir === "asc" ? "↑" : "↓") : ""}
             </th>
-            <th className={thClass}>Signal</th>
-            <th className={thClass} onClick={() => toggleSort("date")}>
+            <th className={`${thClass} w-28`} onClick={() => toggleSort("date")}>
               Date {sortKey === "date" ? (sortDir === "asc" ? "↑" : "↓") : ""}
             </th>
-            <th className={thClass} onClick={() => toggleSort("confidence")}>
+            <th className={`${thClass} w-32`} onClick={() => toggleSort("confidence")}>
               Confidence {sortKey === "confidence" ? (sortDir === "asc" ? "↑" : "↓") : ""}
             </th>
-            <th className="text-left text-xs uppercase tracking-wider text-[var(--muted)] py-3 px-3">
+            <th className="text-left text-xs uppercase tracking-wider text-[var(--muted)] py-3 px-3 w-16">
               Ref
             </th>
           </tr>
@@ -139,17 +95,14 @@ function FindingsTable({
               key={`${row.citation_index}-${i}`}
               className="border-b border-[var(--border)]/60 hover:bg-[var(--surface)]/80"
             >
-              <td className="py-3 px-3 font-medium text-[var(--ink)] align-top max-w-[10rem]">
-                {row.entity || "—"}
-              </td>
-              <td className="py-3 px-3 text-[var(--ink)]/90 align-top leading-relaxed">
+              <td className="py-3.5 px-3 text-[var(--ink)]/90 align-top leading-relaxed">
                 {row.signal}
               </td>
-              <td className="py-3 px-3 text-[var(--muted)] align-top whitespace-nowrap">
+              <td className="py-3.5 px-3 text-[var(--muted)] align-top whitespace-nowrap">
                 {row.date || "—"}
               </td>
-              <td className="py-3 px-3 align-top">{confidenceBadge(row.confidence)}</td>
-              <td className="py-3 px-3 align-top">
+              <td className="py-3.5 px-3 align-top">{confidenceBadge(row.confidence)}</td>
+              <td className="py-3.5 px-3 align-top">
                 {row.citation_index > 0 ? (
                   <button
                     type="button"
@@ -184,7 +137,7 @@ function KeyFindingsList({
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {groups.map(
         (g) =>
           g.items.length > 0 && (
@@ -192,7 +145,7 @@ function KeyFindingsList({
               <h3 className="text-xs uppercase tracking-widest text-[var(--muted)] mb-3">
                 {g.label}
               </h3>
-              <ul className="space-y-3">
+              <ul className="space-y-4">
                 {g.items.map((fact, i) => {
                   const idx =
                     facts.findIndex(
@@ -220,6 +173,26 @@ function KeyFindingsList({
           )
       )}
     </div>
+  );
+}
+
+function Section({
+  label,
+  title,
+  children,
+  className = "",
+}: {
+  label?: string;
+  title: string;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <section className={`report-section ${className}`}>
+      {label ? <span className="report-section-label">{label}</span> : null}
+      <h2 className="font-display brief-section-title text-[var(--ink)] mb-5">{title}</h2>
+      {children}
+    </section>
   );
 }
 
@@ -277,7 +250,7 @@ export function ReportView({
     report.structured_findings && report.structured_findings.length > 0
       ? report.structured_findings
       : report.facts.map((f, i) => ({
-          entity: f.source_title.slice(0, 48),
+          entity: "",
           signal: f.fact,
           date: "",
           confidence: f.confidence,
@@ -290,7 +263,7 @@ export function ReportView({
   }
 
   return (
-    <main className="min-h-screen">
+    <main className="min-h-screen report-doc">
       <header className="border-b border-[var(--border)] bg-[var(--surface)]/60 backdrop-blur-sm sticky top-0 z-20">
         <div className={`${PAGE_GUTTER} py-3 flex flex-wrap items-center justify-between gap-3`}>
           <nav className="flex items-center gap-4 text-sm text-[var(--muted)]">
@@ -311,147 +284,99 @@ export function ReportView({
         </div>
       </header>
 
-      <div className={`${PAGE_GUTTER} py-10 sm:py-12`}>
-        <header
-          className={`mb-2${isInvestorBrief ? " investor-brief" : ""}`}
-        >
-          <p className="text-xs uppercase tracking-[0.25em] text-[var(--accent-dim)] mb-2">
+      <div className={`${PAGE_GUTTER} py-12 sm:py-14`}>
+        {/* Document masthead */}
+        <header className="mb-2">
+          <p className="text-xs uppercase tracking-[0.22em] text-[var(--accent-dim)] mb-3">
             {briefLabel}
           </p>
-          <h1
-            className={`font-display text-[var(--ink)] leading-snug${
-              isInvestorBrief ? " brief-title text-2xl" : " text-2xl sm:text-[1.65rem]"
-            }`}
-          >
-            {report.topic}
-          </h1>
+          <h1 className="font-display brief-title text-[var(--ink)]">{report.topic}</h1>
+          {report.metadata && (
+            <div className="report-meta-strip tabular-nums">
+              {report.metadata.completed_at ? (
+                <span>
+                  {new Date(report.metadata.completed_at).toLocaleDateString("en-GB", {
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                  })}
+                </span>
+              ) : null}
+              <span>{displaySourceCount} sources</span>
+              <span>{report.facts.length} facts</span>
+              <span>{report.metadata.execution_time_seconds.toFixed(0)}s</span>
+            </div>
+          )}
         </header>
 
-        <CitationIndexBar
-          citations={report.citations}
-          activeIndex={activeCitation?.index ?? null}
-          onSelect={openCitation}
-        />
-
-        <article className={`mt-8 space-y-10${isInvestorBrief ? " investor-brief" : ""}`}>
-          <section className="rounded-xl border border-[var(--accent)]/20 bg-[var(--surface)]/80 p-6 sm:p-7">
-            <h2 className="text-xs uppercase tracking-widest text-[var(--accent)] mb-4">
+        <article className="mt-10">
+          <section className="report-section">
+            <span className="report-section-label">Overview</span>
+            <h2 className="font-display brief-section-title text-[var(--ink)] mb-5">
               Executive Summary
             </h2>
-            <p
-              className={`text-[var(--ink)] leading-relaxed${
-                isInvestorBrief ? " brief-summary" : " text-base font-display"
-              }`}
-            >
-              {summary}
-            </p>
+            <div className="report-lead">
+              <p className="brief-summary text-[var(--ink)]">{summary}</p>
+            </div>
           </section>
 
           {tableRows.length > 0 && (
-            <section>
-              <h2
-                className={`font-display text-[var(--ink)] mb-4${
-                  isInvestorBrief ? " brief-section-title" : " text-lg"
-                }`}
-              >
-                {tableHeading}
-              </h2>
-              <FindingsTable
-                rows={tableRows}
-                onCitationClick={openCitation}
-                compact={isInvestorBrief}
-              />
-            </section>
+            <Section label="Signals" title={tableHeading}>
+              <FindingsTable rows={tableRows} onCitationClick={openCitation} />
+            </Section>
           )}
 
           {isInvestorBrief && report.fund_activity && (
-            <section className="rounded-lg border border-[var(--border)] p-5 sm:p-6 bg-[var(--surface)]/60">
-              <h2
-                className={`font-display text-[var(--ink)] mb-3${
-                  isInvestorBrief ? " brief-section-title" : " text-lg"
-                }`}
-              >
-                Fund & Product Activity
-              </h2>
-              <p
-                className={`text-[var(--ink)]/85 leading-relaxed whitespace-pre-wrap${
-                  isInvestorBrief ? " brief-body" : " text-sm"
-                }`}
-              >
+            <Section label="Products" title="Fund & Product Activity">
+              <p className="brief-body text-[var(--ink)]/90 whitespace-pre-wrap">
                 {report.fund_activity}
               </p>
-            </section>
+            </Section>
           )}
+
           {isInvestorBrief && report.credit_risk_watch && (
-            <section className="rounded-lg border border-[var(--border)] p-5 sm:p-6 bg-[var(--surface)]/60">
-              <h2
-                className={`font-display text-[var(--ink)] mb-3${
-                  isInvestorBrief ? " brief-section-title" : " text-lg"
-                }`}
-              >
-                Credit Risk Watch
-              </h2>
-              <p
-                className={`text-[var(--ink)]/85 leading-relaxed whitespace-pre-wrap${
-                  isInvestorBrief ? " brief-body" : " text-sm"
-                }`}
-              >
+            <Section label="Risk" title="Credit Risk Watch">
+              <p className="brief-body text-[var(--ink)]/90 whitespace-pre-wrap">
                 {report.credit_risk_watch}
               </p>
-            </section>
+            </Section>
           )}
 
-          <section>
-            <h2
-              className={`font-display text-[var(--ink)] mb-4${
-                isInvestorBrief ? " brief-section-title" : " text-lg"
-              }`}
-            >
-              Key Findings
-            </h2>
+          <Section label="Evidence" title="Key Findings">
             <KeyFindingsList facts={report.facts} onCitationClick={openCitation} />
-          </section>
+          </Section>
 
           {(report.coverage || report.gaps) && (
-            <section className="grid sm:grid-cols-2 gap-4">
-              {report.coverage && (
-                <div className="rounded-lg border border-[var(--border)] p-5 bg-[var(--surface)]/60">
-                  <h3 className="text-xs uppercase tracking-widest text-[var(--muted)] mb-2">
-                    Coverage
-                  </h3>
-                  <p className="text-sm text-[var(--ink)]/85 leading-relaxed">
-                    {report.coverage}
-                  </p>
-                </div>
-              )}
-              {report.gaps && (
-                <div className="rounded-lg border border-[var(--border)] p-5 bg-[var(--surface)]/60">
-                  <h3 className="text-xs uppercase tracking-widest text-[var(--muted)] mb-2">
-                    Gaps
-                  </h3>
-                  <p className="text-sm text-[var(--ink)]/85 leading-relaxed">
-                    {report.gaps}
-                  </p>
-                </div>
-              )}
-            </section>
+            <Section label="Scope" title="Coverage & Gaps">
+              <div className="grid sm:grid-cols-2 gap-8">
+                {report.coverage && (
+                  <div>
+                    <h3 className="text-xs uppercase tracking-widest text-[var(--muted)] mb-3">
+                      Coverage
+                    </h3>
+                    <p className="brief-body text-[var(--ink)]/85">{report.coverage}</p>
+                  </div>
+                )}
+                {report.gaps && (
+                  <div>
+                    <h3 className="text-xs uppercase tracking-widest text-[var(--muted)] mb-3">
+                      Gaps
+                    </h3>
+                    <p className="brief-body text-[var(--ink)]/85">{report.gaps}</p>
+                  </div>
+                )}
+              </div>
+            </Section>
           )}
 
-          <section className="border-t border-[var(--border)] pt-8">
-            <h2
-              className={`font-display text-[var(--ink)] mb-4${
-                isInvestorBrief ? " brief-section-title" : " text-lg"
-              }`}
-            >
-              Sources
-            </h2>
-            <ol className={`space-y-4${isInvestorBrief ? " brief-body" : " text-sm"}`}>
+          <Section label="Sources" title="Sources" className="pb-8">
+            <ol className="space-y-5 brief-body">
               {groupedSources.map((src) => (
-                <li key={normalizeUrl(src.url)} className="flex gap-2">
-                  <span className="citation-mark font-semibold shrink-0 text-xs">
+                <li key={normalizeUrl(src.url)} className="flex gap-3">
+                  <span className="citation-mark font-semibold shrink-0 text-xs pt-0.5">
                     {src.indices.map((i) => `[${i}]`).join(" ")}
                   </span>
-                  <div>
+                  <div className="min-w-0">
                     <button
                       type="button"
                       onClick={() => openCitation(src.indices[0])}
@@ -463,7 +388,7 @@ export function ReportView({
                       {src.indices.length} fact{src.indices.length > 1 ? "s" : ""} from this
                       source
                     </p>
-                    <p className="text-[var(--muted)] mt-1 italic leading-relaxed text-sm">
+                    <p className="text-[var(--muted)] mt-1.5 italic leading-relaxed text-sm">
                       &ldquo;{src.quote.slice(0, 200)}
                       {src.quote.length > 200 ? "…" : ""}&rdquo;
                     </p>
@@ -471,7 +396,7 @@ export function ReportView({
                 </li>
               ))}
             </ol>
-          </section>
+          </Section>
         </article>
       </div>
 

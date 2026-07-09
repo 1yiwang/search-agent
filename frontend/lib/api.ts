@@ -123,6 +123,8 @@ export interface ResearchReport {
     execution_time_seconds: number;
     source_count: number;
     topics_searched?: string[];
+    started_at?: string;
+    completed_at?: string;
   };
 }
 

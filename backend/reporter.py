@@ -73,16 +73,15 @@ def _findings_table_markdown(synthesis: ReportSynthesis, heading: str = "Structu
     lines = [
         f"## {heading}",
         "",
-        "| Entity | Signal | Date | Confidence | Ref |",
-        "| --- | --- | --- | --- | --- |",
+        "| Signal | Date | Confidence | Ref |",
+        "| --- | --- | --- | --- |",
     ]
     for row in synthesis.structured_findings:
-        entity = row.entity.replace("|", "\\|")
         signal = _truncate_signal(row.signal.replace("|", "\\|"))
         date = row.date or "—"
         ref = f"[^{row.citation_index}]" if row.citation_index else "—"
         lines.append(
-            f"| {entity} | {signal} | {date} | {row.confidence} | {ref} |"
+            f"| {signal} | {date} | {row.confidence} | {ref} |"
         )
     lines.append("")
     return lines
