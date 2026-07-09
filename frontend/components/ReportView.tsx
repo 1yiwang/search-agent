@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import type { Citation, ResearchReport, StructuredFinding } from "@/lib/api";
-import { CitationPanel } from "@/components/CitationPanel";
+import { CitationModal } from "@/components/CitationModal";
 import { countUniqueDomains, normalizeUrl } from "@/lib/normalizeUrl";
 import { snapshotForUrl } from "@/lib/sourcePreview";
 
@@ -11,6 +11,8 @@ type SortKey = "confidence" | "date" | "entity";
 type SortDir = "asc" | "desc";
 
 const CONF_RANK: Record<string, number> = { high: 3, medium: 2, low: 1 };
+
+const PAGE_GUTTER = "mx-auto w-full max-w-3xl px-6 sm:px-10";
 
 function confidenceBadge(conf: string) {
   const styles: Record<string, string> = {
@@ -26,6 +28,44 @@ function confidenceBadge(conf: string) {
     >
       {conf}
     </span>
+  );
+}
+
+function CitationIndexBar({
+  citations,
+  activeIndex,
+  onSelect,
+}: {
+  citations: Citation[];
+  activeIndex: number | null;
+  onSelect: (index: number) => void;
+}) {
+  if (citations.length === 0) return null;
+
+  return (
+    <nav
+      className="flex flex-wrap items-center gap-2 py-4 border-b border-[var(--border)]"
+      aria-label="引用索引"
+    >
+      <span className="text-xs uppercase tracking-wider text-[var(--muted)] mr-1">
+        Refs
+      </span>
+      {citations.map((c) => (
+        <button
+          key={c.index}
+          type="button"
+          onClick={() => onSelect(c.index)}
+          className={`min-w-[2rem] rounded-md px-2 py-1 text-xs font-semibold transition-colors ${
+            activeIndex === c.index
+              ? "bg-[var(--accent)]/20 text-[var(--accent)] border border-[var(--accent)]/40"
+              : "citation-mark border border-transparent hover:border-[var(--accent)]/30 hover:bg-[var(--surface)]"
+          }`}
+          title={c.source_name}
+        >
+          {c.index}
+        </button>
+      ))}
+    </nav>
   );
 }
 
@@ -70,7 +110,11 @@ function FindingsTable({
     "text-left text-xs uppercase tracking-wider text-[var(--muted)] py-3 px-3 cursor-pointer hover:text-[var(--ink)] select-none";
 
   return (
-    <div className={`overflow-x-auto rounded-lg border border-[var(--border)]${compact ? " findings-table" : ""}`}>
+    <div
+      className={`overflow-x-auto rounded-lg border border-[var(--border)]${
+        compact ? " findings-table" : ""
+      }`}
+    >
       <table className={`w-full ${compact ? "text-[13px] tabular-nums" : "text-sm"}`}>
         <thead className="bg-[var(--surface)] border-b border-[var(--border)]">
           <tr>
@@ -247,9 +291,8 @@ export function ReportView({
 
   return (
     <main className="min-h-screen">
-      {/* Masthead */}
       <header className="border-b border-[var(--border)] bg-[var(--surface)]/60 backdrop-blur-sm sticky top-0 z-20">
-        <div className="mx-auto max-w-7xl px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+        <div className={`${PAGE_GUTTER} py-3 flex flex-wrap items-center justify-between gap-3`}>
           <nav className="flex items-center gap-4 text-sm text-[var(--muted)]">
             <Link href="/" className="hover:text-[var(--ink)]">
               New search
@@ -268,199 +311,180 @@ export function ReportView({
         </div>
       </header>
 
-      <div className="mx-auto max-w-7xl px-4 py-8">
-        {/* Full-width masthead — title spans one row above the split layout */}
+      <div className={`${PAGE_GUTTER} py-10 sm:py-12`}>
         <header
-          className={`mb-8 pb-6 border-b border-[var(--border)]${
-            isInvestorBrief ? " investor-brief" : ""
-          }`}
+          className={`mb-2${isInvestorBrief ? " investor-brief" : ""}`}
         >
           <p className="text-xs uppercase tracking-[0.25em] text-[var(--accent-dim)] mb-2">
             {briefLabel}
           </p>
           <h1
             className={`font-display text-[var(--ink)] leading-snug${
-              isInvestorBrief ? " brief-title text-2xl md:text-[1.75rem]" : " text-2xl md:text-3xl"
+              isInvestorBrief ? " brief-title text-2xl" : " text-2xl sm:text-[1.65rem]"
             }`}
           >
             {report.topic}
           </h1>
         </header>
 
-        <div
-          className={
-            activeCitation
-              ? "grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(220px,24%)] gap-6 lg:gap-8 items-start"
-              : "grid grid-cols-1"
-          }
-        >
-          <article className={`min-w-0 space-y-10${isInvestorBrief ? " investor-brief" : ""}`}>
-            {/* Executive summary */}
-            <section className="rounded-xl border border-[var(--accent)]/25 bg-gradient-to-br from-[var(--surface-raised)] to-[var(--surface)] p-6 md:p-8">
-              <h2 className="text-xs uppercase tracking-widest text-[var(--accent)] mb-4">
-                Executive Summary
-              </h2>
-              <p
-                className={`text-[var(--ink)] leading-relaxed${
-                  isInvestorBrief ? " brief-summary" : " text-lg font-display"
-                }`}
-              >
-                {summary}
-              </p>
-            </section>
+        <CitationIndexBar
+          citations={report.citations}
+          activeIndex={activeCitation?.index ?? null}
+          onSelect={openCitation}
+        />
 
-            {/* Structured table */}
-            {tableRows.length > 0 && (
-              <section>
-                <h2
-                  className={`font-display text-[var(--ink)] mb-4${
-                    isInvestorBrief ? " brief-section-title" : " text-xl"
-                  }`}
-                >
-                  {tableHeading}
-                </h2>
-                <FindingsTable
-                  rows={tableRows}
-                  onCitationClick={openCitation}
-                  compact={isInvestorBrief}
-                />
-              </section>
-            )}
+        <article className={`mt-8 space-y-10${isInvestorBrief ? " investor-brief" : ""}`}>
+          <section className="rounded-xl border border-[var(--accent)]/20 bg-[var(--surface)]/80 p-6 sm:p-7">
+            <h2 className="text-xs uppercase tracking-widest text-[var(--accent)] mb-4">
+              Executive Summary
+            </h2>
+            <p
+              className={`text-[var(--ink)] leading-relaxed${
+                isInvestorBrief ? " brief-summary" : " text-base font-display"
+              }`}
+            >
+              {summary}
+            </p>
+          </section>
 
-            {/* Investor brief sections */}
-            {isInvestorBrief && report.fund_activity && (
-              <section className="rounded-lg border border-[var(--border)] p-5 bg-[var(--surface)]">
-                <h2
-                  className={`font-display text-[var(--ink)] mb-3${
-                    isInvestorBrief ? " brief-section-title" : " text-xl"
-                  }`}
-                >
-                  Fund & Product Activity
-                </h2>
-                <p
-                  className={`text-[var(--ink)]/85 leading-relaxed whitespace-pre-wrap${
-                    isInvestorBrief ? " brief-body" : " text-sm"
-                  }`}
-                >
-                  {report.fund_activity}
-                </p>
-              </section>
-            )}
-            {isInvestorBrief && report.credit_risk_watch && (
-              <section className="rounded-lg border border-[var(--border)] p-5 bg-[var(--surface)]">
-                <h2
-                  className={`font-display text-[var(--ink)] mb-3${
-                    isInvestorBrief ? " brief-section-title" : " text-xl"
-                  }`}
-                >
-                  Credit Risk Watch
-                </h2>
-                <p
-                  className={`text-[var(--ink)]/85 leading-relaxed whitespace-pre-wrap${
-                    isInvestorBrief ? " brief-body" : " text-sm"
-                  }`}
-                >
-                  {report.credit_risk_watch}
-                </p>
-              </section>
-            )}
-
-            {/* Key findings */}
+          {tableRows.length > 0 && (
             <section>
               <h2
                 className={`font-display text-[var(--ink)] mb-4${
-                  isInvestorBrief ? " brief-section-title" : " text-xl"
+                  isInvestorBrief ? " brief-section-title" : " text-lg"
                 }`}
               >
-                Key Findings
+                {tableHeading}
               </h2>
-              <KeyFindingsList facts={report.facts} onCitationClick={openCitation} />
-            </section>
-
-            {/* Coverage */}
-            {(report.coverage || report.gaps) && (
-              <section className="grid md:grid-cols-2 gap-4">
-                {report.coverage && (
-                  <div className="rounded-lg border border-[var(--border)] p-5 bg-[var(--surface)]">
-                    <h3 className="text-xs uppercase tracking-widest text-[var(--muted)] mb-2">
-                      Coverage
-                    </h3>
-                    <p className="text-sm text-[var(--ink)]/85 leading-relaxed">
-                      {report.coverage}
-                    </p>
-                  </div>
-                )}
-                {report.gaps && (
-                  <div className="rounded-lg border border-[var(--border)] p-5 bg-[var(--surface)]">
-                    <h3 className="text-xs uppercase tracking-widest text-[var(--muted)] mb-2">
-                      Gaps
-                    </h3>
-                    <p className="text-sm text-[var(--ink)]/85 leading-relaxed">
-                      {report.gaps}
-                    </p>
-                  </div>
-                )}
-              </section>
-            )}
-
-            {/* Sources */}
-            <section className="border-t border-[var(--border)] pt-8">
-              <h2
-                className={`font-display text-[var(--ink)] mb-4${
-                  isInvestorBrief ? " brief-section-title" : " text-xl"
-                }`}
-              >
-                Sources
-              </h2>
-              <ol className={`space-y-4${isInvestorBrief ? " brief-body" : " text-sm"}`}>
-                {groupedSources.map((src) => (
-                  <li key={normalizeUrl(src.url)} className="flex gap-2">
-                    <span className="citation-mark font-semibold shrink-0 text-xs">
-                      {src.indices.map((i) => `[${i}]`).join(" ")}
-                    </span>
-                    <div>
-                      <button
-                        type="button"
-                        onClick={() => openCitation(src.indices[0])}
-                        className="text-[var(--link)] hover:underline text-left"
-                      >
-                        {src.name}
-                      </button>
-                      <p className="text-xs text-[var(--muted)] mt-0.5">
-                        {src.indices.length} fact{src.indices.length > 1 ? "s" : ""} from this
-                        source
-                      </p>
-                      <p className="text-[var(--muted)] mt-1 italic leading-relaxed text-sm">
-                        &ldquo;{src.quote.slice(0, 200)}
-                        {src.quote.length > 200 ? "…" : ""}&rdquo;
-                      </p>
-                    </div>
-                  </li>
-                ))}
-              </ol>
-            </section>
-          </article>
-
-          {activeCitation && (
-            <aside className="lg:sticky lg:top-[4.5rem] w-full lg:w-auto min-w-0">
-              <CitationPanel
-                citation={activeCitation}
-                snapshot={snapshotForUrl(
-                  report.source_snapshots,
-                  activeCitation.source_url
-                )}
-                onClose={onCitationClose}
+              <FindingsTable
+                rows={tableRows}
+                onCitationClick={openCitation}
+                compact={isInvestorBrief}
               />
-            </aside>
+            </section>
           )}
-        </div>
 
-        {!activeCitation && (
-          <p className="mt-6 text-center text-xs text-[var(--muted)] lg:text-left">
-            点击文中 [{` `}n{` `}] 引用，在右侧查看原文摘录
-          </p>
-        )}
+          {isInvestorBrief && report.fund_activity && (
+            <section className="rounded-lg border border-[var(--border)] p-5 sm:p-6 bg-[var(--surface)]/60">
+              <h2
+                className={`font-display text-[var(--ink)] mb-3${
+                  isInvestorBrief ? " brief-section-title" : " text-lg"
+                }`}
+              >
+                Fund & Product Activity
+              </h2>
+              <p
+                className={`text-[var(--ink)]/85 leading-relaxed whitespace-pre-wrap${
+                  isInvestorBrief ? " brief-body" : " text-sm"
+                }`}
+              >
+                {report.fund_activity}
+              </p>
+            </section>
+          )}
+          {isInvestorBrief && report.credit_risk_watch && (
+            <section className="rounded-lg border border-[var(--border)] p-5 sm:p-6 bg-[var(--surface)]/60">
+              <h2
+                className={`font-display text-[var(--ink)] mb-3${
+                  isInvestorBrief ? " brief-section-title" : " text-lg"
+                }`}
+              >
+                Credit Risk Watch
+              </h2>
+              <p
+                className={`text-[var(--ink)]/85 leading-relaxed whitespace-pre-wrap${
+                  isInvestorBrief ? " brief-body" : " text-sm"
+                }`}
+              >
+                {report.credit_risk_watch}
+              </p>
+            </section>
+          )}
+
+          <section>
+            <h2
+              className={`font-display text-[var(--ink)] mb-4${
+                isInvestorBrief ? " brief-section-title" : " text-lg"
+              }`}
+            >
+              Key Findings
+            </h2>
+            <KeyFindingsList facts={report.facts} onCitationClick={openCitation} />
+          </section>
+
+          {(report.coverage || report.gaps) && (
+            <section className="grid sm:grid-cols-2 gap-4">
+              {report.coverage && (
+                <div className="rounded-lg border border-[var(--border)] p-5 bg-[var(--surface)]/60">
+                  <h3 className="text-xs uppercase tracking-widest text-[var(--muted)] mb-2">
+                    Coverage
+                  </h3>
+                  <p className="text-sm text-[var(--ink)]/85 leading-relaxed">
+                    {report.coverage}
+                  </p>
+                </div>
+              )}
+              {report.gaps && (
+                <div className="rounded-lg border border-[var(--border)] p-5 bg-[var(--surface)]/60">
+                  <h3 className="text-xs uppercase tracking-widest text-[var(--muted)] mb-2">
+                    Gaps
+                  </h3>
+                  <p className="text-sm text-[var(--ink)]/85 leading-relaxed">
+                    {report.gaps}
+                  </p>
+                </div>
+              )}
+            </section>
+          )}
+
+          <section className="border-t border-[var(--border)] pt-8">
+            <h2
+              className={`font-display text-[var(--ink)] mb-4${
+                isInvestorBrief ? " brief-section-title" : " text-lg"
+              }`}
+            >
+              Sources
+            </h2>
+            <ol className={`space-y-4${isInvestorBrief ? " brief-body" : " text-sm"}`}>
+              {groupedSources.map((src) => (
+                <li key={normalizeUrl(src.url)} className="flex gap-2">
+                  <span className="citation-mark font-semibold shrink-0 text-xs">
+                    {src.indices.map((i) => `[${i}]`).join(" ")}
+                  </span>
+                  <div>
+                    <button
+                      type="button"
+                      onClick={() => openCitation(src.indices[0])}
+                      className="text-[var(--link)] hover:underline text-left"
+                    >
+                      {src.name}
+                    </button>
+                    <p className="text-xs text-[var(--muted)] mt-0.5">
+                      {src.indices.length} fact{src.indices.length > 1 ? "s" : ""} from this
+                      source
+                    </p>
+                    <p className="text-[var(--muted)] mt-1 italic leading-relaxed text-sm">
+                      &ldquo;{src.quote.slice(0, 200)}
+                      {src.quote.length > 200 ? "…" : ""}&rdquo;
+                    </p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          </section>
+        </article>
       </div>
+
+      {activeCitation && (
+        <CitationModal
+          citation={activeCitation}
+          snapshot={snapshotForUrl(
+            report.source_snapshots,
+            activeCitation.source_url
+          )}
+          onClose={onCitationClose}
+        />
+      )}
     </main>
   );
 }
