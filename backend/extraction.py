@@ -6,7 +6,7 @@ import re
 from config import config
 from llm_context import get_openai_client, get_request_keys
 from models import ExtractedFact, SearchResult
-from sources.registry import has_dach_intent
+from sources.seeds import has_registry_intent
 
 SINGLE_SOURCE_PROMPT = """You are a research assistant. Extract key facts from ONE source about the research topic.
 
@@ -95,7 +95,7 @@ async def extract_facts_from_source(
     if not content or content.startswith("[Failed"):
         return []
 
-    recency_days = config.research_recency_days if has_dach_intent(topic) else 365
+    recency_days = config.research_recency_days if has_registry_intent(topic) else 365
     prompt = SINGLE_SOURCE_PROMPT.format(
         topic=topic,
         recency_days=recency_days,

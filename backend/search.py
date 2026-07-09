@@ -8,7 +8,7 @@ from dedup import deduplicate_search_results
 from models import SearchResult
 from providers import get_fetch_provider, get_search_provider
 from providers.fetch_chain import ChainedFetchProvider
-from sources.registry import build_seed_queries, has_dach_intent
+from sources.seeds import build_combined_seed_queries, has_registry_intent, registry_intent_label
 
 FetchEventCallback = Callable[[str, dict[str, Any]], Awaitable[None]]
 
@@ -83,9 +83,9 @@ async def search_topic_with_seeds(
         max_results = config.search_max_results
 
     topics_searched = [query]
-    recency_days = config.research_recency_days if has_dach_intent(query) else None
+    recency_days = config.research_recency_days if has_registry_intent(query) else None
 
-    if not config.dach_seeds_enabled or not has_dach_intent(query):
+    if not config.dach_seeds_enabled or not has_registry_intent(query):
         results = await search_and_fetch(
             query,
             max_results,
@@ -94,7 +94,7 @@ async def search_topic_with_seeds(
         )
         return results, topics_searched
 
-    seed_queries = build_seed_queries(query, max_seeds=config.dach_max_seed_queries)
+    seed_queries = build_combined_seed_queries(query, max_seeds=config.dach_max_seed_queries)
     broad_budget = max(max_results - len(seed_queries) * config.dach_seed_results_per_query, 3)
 
     if event_callback and seed_queries:
@@ -102,6 +102,7 @@ async def search_topic_with_seeds(
             "seed_count": len(seed_queries),
             "seeds": seed_queries,
             "recency_days": recency_days,
+            "intent": registry_intent_label(query),
         })
 
     broad_results = await search_and_fetch(

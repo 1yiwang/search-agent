@@ -1,7 +1,32 @@
 """Pydantic data models for Search Agent."""
 from datetime import datetime
+from enum import Enum
 from typing import Optional
 from pydantic import BaseModel, Field
+
+
+class SignalType(str, Enum):
+    """Structured signal taxonomy for private markets intelligence (Phase 2)."""
+    FUND_CLOSE = "fund_close"
+    FUNDRAISE = "fundraise"
+    DEPLOYMENT = "deployment"
+    REFINANCE = "refinance"
+    DEFAULT_DISTRESS = "default_distress"
+    SPREAD_MARKET = "spread_market"
+    REGULATORY = "regulatory"
+    TEAM_MOVE = "team_move"
+    PRODUCT_LAUNCH = "product_launch"
+    OTHER = "other"
+
+
+class EntityType(str, Enum):
+    """Entity taxonomy for private markets intelligence (Phase 2)."""
+    FUND = "fund"
+    MANAGER_GP = "manager_gp"
+    BORROWER = "borrower"
+    INVESTOR_LP = "investor_lp"
+    REGULATOR = "regulator"
+    OTHER = "other"
 
 
 class ResearchRequest(BaseModel):
@@ -92,6 +117,8 @@ class StructuredFinding(BaseModel):
     date: str = Field(default="", description="Event date if known, else empty")
     confidence: str = Field(default="medium", pattern="^(high|medium|low)$")
     citation_index: int = Field(default=0, ge=0, description="[^n] citation index")
+    signal_type: str = Field(default="", description="SignalType value when classified")
+    entity_type: str = Field(default="", description="EntityType value when classified")
 
 
 class ReportSynthesis(BaseModel):
@@ -100,12 +127,18 @@ class ReportSynthesis(BaseModel):
     structured_findings: list[StructuredFinding] = Field(default_factory=list)
     coverage: str = ""
     gaps: str = ""
+    fund_activity: str = Field(default="", description="Investor brief: fund/product section")
+    credit_risk_watch: str = Field(default="", description="Investor brief: credit risk section")
 
 
 class ResearchReport(BaseModel):
     """Final research report."""
     topic: str
     slug: str
+    report_type: str = Field(
+        default="intelligence_brief",
+        description="intelligence_brief | investor_brief",
+    )
     facts: list[ExtractedFact] = Field(default_factory=list)
     citations: list[Citation] = Field(default_factory=list)
     markdown: str = ""
@@ -115,6 +148,8 @@ class ResearchReport(BaseModel):
     structured_findings: list[StructuredFinding] = Field(default_factory=list)
     coverage: str = ""
     gaps: str = ""
+    fund_activity: str = ""
+    credit_risk_watch: str = ""
     source_snapshots: list[SourceSnapshot] = Field(default_factory=list)
 
 

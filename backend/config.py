@@ -29,6 +29,13 @@ class Config:
     dach_seeds_enabled: bool = os.getenv("DACH_SEEDS_ENABLED", "true").lower() in ("1", "true", "yes")
     dach_max_seed_queries: int = int(os.getenv("DACH_MAX_SEED_QUERIES", "5"))
     dach_seed_results_per_query: int = int(os.getenv("DACH_SEED_RESULTS_PER_QUERY", "3"))
+    router_enabled: bool = os.getenv("ROUTER_ENABLED", "true").lower() in ("1", "true", "yes")
+    router_max_sources_per_round: int = int(os.getenv("ROUTER_MAX_SOURCES_PER_ROUND", "6"))
+    router_max_site_queries: int = int(os.getenv("ROUTER_MAX_SITE_QUERIES", "5"))
+    router_max_direct_fetches: int = int(os.getenv("ROUTER_MAX_DIRECT_FETCHES", "4"))
+    research_max_hops: int = int(os.getenv("RESEARCH_MAX_HOPS", "3"))
+    research_max_router_calls: int = int(os.getenv("RESEARCH_MAX_ROUTER_CALLS", "4"))
+    research_coverage_threshold: float = float(os.getenv("RESEARCH_COVERAGE_THRESHOLD", "0.65"))
     report_output_dir: str = os.getenv(
         "REPORT_OUTPUT_DIR",
         os.path.join(os.path.dirname(__file__), "..", "reports"),

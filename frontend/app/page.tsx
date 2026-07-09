@@ -109,6 +109,22 @@ export default function SearchPage() {
           disabled={loading}
         />
 
+        <div className="flex flex-wrap justify-center gap-2 text-sm">
+          <button
+            type="button"
+            disabled={loading}
+            onClick={() =>
+              setTopic(
+                "European corporate direct lending fundraising and deployment trends H1 2026"
+              )
+            }
+            className="rounded-full border border-[var(--border)] px-3 py-1 text-[var(--muted)]
+                       hover:border-[var(--accent-dim)] hover:text-[var(--ink)] transition-colors"
+          >
+            European Private Debt Brief
+          </button>
+        </div>
+
         <div className="flex items-center justify-center gap-8 text-sm">
           <label className="flex items-center gap-2 cursor-pointer text-[var(--ink)]">
             <input

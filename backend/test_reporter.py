@@ -1,8 +1,9 @@
 """Smoke test for report generation."""
 from datetime import datetime, timezone
 
-from models import ExtractedFact
+from models import ExtractedFact, ReportSynthesis, StructuredFinding
 from reporter import generate_report, _slugify
+from report_synthesis import detect_report_type
 
 
 def test_slugify():
@@ -39,7 +40,45 @@ def test_generate_report():
     print("test_generate_report: PASS")
 
 
+def test_investor_brief_report_type():
+    topic = "European corporate direct lending fundraising trends 2026"
+    assert detect_report_type(topic) == "investor_brief"
+    facts = [
+        ExtractedFact(
+            fact="European fundraising rebounded in 2025.",
+            source_url="https://www.stepstonegroup.com/news-insights/recent-trends-in-corporate-direct-lending-2h25/",
+            source_title="StepStone 2H25",
+            quoted_text="European fundraising rebounded after a weaker 2024",
+            confidence="high",
+        ),
+    ]
+    synthesis = ReportSynthesis(
+        executive_summary="European PD fundraising improved in 2025.",
+        structured_findings=[
+            StructuredFinding(
+                entity="European PD market",
+                signal="Fundraising rebound",
+                date="2025",
+                confidence="high",
+                citation_index=1,
+                signal_type="fundraise",
+            ),
+        ],
+        fund_activity="Evergreen funds grew.",
+        credit_risk_watch="Defaults remain below historical averages.",
+        coverage="StepStone research",
+        gaps="No LCD data",
+    )
+    report = generate_report(topic, facts, synthesis=synthesis, report_type="investor_brief")
+    assert report.report_type == "investor_brief"
+    assert "# Investor Brief:" in report.markdown
+    assert "## Fund & Product Activity" in report.markdown
+    assert report.fund_activity
+    print("test_investor_brief_report_type: PASS")
+
+
 if __name__ == "__main__":
     test_slugify()
     test_generate_report()
+    test_investor_brief_report_type()
     print("All reporter tests passed!")

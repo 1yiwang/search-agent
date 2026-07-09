@@ -2,8 +2,8 @@
 
 > **Single source of truth** for implementation progress. Update this file at the end of each Step.
 
-**Current phase:** Wave 5 — DACH intelligence Phase 1 **complete**  
-**Next step:** Phase 2 — Entity/Signal model + job_brief / investor_brief (Step 38)
+**Current phase:** Wave 7 — Source Router + Coverage Loop **complete**  
+**Next step:** Step 38b — extraction `signal_type` + eval golden case
 
 ## Usability timeline
 
@@ -33,6 +33,8 @@
 | Wave 3 (Step 25–35) | Done | Meta UI, deploy Mode B (local API + BYOK), saved reports |
 | Wave 4 (Step 36) | Done | Phase 0: report synthesis, intelligence brief UI, Swiss robotics demo |
 | Wave 5 (Step 37) | Done | Phase 1: DACH source registry + site: seed queries + 90d recency |
+| Wave 6 (Step 38a) | Done | Phase 2a: private debt registry + investor_brief + Entity/Signal enums + EU PD demo |
+| Wave 7 (Step 39–40) | Done | Source catalog (36 entries) + LLM Router + Coverage-driven research loop |
 
 ## Phase 1-alpha checklist (complete)
 
@@ -113,6 +115,26 @@
 
 **Phase 1 done when:** DACH-topics hit more vertical Swiss/EU sources than broad-only search. **Status: complete (2026-07-06).**
 
+## Wave 6 — Private Debt intelligence Phase 2
+
+> **Product narrative:** Private Markets Open-Source Intelligence Agent — DACH venture is one vertical module; **European private debt** is the Phase 2主线 (StepStone SPD alignment).
+
+| Step | Task | Status |
+|------|------|--------|
+| 38a | `sources/private_debt_registry.yaml` + `pd_registry.py` intent + site: seeds | Done |
+| 38a | `investor_brief` report template (`reporter.py`, `report_synthesis.py`) | Done |
+| 38a | `SignalType` / `EntityType` enums in `models.py` | Done |
+| 38a | European direct lending demo `public/demos/european-direct-lending-2026/` | Done |
+| 38b | Extraction prompt with `signal_type` for private debt topics | Pending |
+| 38c | `eval/golden_cases.yaml` — European PD smoke case | Pending |
+| 39 | Source catalog `sources/catalog/` (36 entries) + `links/` direct URLs | Done |
+| 39 | `sources/router.py` — LLM constrained source selection + SSE `source_router_decision` | Done |
+| 39 | `sources/executor.py` — direct_fetch → site_search → open_search | Done |
+| 40 | `coverage.py` + `research_loop.py` — coverage-driven hops + SSE `coverage_eval` | Done |
+| 41 | Watchlist + weekly delta (Phase 3 preview) | Pending |
+
+`job_brief` deferred — integration point for swiss-job-agent, not StepStone interview narrative.
+
 ## Progress ritual
 
 1. Complete one Step → focused `git commit`
@@ -124,6 +146,7 @@
 
 | Doc | Path |
 |-----|------|
+| StepStone interview prep | [docs/interview-prep-stepstone.md](docs/interview-prep-stepstone.md) |
 | AI onboarding | [AGENTS.md](AGENTS.md) |
 | Product vision | [product-description.md](product-description.md) |
 | Design (Obsidian) | `D:\My Second Brain\10-PROJECTS\deep-search-agent\design.md` |

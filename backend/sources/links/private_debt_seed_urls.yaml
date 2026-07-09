@@ -1,0 +1,17 @@
+# High-value direct URLs for private debt / European credit research
+urls:
+  - url: https://www.stepstonegroup.com/news-insights/recent-trends-in-corporate-direct-lending-2h25/
+    source_id: stepstone_insights
+    label: StepStone corporate direct lending 2H25 trends
+
+  - url: https://www.stepstonegroup.com/news-insights/direct-lending-for-swiss-pension-funds/
+    source_id: stepstone_insights
+    label: StepStone Swiss pension funds direct lending
+
+  - url: https://shareholders.stepstonegroup.com/news-releases/news-release-details/stepstone-group-launching-eltif-europe
+    source_id: stepstone_insights
+    label: StepStone ELTIF Europe launch
+
+  - url: https://www.stepstonegroup.com/what-we-do/asset-classes/private-debt/
+    source_id: stepstone_insights
+    label: StepStone Private Debt overview

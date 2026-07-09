@@ -1,0 +1,87 @@
+# Regulatory and institutional — DACH / Europe
+version: 1
+
+sources:
+  - id: finma
+    name: FINMA
+    domain: finma.ch
+    language: de
+    category: regulatory
+    tags: [geo, regulatory, credit]
+    trust_tier: primary
+    access_modes: [site_search]
+    notes: Swiss financial regulator — funds, credit, market notices
+    search_templates:
+      - "site:finma.ch {topic} fund OR Kredit OR Finanzmarkt"
+
+  - id: snb
+    name: Swiss National Bank
+    domain: snb.ch
+    language: de
+    category: regulatory
+    tags: [geo, regulatory]
+    trust_tier: primary
+    access_modes: [site_search]
+    notes: Swiss monetary policy and financial stability
+    search_templates:
+      - "site:snb.ch {topic} financial stability OR credit"
+
+  - id: cssf
+    name: CSSF Luxembourg
+    domain: cssf.lu
+    language: en
+    category: regulatory
+    tags: [geo, regulatory, credit]
+    trust_tier: primary
+    access_modes: [site_search]
+    notes: Luxembourg fund regulator — AIF, ELTIF registrations
+    search_templates:
+      - "site:cssf.lu {topic} fund OR AIF OR ELTIF"
+
+  - id: eiopa
+    name: EIOPA
+    domain: eiopa.europa.eu
+    language: en
+    category: regulatory
+    tags: [geo, regulatory, credit]
+    trust_tier: primary
+    access_modes: [site_search]
+    notes: EU insurance/pension supervision — private markets allocation
+    search_templates:
+      - "site:eiopa.europa.eu {topic} private markets OR alternative investments"
+
+  - id: esma
+    name: ESMA
+    domain: esma.europa.eu
+    language: en
+    category: regulatory
+    tags: [geo, regulatory]
+    trust_tier: primary
+    access_modes: [site_search]
+    notes: EU securities regulator — ELTIF, fund rules
+    search_templates:
+      - "site:esma.europa.eu {topic} ELTIF OR alternative fund"
+
+  - id: swissfunddata
+    name: Swiss Fund Data
+    domain: swissfunddata.ch
+    language: de
+    category: association
+    tags: [geo, credit]
+    trust_tier: secondary
+    access_modes: [site_search]
+    notes: Swiss fund industry data and news
+    search_templates:
+      - "site:swissfunddata.ch {topic} Fonds OR Anlage"
+
+  - id: sfa
+    name: Swiss Funds & Assets Association
+    domain: sfa-funds.ch
+    language: de
+    category: association
+    tags: [geo, credit]
+    trust_tier: secondary
+    access_modes: [site_search]
+    notes: Swiss asset management association
+    search_templates:
+      - "site:sfa-funds.ch {topic} private markets OR Anlage"

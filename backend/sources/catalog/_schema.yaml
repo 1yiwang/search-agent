@@ -1,0 +1,13 @@
+# Source catalog entry schema (documentation only)
+#
+# id: unique slug
+# name: human-readable label for LLM router
+# domain: primary domain (used for URL validation)
+# language: en | de | fr
+# category: research | media | regulatory | association | university | registry | institution
+# tags: credit | geo | venture | sectors | regulatory
+# trust_tier: primary | secondary
+# access_modes: site_search | direct_urls | rss
+# search_templates: site: queries with {topic} placeholder
+# entry_urls: high-value landing pages for direct_fetch
+# notes: one-line description for Source Router LLM

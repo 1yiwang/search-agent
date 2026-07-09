@@ -1,0 +1,177 @@
+# European private debt / private credit — source catalog
+version: 1
+
+sources:
+  - id: stepstone_insights
+    name: StepStone Group Research
+    domain: stepstonegroup.com
+    language: en
+    category: research
+    tags: [credit, geo]
+    trust_tier: primary
+    access_modes: [site_search, direct_urls]
+    notes: Manager research on direct lending, ELTIF, European private credit trends
+    search_templates:
+      - "site:stepstonegroup.com {topic} private debt OR direct lending"
+      - "site:stepstonegroup.com news-insights credit OR lending"
+    entry_urls:
+      - "https://www.stepstonegroup.com/news-insights/recent-trends-in-corporate-direct-lending-2h25/"
+      - "https://www.stepstonegroup.com/news-insights/direct-lending-for-swiss-pension-funds/"
+
+  - id: finews_credit
+    name: finews.ch
+    domain: finews.ch
+    language: de
+    category: media
+    tags: [credit, geo]
+    trust_tier: primary
+    access_modes: [site_search]
+    notes: Swiss financial news — private debt, credit funds, allocator moves
+    search_templates:
+      - "site:finews.ch {topic} Kredit OR Private Debt OR Direct Lending"
+      - "site:finews.ch Private Equity Kreditmarkt"
+
+  - id: handelszeitung_credit
+    name: Handelszeitung
+    domain: handelszeitung.ch
+    language: de
+    category: media
+    tags: [credit, geo]
+    trust_tier: secondary
+    access_modes: [site_search]
+    notes: DACH business media — credit funds and private markets
+    search_templates:
+      - "site:handelszeitung.ch {topic} Private Debt OR Kreditfonds"
+
+  - id: pei
+    name: Private Equity International
+    domain: privateequityinternational.com
+    language: en
+    category: media
+    tags: [credit]
+    trust_tier: primary
+    access_modes: [site_search]
+    notes: Global PE/PD industry news — fundraising, direct lending
+    search_templates:
+      - "site:privateequityinternational.com {topic} private debt OR direct lending"
+      - "site:privateequityinternational.com Europe private credit fundraising"
+
+  - id: altassets
+    name: AltAssets
+    domain: altassets.net
+    language: en
+    category: media
+    tags: [credit]
+    trust_tier: secondary
+    access_modes: [site_search]
+    notes: Alternative assets news including private debt
+    search_templates:
+      - "site:altassets.net {topic} private debt OR credit"
+
+  - id: eif
+    name: European Investment Fund
+    domain: eif.org
+    language: en
+    category: institution
+    tags: [credit, geo, regulatory]
+    trust_tier: primary
+    access_modes: [site_search]
+    notes: EU SME finance, venture debt, policy
+    search_templates:
+      - "site:eif.org {topic} private debt OR venture debt OR SME finance"
+
+  - id: eib
+    name: European Investment Bank
+    domain: eib.org
+    language: en
+    category: institution
+    tags: [credit, geo]
+    trust_tier: primary
+    access_modes: [site_search]
+    notes: EU lending policy and market reports
+    search_templates:
+      - "site:eib.org {topic} lending OR private debt"
+
+  - id: bilan_credit
+    name: Bilan
+    domain: bilan.ch
+    language: fr
+    category: media
+    tags: [credit, geo]
+    trust_tier: secondary
+    access_modes: [site_search]
+    notes: French-language Swiss finance — dette privée
+    search_templates:
+      - "site:bilan.ch {topic} dette privée OR crédit privé"
+
+  - id: fnlondon
+    name: Financial News
+    domain: fnlondon.com
+    language: en
+    category: media
+    tags: [credit, geo]
+    trust_tier: secondary
+    access_modes: [site_search]
+    notes: European leveraged finance and private credit coverage
+    search_templates:
+      - "site:fnlondon.com {topic} private debt OR direct lending OR leveraged"
+
+  - id: levfin_insights
+    name: LevFin Insights
+    domain: levfininsights.com
+    language: en
+    category: media
+    tags: [credit]
+    trust_tier: secondary
+    access_modes: [site_search]
+    notes: Leveraged finance market commentary
+    search_templates:
+      - "site:levfininsights.com {topic} direct lending OR private credit"
+
+  - id: icg_news
+    name: ICG / Industry press
+    domain: icgam.com
+    language: en
+    category: research
+    tags: [credit, geo]
+    trust_tier: secondary
+    access_modes: [site_search]
+    notes: European direct lending manager insights
+    search_templates:
+      - "site:icgam.com {topic} private debt OR direct lending"
+
+  - id: ardian
+    name: Ardian
+    domain: ardian.com
+    language: en
+    category: research
+    tags: [credit, geo]
+    trust_tier: secondary
+    access_modes: [site_search]
+    notes: European private markets manager — credit strategies
+    search_templates:
+      - "site:ardian.com {topic} private debt OR direct lending"
+
+  - id: pension_policy
+    name: IPE / Institutional Investor Europe
+    domain: ipe.com
+    language: en
+    category: media
+    tags: [credit, geo]
+    trust_tier: secondary
+    access_modes: [site_search]
+    notes: European pension allocator news — private credit allocation
+    search_templates:
+      - "site:ipe.com {topic} private debt OR private credit OR direct lending"
+
+  - id: lux_flag
+    name: Luxembourg fund industry
+    domain: alfi.lu
+    language: en
+    category: association
+    tags: [credit, geo, regulatory]
+    trust_tier: primary
+    access_modes: [site_search]
+    notes: Luxembourg fund industry — RAIF, ELTIF, private credit vehicles
+    search_templates:
+      - "site:alfi.lu {topic} private debt OR ELTIF OR private credit"

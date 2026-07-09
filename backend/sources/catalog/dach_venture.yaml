@@ -1,0 +1,186 @@
+# DACH venture / startup intelligence — source catalog
+version: 1
+
+sources:
+  - id: startupticker
+    name: Startupticker.ch
+    domain: startupticker.ch
+    language: de
+    category: media
+    tags: [geo, venture]
+    trust_tier: primary
+    access_modes: [site_search]
+    notes: Swiss startup funding rounds and VC deals
+    search_templates:
+      - "site:startupticker.ch {topic}"
+      - "site:startupticker.ch Finanzierung OR funding"
+
+  - id: swissfundraising
+    name: Swissfundraising.ch
+    domain: swissfundraising.ch
+    language: de
+    category: media
+    tags: [geo, venture]
+    trust_tier: primary
+    access_modes: [site_search]
+    notes: Swiss startup fundraising database and news
+    search_templates:
+      - "site:swissfundraising.ch {topic}"
+
+  - id: venturelab
+    name: Venturelab
+    domain: venturelab.ch
+    language: de
+    category: events
+    tags: [geo, venture]
+    trust_tier: secondary
+    access_modes: [site_search]
+    notes: Swiss startup programs and Venture Leaders
+    search_templates:
+      - "site:venturelab.ch {topic}"
+      - "site:venturelab.ch startup OR Venture Leaders"
+
+  - id: swissnex
+    name: Swissnex
+    domain: swissnex.org
+    language: en
+    category: university
+    tags: [geo, venture, sectors]
+    trust_tier: secondary
+    access_modes: [site_search]
+    notes: Swiss innovation ecosystem and deep tech events
+    search_templates:
+      - "site:swissnex.org {topic}"
+      - "site:swissnex.org Swiss startup OR deep tech"
+
+  - id: eth_spinoff
+    name: ETH Zurich
+    domain: ethz.ch
+    language: en
+    category: university
+    tags: [geo, venture, sectors]
+    trust_tier: secondary
+    access_modes: [site_search]
+    notes: ETH spin-offs and deeptech
+    search_templates:
+      - "site:ethz.ch spin-off OR startup {topic}"
+
+  - id: epfl_innovation
+    name: EPFL
+    domain: epfl.ch
+    language: en
+    category: university
+    tags: [geo, venture, sectors]
+    trust_tier: secondary
+    access_modes: [site_search]
+    notes: EPFL startups and innovation
+    search_templates:
+      - "site:epfl.ch startup OR spin-off {topic}"
+
+  - id: finews_venture
+    name: finews.ch (venture)
+    domain: finews.ch
+    language: de
+    category: media
+    tags: [geo, venture]
+    trust_tier: primary
+    access_modes: [site_search]
+    notes: Swiss VC and startup coverage
+    search_templates:
+      - "site:finews.ch startup OR Venture Capital {topic}"
+
+  - id: handelszeitung_venture
+    name: Handelszeitung (venture)
+    domain: handelszeitung.ch
+    language: de
+    category: media
+    tags: [geo, venture]
+    trust_tier: secondary
+    access_modes: [site_search]
+    notes: Swiss startup and investment news
+    search_templates:
+      - "site:handelszeitung.ch startup OR Investment {topic}"
+
+  - id: bilan_venture
+    name: Bilan (venture)
+    domain: bilan.ch
+    language: fr
+    category: media
+    tags: [geo, venture]
+    trust_tier: secondary
+    access_modes: [site_search]
+    notes: Romandie startup finance
+    search_templates:
+      - "site:bilan.ch startup OR financement {topic}"
+
+  - id: letemps
+    name: Le Temps
+    domain: letemps.ch
+    language: fr
+    category: media
+    tags: [geo, venture]
+    trust_tier: secondary
+    access_modes: [site_search]
+    notes: Swiss French-language business news
+    search_templates:
+      - "site:letemps.ch startup OR investissement {topic}"
+
+  - id: sifted
+    name: Sifted
+    domain: sifted.eu
+    language: en
+    category: media
+    tags: [venture, sectors, geo]
+    trust_tier: primary
+    access_modes: [site_search]
+    notes: European startup ecosystem — DACH coverage
+    search_templates:
+      - "site:sifted.eu Switzerland OR DACH {topic}"
+
+  - id: tech_eu
+    name: Tech.eu
+    domain: tech.eu
+    language: en
+    category: media
+    tags: [venture, sectors]
+    trust_tier: secondary
+    access_modes: [site_search]
+    notes: European tech startup funding
+    search_templates:
+      - "site:tech.eu Switzerland OR Swiss {topic}"
+
+  - id: eu_startups
+    name: EU-Startups
+    domain: eu-startups.com
+    language: en
+    category: media
+    tags: [venture]
+    trust_tier: secondary
+    access_modes: [site_search]
+    notes: European startup news
+    search_templates:
+      - "site:eu-startups.com Switzerland OR Swiss {topic}"
+
+  - id: greaterzurich
+    name: Greater Zurich Area
+    domain: greaterzuricharea.com
+    language: en
+    category: registry
+    tags: [geo, venture]
+    trust_tier: secondary
+    access_modes: [site_search]
+    notes: Greater Zurich investment and startup ecosystem
+    search_templates:
+      - "site:greaterzuricharea.com startup OR investment {topic}"
+
+  - id: innovaud
+    name: Innovaud
+    domain: innovaud.ch
+    language: fr
+    category: registry
+    tags: [geo, venture]
+    trust_tier: secondary
+    access_modes: [site_search]
+    notes: Vaud canton innovation and startups
+    search_templates:
+      - "site:innovaud.ch startup OR financement {topic}"

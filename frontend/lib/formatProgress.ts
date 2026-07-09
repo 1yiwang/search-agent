@@ -8,6 +8,17 @@ export function formatProgressEvent(event: SSEEvent): string {
       return `Session started (${d.mode || "quick"})`;
     case "dach_seeds_start":
       return `DACH seeds: ${d.seed_count} site: queries (${d.recency_days ?? 90}d window)`;
+    case "catalog_filtered":
+      return `Catalog: ${d.candidate_count} candidate sources (${(d.intent as string[])?.join(", ") || "general"})`;
+    case "source_router_decision": {
+      const hop = d.hop != null ? ` hop ${d.hop}` : "";
+      const ids = (d.selected_source_ids as string[])?.join(", ") || "";
+      return `Router${hop}: ${ids}${d.rationale ? ` — ${String(d.rationale).slice(0, 80)}` : ""}`;
+    }
+    case "direct_fetch":
+      return `Direct fetch: ${d.url}`;
+    case "coverage_eval":
+      return `Coverage hop ${d.hop}: ${Math.round(Number(d.score) * 100)}% (${(d.missing as string[])?.length || 0} gaps)`;
     case "search_start":
       return `Searching: “${d.topic}”`;
     case "search_complete":

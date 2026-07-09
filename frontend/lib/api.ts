@@ -92,6 +92,8 @@ export interface StructuredFinding {
   date: string;
   confidence: "high" | "medium" | "low";
   citation_index: number;
+  signal_type?: string;
+  entity_type?: string;
 }
 
 export interface SourceSnapshot {
@@ -104,6 +106,7 @@ export interface SourceSnapshot {
 export interface ResearchReport {
   topic: string;
   slug: string;
+  report_type?: "intelligence_brief" | "investor_brief";
   facts: ExtractedFact[];
   citations: Citation[];
   markdown: string;
@@ -112,6 +115,8 @@ export interface ResearchReport {
   structured_findings?: StructuredFinding[];
   coverage?: string;
   gaps?: string;
+  fund_activity?: string;
+  credit_risk_watch?: string;
   source_snapshots?: SourceSnapshot[];
   metadata?: {
     execution_time_seconds: number;

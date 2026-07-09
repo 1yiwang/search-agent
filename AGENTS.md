@@ -169,8 +169,11 @@ agent.run_research()
 - [x] **引文预览**：`source_snapshots` + 侧栏高亮（Word/PDF 不自动下载）
 - [x] **DACH Phase 1**：`sources/dach_registry.yaml` + `site:` 种子查询 + 90 天新鲜度
 
-- [ ] **Phase 2**：Entity/Signal 模型 + job_brief / investor_brief 双线报告
+- [x] **Phase 2a (Wave 6)**：`private_debt_registry.yaml` + `investor_brief` + Entity/Signal 枚举 + European PD demo
+- [x] **Wave 7**：`sources/catalog/`（36 信源）+ Source Router + Coverage 驱动 `research_loop`
+- [ ] **Phase 2b**：提取阶段 `signal_type` + eval golden case（欧洲 PD）
 - [ ] Phase 3：Watchlist + 周刊增量
+- [ ] `job_brief`（swiss-job-agent 集成，非主叙事）
 - [ ] `search-demo.yiwang.dev` DNS（demo 公开展示）
 
 ## 设计哲学（为什么这样构建）

@@ -8,24 +8,20 @@ from search import search_topic_with_seeds
 from extraction import extract_facts
 from dedup import deduplicate_search_results
 from reporter import generate_report
-from report_synthesis import synthesize_report
+from report_synthesis import detect_report_type, synthesize_report
 from multihop import finalize_facts, urls_from_results
-from sources.registry import augment_queries
+from research_loop import run_research_loop
+from sources.seeds import augment_queries
 
 
 async def run_research(
     request: ResearchRequest,
     event_callback=None,
 ) -> ResearchReport:
-    """Execute the complete research pipeline.
+    """Execute the complete research pipeline via coverage-driven loop."""
+    if config.router_enabled:
+        return await run_research_loop(request, event_callback=event_callback)
 
-    Args:
-        request: The research topic and parameters.
-        event_callback: Optional async callback(event_type, data) for SSE streaming.
-
-    Returns:
-        ResearchReport with facts, citations, and markdown.
-    """
     started_at = datetime.now(timezone.utc)
 
     async def emit(event_type: str, data: dict):
@@ -34,7 +30,6 @@ async def run_research(
 
     await emit("search_start", {"topic": request.topic, "max_sources": request.max_sources})
 
-    # Phase 1: Search
     raw_results, seed_topics = await search_topic_with_seeds(
         request.topic,
         request.max_sources,
@@ -42,7 +37,6 @@ async def run_research(
     )
     await emit("search_complete", {"results_found": len(raw_results)})
 
-    # Dedup search results
     unique_results = deduplicate_search_results(raw_results)
     await emit("dedup_complete", {
         "before": len(raw_results),
@@ -50,14 +44,12 @@ async def run_research(
         "removed": len(raw_results) - len(unique_results),
     })
 
-    # Phase 2: Extract facts
     successful_fetches = [r for r in unique_results if r.full_text and not r.full_text.startswith("[Failed")]
     await emit("extraction_start", {"sources_with_content": len(successful_fetches)})
 
     facts = await extract_facts(request.topic, successful_fetches)
     await emit("extraction_complete", {"facts_extracted": len(facts)})
 
-    # Phase 3: Dedup, verify, multi-hop follow-up
     seen_urls = urls_from_results(unique_results)
     topics_searched = seed_topics
     sources_per_query = min(config.multihop_sources_per_query, request.max_sources)
@@ -71,9 +63,11 @@ async def run_research(
         emit,
     )
 
-    # Phase 4: Synthesize narrative + generate report
     await emit("report_start", {"fact_count": len(verified_facts)})
-    synthesis = await synthesize_report(request.topic, verified_facts, topics_searched)
+    report_type = detect_report_type(request.topic)
+    synthesis = await synthesize_report(
+        request.topic, verified_facts, topics_searched, report_type=report_type,
+    )
     report = generate_report(
         request.topic,
         verified_facts,
@@ -81,6 +75,7 @@ async def run_research(
         synthesis=synthesis,
         topics_searched=topics_searched,
         fetched_results=unique_results,
+        report_type=report_type,
     )
     await emit("report_complete", {
         "slug": report.slug,
@@ -209,7 +204,10 @@ async def run_deep_research(
 
     await emit("report_start", {"fact_count": len(verified_facts)})
     report_topic = plan.title or plan.topic
-    synthesis = await synthesize_report(report_topic, verified_facts, topics_searched)
+    report_type = detect_report_type(report_topic)
+    synthesis = await synthesize_report(
+        report_topic, verified_facts, topics_searched, report_type=report_type,
+    )
     report = generate_report(
         report_topic,
         verified_facts,
@@ -217,6 +215,7 @@ async def run_deep_research(
         synthesis=synthesis,
         topics_searched=topics_searched,
         fetched_results=unique_results,
+        report_type=report_type,
     )
     await emit("report_complete", {
         "slug": report.slug,

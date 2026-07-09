@@ -41,9 +41,9 @@ def _build_citations(facts: list[ExtractedFact]) -> list[Citation]:
     return citations
 
 
-def _findings_table_markdown(synthesis: ReportSynthesis) -> list[str]:
+def _findings_table_markdown(synthesis: ReportSynthesis, heading: str = "Structured Findings") -> list[str]:
     lines = [
-        "## Structured Findings",
+        f"## {heading}",
         "",
         "| Entity | Signal | Date | Confidence | Ref |",
         "| --- | --- | --- | --- | --- |",
@@ -67,6 +67,7 @@ def _generate_markdown(
     synthesis: ReportSynthesis,
     started_at: datetime,
     completed_at: datetime,
+    report_type: str = "intelligence_brief",
 ) -> str:
     """Generate structured Markdown report with synthesis, table, and citations."""
     high = [f for f in facts if f.confidence == "high"]
@@ -74,8 +75,9 @@ def _generate_markdown(
     low = [f for f in facts if f.confidence == "low"]
     fact_index_map = {id(f): i + 1 for i, f in enumerate(facts)}
 
+    title = "Investor Brief" if report_type == "investor_brief" else "Intelligence Brief"
     lines = [
-        f"# Intelligence Brief: {topic}",
+        f"# {title}: {topic}",
         "",
         f"*Generated: {completed_at.strftime('%Y-%m-%d %H:%M UTC')}*",
         f"*Sources: {len(facts)} facts from {len(set(f.source_url for f in facts))} unique URLs*",
@@ -91,8 +93,29 @@ def _generate_markdown(
     ]
 
     if synthesis.structured_findings:
-        lines.extend(_findings_table_markdown(synthesis))
+        table_heading = "Market Signals" if report_type == "investor_brief" else "Structured Findings"
+        lines.extend(_findings_table_markdown(synthesis, heading=table_heading))
         lines.extend(["---", ""])
+
+    if report_type == "investor_brief":
+        if synthesis.fund_activity:
+            lines.extend([
+                "## Fund & Product Activity",
+                "",
+                synthesis.fund_activity,
+                "",
+                "---",
+                "",
+            ])
+        if synthesis.credit_risk_watch:
+            lines.extend([
+                "## Credit Risk Watch",
+                "",
+                synthesis.credit_risk_watch,
+                "",
+                "---",
+                "",
+            ])
 
     lines.extend(["## Key Findings", ""])
 
@@ -159,6 +182,7 @@ def generate_report(
     synthesis: ReportSynthesis | None = None,
     topics_searched: list[str] | None = None,
     fetched_results: list[SearchResult] | None = None,
+    report_type: str = "intelligence_brief",
 ) -> ResearchReport:
     """Generate a complete ResearchReport from extracted facts."""
     now = datetime.now(timezone.utc)
@@ -171,7 +195,9 @@ def generate_report(
 
     slug = _slugify(topic, now)
     citations = _build_citations(facts)
-    markdown = _generate_markdown(topic, facts, citations, synthesis, started_at, now)
+    markdown = _generate_markdown(
+        topic, facts, citations, synthesis, started_at, now, report_type=report_type,
+    )
 
     unique_urls = set(f.source_url for f in facts)
     metadata = ReportMetadata(
@@ -187,6 +213,7 @@ def generate_report(
     return ResearchReport(
         topic=topic,
         slug=slug,
+        report_type=report_type,
         facts=facts,
         citations=citations,
         markdown=markdown,
@@ -194,6 +221,8 @@ def generate_report(
         structured_findings=synthesis.structured_findings,
         coverage=synthesis.coverage,
         gaps=synthesis.gaps,
+        fund_activity=synthesis.fund_activity,
+        credit_risk_watch=synthesis.credit_risk_watch,
         source_snapshots=snapshots,
         metadata=metadata,
     )

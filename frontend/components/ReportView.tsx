@@ -192,6 +192,10 @@ export function ReportView({
     report.facts.slice(0, 2).map((f) => f.fact).join(" ") ||
     "No summary available for this report.";
 
+  const isInvestorBrief = report.report_type === "investor_brief";
+  const briefLabel = isInvestorBrief ? "Investor Brief" : "Intelligence Brief";
+  const tableHeading = isInvestorBrief ? "Market Signals" : "Structured Findings";
+
   const tableRows: StructuredFinding[] =
     report.structured_findings && report.structured_findings.length > 0
       ? report.structured_findings
@@ -237,7 +241,7 @@ export function ReportView({
             {/* Hero */}
             <div className="relative">
               <p className="text-xs uppercase tracking-[0.25em] text-[var(--accent-dim)] mb-3">
-                Intelligence Brief
+                {briefLabel}
               </p>
               <h1 className="font-display text-3xl md:text-4xl text-[var(--ink)] leading-tight max-w-3xl">
                 {report.topic}
@@ -262,9 +266,31 @@ export function ReportView({
             {tableRows.length > 0 && (
               <section>
                 <h2 className="font-display text-xl text-[var(--ink)] mb-4">
-                  Structured Findings
+                  {tableHeading}
                 </h2>
                 <FindingsTable rows={tableRows} onCitationClick={openCitation} />
+              </section>
+            )}
+
+            {/* Investor brief sections */}
+            {isInvestorBrief && report.fund_activity && (
+              <section className="rounded-lg border border-[var(--border)] p-5 bg-[var(--surface)]">
+                <h2 className="font-display text-xl text-[var(--ink)] mb-3">
+                  Fund & Product Activity
+                </h2>
+                <p className="text-sm text-[var(--ink)]/85 leading-relaxed whitespace-pre-wrap">
+                  {report.fund_activity}
+                </p>
+              </section>
+            )}
+            {isInvestorBrief && report.credit_risk_watch && (
+              <section className="rounded-lg border border-[var(--border)] p-5 bg-[var(--surface)]">
+                <h2 className="font-display text-xl text-[var(--ink)] mb-3">
+                  Credit Risk Watch
+                </h2>
+                <p className="text-sm text-[var(--ink)]/85 leading-relaxed whitespace-pre-wrap">
+                  {report.credit_risk_watch}
+                </p>
               </section>
             )}
 
