@@ -249,7 +249,7 @@ export function ReportView({
     <main className="min-h-screen">
       {/* Masthead */}
       <header className="border-b border-[var(--border)] bg-[var(--surface)]/60 backdrop-blur-sm sticky top-0 z-20">
-        <div className="mx-auto max-w-6xl px-4 py-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="mx-auto max-w-7xl px-4 py-3 flex flex-wrap items-center justify-between gap-3">
           <nav className="flex items-center gap-4 text-sm text-[var(--muted)]">
             <Link href="/" className="hover:text-[var(--ink)]">
               New search
@@ -268,29 +268,33 @@ export function ReportView({
         </div>
       </header>
 
-      <div className="mx-auto max-w-6xl px-4 py-10">
-        <div className="flex flex-col lg:flex-row gap-10">
-          <article
-            className={`flex-1 min-w-0 space-y-10${isInvestorBrief ? " investor-brief" : ""}`}
+      <div className="mx-auto max-w-7xl px-4 py-8">
+        {/* Full-width masthead — title spans one row above the split layout */}
+        <header
+          className={`mb-8 pb-6 border-b border-[var(--border)]${
+            isInvestorBrief ? " investor-brief" : ""
+          }`}
+        >
+          <p className="text-xs uppercase tracking-[0.25em] text-[var(--accent-dim)] mb-2">
+            {briefLabel}
+          </p>
+          <h1
+            className={`font-display text-[var(--ink)] leading-snug${
+              isInvestorBrief ? " brief-title text-2xl md:text-[1.75rem]" : " text-2xl md:text-3xl"
+            }`}
           >
-            {/* Hero */}
-            <div className="relative">
-              <p className="text-xs uppercase tracking-[0.25em] text-[var(--accent-dim)] mb-3">
-                {briefLabel}
-              </p>
-              <h1
-                className={`font-display text-[var(--ink)] leading-tight max-w-3xl${
-                  isInvestorBrief ? " brief-title" : " text-3xl md:text-4xl"
-                }`}
-              >
-                {report.topic}
-              </h1>
-              <div
-                className="mt-6 absolute -left-4 top-0 bottom-0 w-1 rounded-full bg-gradient-to-b from-[var(--accent)] to-transparent opacity-60 hidden sm:block"
-                aria-hidden
-              />
-            </div>
+            {report.topic}
+          </h1>
+        </header>
 
+        <div
+          className={
+            activeCitation
+              ? "grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(220px,24%)] gap-6 lg:gap-8 items-start"
+              : "grid grid-cols-1"
+          }
+        >
+          <article className={`min-w-0 space-y-10${isInvestorBrief ? " investor-brief" : ""}`}>
             {/* Executive summary */}
             <section className="rounded-xl border border-[var(--accent)]/25 bg-gradient-to-br from-[var(--surface-raised)] to-[var(--surface)] p-6 md:p-8">
               <h2 className="text-xs uppercase tracking-widest text-[var(--accent)] mb-4">
@@ -437,26 +441,25 @@ export function ReportView({
             </section>
           </article>
 
-          {/* Citation panel */}
-          <aside className="lg:w-[28rem] shrink-0">
-            <div className="lg:sticky lg:top-24">
-              {activeCitation ? (
-                <CitationPanel
-                  citation={activeCitation}
-                  snapshot={snapshotForUrl(
-                    report.source_snapshots,
-                    activeCitation.source_url
-                  )}
-                  onClose={onCitationClose}
-                />
-              ) : (
-                <p className="text-xs text-[var(--muted)] border border-dashed border-[var(--border)] rounded-lg p-4 text-center">
-                  点击 [{` `}n{` `}] 引用，在右侧预览原文并高亮对应片段
-                </p>
-              )}
-            </div>
-          </aside>
+          {activeCitation && (
+            <aside className="lg:sticky lg:top-[4.5rem] w-full lg:w-auto min-w-0">
+              <CitationPanel
+                citation={activeCitation}
+                snapshot={snapshotForUrl(
+                  report.source_snapshots,
+                  activeCitation.source_url
+                )}
+                onClose={onCitationClose}
+              />
+            </aside>
+          )}
         </div>
+
+        {!activeCitation && (
+          <p className="mt-6 text-center text-xs text-[var(--muted)] lg:text-left">
+            点击文中 [{` `}n{` `}] 引用，在右侧查看原文摘录
+          </p>
+        )}
       </div>
     </main>
   );
