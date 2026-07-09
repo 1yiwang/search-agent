@@ -41,6 +41,34 @@ def _build_citations(facts: list[ExtractedFact]) -> list[Citation]:
     return citations
 
 
+def _build_sources_markdown(citations: list[Citation]) -> list[str]:
+    """Aggregate citations by unique URL for the Sources section."""
+    from dedup import normalize_url
+
+    by_url: dict[str, list[Citation]] = {}
+    for citation in citations:
+        key = normalize_url(citation.source_url)
+        by_url.setdefault(key, []).append(citation)
+
+    lines: list[str] = []
+    for group in by_url.values():
+        primary = group[0]
+        indices = ", ".join(f"[^{c.index}]" for c in sorted(group, key=lambda c: c.index))
+        quote = primary.quoted_text[:120] + ("..." if len(primary.quoted_text) > 120 else "")
+        lines.append(
+            f"- [{primary.source_name}]({primary.source_url}) — refs {indices} — *\"{quote}\"*"
+        )
+        lines.append("")
+    return lines
+
+
+def _truncate_signal(signal: str, max_len: int = 120) -> str:
+    signal = signal.strip()
+    if len(signal) <= max_len:
+        return signal
+    return signal[: max_len - 1].rstrip() + "…"
+
+
 def _findings_table_markdown(synthesis: ReportSynthesis, heading: str = "Structured Findings") -> list[str]:
     lines = [
         f"## {heading}",
@@ -50,7 +78,7 @@ def _findings_table_markdown(synthesis: ReportSynthesis, heading: str = "Structu
     ]
     for row in synthesis.structured_findings:
         entity = row.entity.replace("|", "\\|")
-        signal = row.signal.replace("|", "\\|")
+        signal = _truncate_signal(row.signal.replace("|", "\\|"))
         date = row.date or "—"
         ref = f"[^{row.citation_index}]" if row.citation_index else "—"
         lines.append(
@@ -161,11 +189,7 @@ def _generate_markdown(
         "## Sources",
         "",
     ])
-    for c in citations:
-        quote = c.quoted_text[:120] + ("..." if len(c.quoted_text) > 120 else "")
-        lines.append(f"[^{c.index}]: [{c.source_name}]({c.source_url}) — *\"{quote}\"*")
-        lines.append("")
-
+    lines.extend(_build_sources_markdown(citations))
     lines.extend([
         "---",
         "",

@@ -99,6 +99,10 @@ class SourceSnapshot(BaseModel):
         description="html page, office/pdf document, or empty/failed fetch",
     )
     text: str = ""
+    normalized_url: str = Field(
+        default="",
+        description="Normalized URL key for dedup and frontend snapshot lookup",
+    )
 
 
 class ReportMetadata(BaseModel):

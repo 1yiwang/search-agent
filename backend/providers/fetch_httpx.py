@@ -24,6 +24,8 @@ class HttpxFetchProvider:
             try:
                 response = await client.get(url, headers=_DEFAULT_HEADERS)
                 response.raise_for_status()
+                if not response.encoding:
+                    response.encoding = response.apparent_encoding or "utf-8"
                 text = md(
                     response.text,
                     heading_style="ATX",

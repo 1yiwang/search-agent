@@ -1,5 +1,7 @@
 "use client";
 
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import type { Citation } from "@/lib/api";
 import {
   excerptAround,
@@ -7,6 +9,39 @@ import {
   isDownloadableUrl,
   type SourceSnapshot,
 } from "@/lib/sourcePreview";
+import { buildTextFragmentUrl } from "@/lib/textFragmentUrl";
+
+function MarkdownChunk({ text }: { text: string }) {
+  if (!text.trim()) return null;
+  return (
+    <ReactMarkdown remarkPlugins={[remarkGfm]}>{text}</ReactMarkdown>
+  );
+}
+
+function ReaderBody({
+  text,
+  quoted,
+  anchor,
+}: {
+  text: string;
+  quoted: string;
+  anchor: string;
+}) {
+  const range = findHighlightRange(text, quoted, anchor);
+  const excerpt = excerptAround(text, range, 600);
+
+  return (
+    <div className="citation-reader text-[var(--ink)]/90">
+      <MarkdownChunk text={excerpt.before} />
+      {excerpt.highlight ? (
+        <mark className="bg-[var(--accent)]/25 text-[var(--ink)] rounded px-0.5">
+          {excerpt.highlight}
+        </mark>
+      ) : null}
+      <MarkdownChunk text={excerpt.after} />
+    </div>
+  );
+}
 
 export function CitationPanel({
   citation,
@@ -20,10 +55,11 @@ export function CitationPanel({
   const isDocument =
     snapshot?.content_kind === "document" || isDownloadableUrl(citation.source_url);
   const bodyText = snapshot?.text?.trim() || citation.quoted_text;
-  const range = bodyText
-    ? findHighlightRange(bodyText, citation.quoted_text, citation.highlight_anchor)
-    : null;
-  const excerpt = excerptAround(bodyText, range);
+  const highlightUrl = buildTextFragmentUrl(
+    citation.source_url,
+    citation.quoted_text,
+    citation.highlight_anchor
+  );
 
   return (
     <div className="rounded-xl border border-[var(--accent)]/30 bg-[var(--surface-raised)] p-5 shadow-lg max-h-[calc(100vh-8rem)] flex flex-col">
@@ -47,34 +83,43 @@ export function CitationPanel({
         </p>
       )}
 
-      <div className="overflow-y-auto flex-1 min-h-0 text-sm leading-relaxed text-[var(--ink)]/90">
+      <div className="overflow-y-auto flex-1 min-h-0">
         {bodyText ? (
-          <p className="whitespace-pre-wrap">
-            {excerpt.before}
-            {excerpt.highlight ? (
-              <mark className="bg-[var(--accent)]/25 text-[var(--ink)] rounded px-0.5">
-                {excerpt.highlight}
-              </mark>
-            ) : null}
-            {excerpt.after}
-          </p>
+          <ReaderBody
+            text={bodyText}
+            quoted={citation.quoted_text}
+            anchor={citation.highlight_anchor}
+          />
         ) : (
-          <blockquote className="border-l-2 border-[var(--accent)] pl-3 text-[var(--muted)] italic">
+          <blockquote className="border-l-2 border-[var(--accent)] pl-3 text-[var(--muted)] italic text-sm">
             &ldquo;{citation.quoted_text}&rdquo;
           </blockquote>
         )}
       </div>
 
-      <div className="mt-4 pt-3 border-t border-[var(--border)] shrink-0 flex flex-wrap gap-3 text-xs">
+      <div className="mt-4 pt-3 border-t border-[var(--border)] shrink-0 flex flex-col gap-2 text-xs">
         {!isDocument && (
-          <a
-            href={citation.source_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-[var(--link)] hover:underline"
-          >
-            在新标签页打开原文 →
-          </a>
+          <>
+            <a
+              href={highlightUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center rounded-md border border-[var(--accent)]/40 bg-[var(--accent)]/10 px-3 py-2 text-[var(--accent)] hover:bg-[var(--accent)]/20 transition-colors"
+            >
+              在新标签页打开并高亮 →
+            </a>
+            <a
+              href={citation.source_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[var(--link)] hover:underline"
+            >
+              打开原文（无高亮）
+            </a>
+            <p className="text-[var(--muted)] leading-relaxed">
+              高亮依赖浏览器 Text Fragment；PDF 或动态页面可能无法定位。
+            </p>
+          </>
         )}
         {isDocument && (
           <a

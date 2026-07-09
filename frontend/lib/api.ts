@@ -101,6 +101,7 @@ export interface SourceSnapshot {
   title: string;
   content_kind: "html" | "document" | "empty";
   text: string;
+  normalized_url?: string;
 }
 
 export interface ResearchReport {

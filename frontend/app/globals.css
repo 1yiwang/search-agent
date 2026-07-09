@@ -40,3 +40,84 @@ body {
 .progress-line-active {
   border-left-color: var(--accent);
 }
+
+/* Investor brief typography */
+.investor-brief .brief-title {
+  font-size: 2rem;
+  line-height: 1.2;
+}
+
+@media (min-width: 768px) {
+  .investor-brief .brief-title {
+    font-size: 2rem;
+  }
+}
+
+.investor-brief .brief-summary {
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-size: 17px;
+  line-height: 1.65;
+}
+
+.investor-brief .brief-body {
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+.investor-brief .brief-section-title {
+  font-size: 1.375rem;
+  line-height: 1.3;
+}
+
+.investor-brief .brief-subsection {
+  font-size: 1.125rem;
+  line-height: 1.35;
+}
+
+.investor-brief .findings-table {
+  font-size: 13px;
+}
+
+.investor-brief .findings-table th,
+.investor-brief .findings-table td {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Citation reader (markdown in sidebar) */
+.citation-reader {
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.citation-reader p {
+  margin-bottom: 0.75em;
+}
+
+.citation-reader h1,
+.citation-reader h2,
+.citation-reader h3 {
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 1.1em;
+  font-weight: 600;
+  margin-top: 1em;
+  margin-bottom: 0.5em;
+  color: var(--ink);
+}
+
+.citation-reader a {
+  color: var(--link);
+  text-decoration: underline;
+}
+
+.citation-reader ul,
+.citation-reader ol {
+  margin-left: 1.25em;
+  margin-bottom: 0.75em;
+}
+
+.citation-reader mark {
+  background: color-mix(in srgb, var(--accent) 30%, transparent);
+  color: var(--ink);
+  border-radius: 2px;
+  padding: 0 2px;
+}

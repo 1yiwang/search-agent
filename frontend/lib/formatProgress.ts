@@ -17,8 +17,10 @@ export function formatProgressEvent(event: SSEEvent): string {
     }
     case "direct_fetch":
       return `Direct fetch: ${d.url}`;
-    case "coverage_eval":
-      return `Coverage hop ${d.hop}: ${Math.round(Number(d.score) * 100)}% (${(d.missing as string[])?.length || 0} gaps)`;
+    case "coverage_eval": {
+      const domains = d.unique_domains != null ? ` · ${d.unique_domains} domains` : "";
+      return `Coverage hop ${d.hop}: ${Math.round(Number(d.score) * 100)}% (${(d.missing as string[])?.length || 0} gaps)${domains}`;
+    }
     case "search_start":
       return `Searching: “${d.topic}”`;
     case "search_complete":

@@ -1,10 +1,13 @@
 /** Helpers for in-app citation preview and text highlighting. */
 
+import { normalizeUrl } from "./normalizeUrl";
+
 export interface SourceSnapshot {
   url: string;
   title: string;
   content_kind: "html" | "document" | "empty";
   text: string;
+  normalized_url?: string;
 }
 
 const DOWNLOAD_EXT = /\.(docx?|pdf|xlsx?|pptx?)(\?|#|$)/i;
@@ -74,5 +77,10 @@ export function snapshotForUrl(
   snapshots: SourceSnapshot[] | undefined,
   url: string
 ): SourceSnapshot | undefined {
-  return snapshots?.find((s) => s.url === url);
+  if (!snapshots?.length) return undefined;
+  const key = normalizeUrl(url);
+  return (
+    snapshots.find((s) => (s.normalized_url && s.normalized_url === key) || normalizeUrl(s.url) === key) ||
+    snapshots.find((s) => s.url === url)
+  );
 }

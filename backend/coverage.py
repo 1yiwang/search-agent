@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from urllib.parse import urlparse
 
 from models import ExtractedFact
 from report_synthesis import detect_report_type
@@ -33,6 +34,8 @@ INVESTOR_BRIEF_DIMENSIONS: dict[str, list[str]] = {
     ],
 }
 
+MIN_UNIQUE_DOMAINS = 2
+
 
 @dataclass
 class CoverageResult:
@@ -41,6 +44,8 @@ class CoverageResult:
     covered_dimensions: list[str] = field(default_factory=list)
     suggested_router_hints: list[str] = field(default_factory=list)
     should_continue: bool = False
+    unique_domains: int = 0
+    source_diversity_ok: bool = True
 
 
 def _fact_corpus(facts: list[ExtractedFact]) -> str:
@@ -51,6 +56,15 @@ def _fact_corpus(facts: list[ExtractedFact]) -> str:
 
 def _dimension_covered(corpus: str, keywords: list[str]) -> bool:
     return any(kw in corpus for kw in keywords)
+
+
+def _unique_domains_from_facts(facts: list[ExtractedFact]) -> int:
+    domains: set[str] = set()
+    for fact in facts:
+        host = (urlparse(fact.source_url).hostname or "").lower().removeprefix("www.")
+        if host:
+            domains.add(host)
+    return len(domains)
 
 
 def evaluate_coverage(
@@ -65,10 +79,15 @@ def evaluate_coverage(
 ) -> CoverageResult:
     """Rule-based coverage check for private debt investor briefs."""
     report_type = detect_report_type(topic)
+    unique_domains = _unique_domains_from_facts(facts)
+    source_diversity_ok = unique_domains >= MIN_UNIQUE_DOMAINS
+
     if report_type != "investor_brief" or not facts:
         return CoverageResult(
             score=1.0 if facts else 0.0,
             should_continue=False,
+            unique_domains=unique_domains,
+            source_diversity_ok=source_diversity_ok,
         )
 
     corpus = _fact_corpus(facts)
@@ -92,13 +111,16 @@ def evaluate_coverage(
 
     score = len(covered) / len(INVESTOR_BRIEF_DIMENSIONS) if INVESTOR_BRIEF_DIMENSIONS else 1.0
     hints = [hint_map[m] for m in missing[:3]]
+    if not source_diversity_ok:
+        hints.insert(0, "Broaden sources across multiple managers and data providers")
 
+    content_satisfied = score >= coverage_threshold
     should_continue = (
-        score < coverage_threshold
+        (not content_satisfied or not source_diversity_ok)
         and hop < max_hops
         and sources_budget_remaining > 0
         and stagnant_hops < 2
-        and bool(missing)
+        and (bool(missing) or not source_diversity_ok)
     )
 
     return CoverageResult(
@@ -107,4 +129,6 @@ def evaluate_coverage(
         covered_dimensions=covered,
         suggested_router_hints=hints,
         should_continue=should_continue,
+        unique_domains=unique_domains,
+        source_diversity_ok=source_diversity_ok,
     )

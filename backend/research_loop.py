@@ -156,6 +156,8 @@ async def run_research_loop(
             "missing": coverage.missing_dimensions,
             "should_continue": coverage.should_continue,
             "hints": coverage.suggested_router_hints,
+            "unique_domains": coverage.unique_domains,
+            "source_diversity_ok": coverage.source_diversity_ok,
         })
 
         if len(state.facts) == prev_fact_count:

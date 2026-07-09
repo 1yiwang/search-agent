@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import type { Citation, ResearchReport, StructuredFinding } from "@/lib/api";
 import { CitationPanel } from "@/components/CitationPanel";
+import { countUniqueDomains, normalizeUrl } from "@/lib/normalizeUrl";
 import { snapshotForUrl } from "@/lib/sourcePreview";
 
 type SortKey = "confidence" | "date" | "entity";
@@ -31,9 +32,11 @@ function confidenceBadge(conf: string) {
 function FindingsTable({
   rows,
   onCitationClick,
+  compact,
 }: {
   rows: StructuredFinding[];
   onCitationClick: (index: number) => void;
+  compact?: boolean;
 }) {
   const [sortKey, setSortKey] = useState<SortKey>("confidence");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
@@ -67,8 +70,8 @@ function FindingsTable({
     "text-left text-xs uppercase tracking-wider text-[var(--muted)] py-3 px-3 cursor-pointer hover:text-[var(--ink)] select-none";
 
   return (
-    <div className="overflow-x-auto rounded-lg border border-[var(--border)]">
-      <table className="w-full text-sm">
+    <div className={`overflow-x-auto rounded-lg border border-[var(--border)]${compact ? " findings-table" : ""}`}>
+      <table className={`w-full ${compact ? "text-[13px] tabular-nums" : "text-sm"}`}>
         <thead className="bg-[var(--surface)] border-b border-[var(--border)]">
           <tr>
             <th className={thClass} onClick={() => toggleSort("entity")}>
@@ -196,6 +199,36 @@ export function ReportView({
   const briefLabel = isInvestorBrief ? "Investor Brief" : "Intelligence Brief";
   const tableHeading = isInvestorBrief ? "Market Signals" : "Structured Findings";
 
+  const uniqueSourceCount = useMemo(
+    () => countUniqueDomains(report.facts.map((f) => f.source_url)),
+    [report.facts]
+  );
+
+  const groupedSources = useMemo(() => {
+    const byUrl = new Map<
+      string,
+      { name: string; url: string; indices: number[]; quote: string }
+    >();
+    for (const c of report.citations) {
+      const key = normalizeUrl(c.source_url);
+      const existing = byUrl.get(key);
+      if (existing) {
+        existing.indices.push(c.index);
+      } else {
+        byUrl.set(key, {
+          name: c.source_name,
+          url: c.source_url,
+          indices: [c.index],
+          quote: c.quoted_text,
+        });
+      }
+    }
+    return Array.from(byUrl.values());
+  }, [report.citations]);
+
+  const displaySourceCount =
+    uniqueSourceCount || report.metadata?.source_count || groupedSources.length;
+
   const tableRows: StructuredFinding[] =
     report.structured_findings && report.structured_findings.length > 0
       ? report.structured_findings
@@ -229,7 +262,7 @@ export function ReportView({
           {report.metadata && (
             <p className="text-xs text-[var(--muted)] tabular-nums">
               {report.metadata.execution_time_seconds.toFixed(0)}s ·{" "}
-              {report.metadata.source_count} sources · {report.facts.length} facts
+              {displaySourceCount} sources · {report.facts.length} facts
             </p>
           )}
         </div>
@@ -237,13 +270,19 @@ export function ReportView({
 
       <div className="mx-auto max-w-6xl px-4 py-10">
         <div className="flex flex-col lg:flex-row gap-10">
-          <article className="flex-1 min-w-0 space-y-10">
+          <article
+            className={`flex-1 min-w-0 space-y-10${isInvestorBrief ? " investor-brief" : ""}`}
+          >
             {/* Hero */}
             <div className="relative">
               <p className="text-xs uppercase tracking-[0.25em] text-[var(--accent-dim)] mb-3">
                 {briefLabel}
               </p>
-              <h1 className="font-display text-3xl md:text-4xl text-[var(--ink)] leading-tight max-w-3xl">
+              <h1
+                className={`font-display text-[var(--ink)] leading-tight max-w-3xl${
+                  isInvestorBrief ? " brief-title" : " text-3xl md:text-4xl"
+                }`}
+              >
                 {report.topic}
               </h1>
               <div
@@ -257,7 +296,11 @@ export function ReportView({
               <h2 className="text-xs uppercase tracking-widest text-[var(--accent)] mb-4">
                 Executive Summary
               </h2>
-              <p className="text-lg text-[var(--ink)] leading-relaxed font-display">
+              <p
+                className={`text-[var(--ink)] leading-relaxed${
+                  isInvestorBrief ? " brief-summary" : " text-lg font-display"
+                }`}
+              >
                 {summary}
               </p>
             </section>
@@ -265,30 +308,54 @@ export function ReportView({
             {/* Structured table */}
             {tableRows.length > 0 && (
               <section>
-                <h2 className="font-display text-xl text-[var(--ink)] mb-4">
+                <h2
+                  className={`font-display text-[var(--ink)] mb-4${
+                    isInvestorBrief ? " brief-section-title" : " text-xl"
+                  }`}
+                >
                   {tableHeading}
                 </h2>
-                <FindingsTable rows={tableRows} onCitationClick={openCitation} />
+                <FindingsTable
+                  rows={tableRows}
+                  onCitationClick={openCitation}
+                  compact={isInvestorBrief}
+                />
               </section>
             )}
 
             {/* Investor brief sections */}
             {isInvestorBrief && report.fund_activity && (
               <section className="rounded-lg border border-[var(--border)] p-5 bg-[var(--surface)]">
-                <h2 className="font-display text-xl text-[var(--ink)] mb-3">
+                <h2
+                  className={`font-display text-[var(--ink)] mb-3${
+                    isInvestorBrief ? " brief-section-title" : " text-xl"
+                  }`}
+                >
                   Fund & Product Activity
                 </h2>
-                <p className="text-sm text-[var(--ink)]/85 leading-relaxed whitespace-pre-wrap">
+                <p
+                  className={`text-[var(--ink)]/85 leading-relaxed whitespace-pre-wrap${
+                    isInvestorBrief ? " brief-body" : " text-sm"
+                  }`}
+                >
                   {report.fund_activity}
                 </p>
               </section>
             )}
             {isInvestorBrief && report.credit_risk_watch && (
               <section className="rounded-lg border border-[var(--border)] p-5 bg-[var(--surface)]">
-                <h2 className="font-display text-xl text-[var(--ink)] mb-3">
+                <h2
+                  className={`font-display text-[var(--ink)] mb-3${
+                    isInvestorBrief ? " brief-section-title" : " text-xl"
+                  }`}
+                >
                   Credit Risk Watch
                 </h2>
-                <p className="text-sm text-[var(--ink)]/85 leading-relaxed whitespace-pre-wrap">
+                <p
+                  className={`text-[var(--ink)]/85 leading-relaxed whitespace-pre-wrap${
+                    isInvestorBrief ? " brief-body" : " text-sm"
+                  }`}
+                >
                   {report.credit_risk_watch}
                 </p>
               </section>
@@ -296,7 +363,11 @@ export function ReportView({
 
             {/* Key findings */}
             <section>
-              <h2 className="font-display text-xl text-[var(--ink)] mb-4">
+              <h2
+                className={`font-display text-[var(--ink)] mb-4${
+                  isInvestorBrief ? " brief-section-title" : " text-xl"
+                }`}
+              >
                 Key Findings
               </h2>
               <KeyFindingsList facts={report.facts} onCitationClick={openCitation} />
@@ -330,24 +401,34 @@ export function ReportView({
 
             {/* Sources */}
             <section className="border-t border-[var(--border)] pt-8">
-              <h2 className="font-display text-xl text-[var(--ink)] mb-4">Sources</h2>
-              <ol className="space-y-3 text-sm">
-                {report.citations.map((c) => (
-                  <li key={c.index} id={`source-${c.index}`} className="flex gap-2">
-                    <span className="citation-mark font-semibold shrink-0">
-                      [{c.index}]
+              <h2
+                className={`font-display text-[var(--ink)] mb-4${
+                  isInvestorBrief ? " brief-section-title" : " text-xl"
+                }`}
+              >
+                Sources
+              </h2>
+              <ol className={`space-y-4${isInvestorBrief ? " brief-body" : " text-sm"}`}>
+                {groupedSources.map((src) => (
+                  <li key={normalizeUrl(src.url)} className="flex gap-2">
+                    <span className="citation-mark font-semibold shrink-0 text-xs">
+                      {src.indices.map((i) => `[${i}]`).join(" ")}
                     </span>
                     <div>
                       <button
                         type="button"
-                        onClick={() => openCitation(c.index)}
+                        onClick={() => openCitation(src.indices[0])}
                         className="text-[var(--link)] hover:underline text-left"
                       >
-                        {c.source_name}
+                        {src.name}
                       </button>
-                      <p className="text-[var(--muted)] mt-1 italic leading-relaxed">
-                        &ldquo;{c.quoted_text.slice(0, 200)}
-                        {c.quoted_text.length > 200 ? "…" : ""}&rdquo;
+                      <p className="text-xs text-[var(--muted)] mt-0.5">
+                        {src.indices.length} fact{src.indices.length > 1 ? "s" : ""} from this
+                        source
+                      </p>
+                      <p className="text-[var(--muted)] mt-1 italic leading-relaxed text-sm">
+                        &ldquo;{src.quote.slice(0, 200)}
+                        {src.quote.length > 200 ? "…" : ""}&rdquo;
                       </p>
                     </div>
                   </li>

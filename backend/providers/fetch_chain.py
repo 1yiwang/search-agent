@@ -1,7 +1,8 @@
-"""Chained fetch: httpx → Jina → Tavily extract."""
+"""Chained fetch: Jina (when configured) → httpx → Tavily extract."""
 from collections.abc import Awaitable, Callable
 from typing import Any
 
+from config import config
 from .fetch_httpx import HttpxFetchProvider
 from .fetch_jina import JinaFetchProvider
 from .fetch_tavily_extract import TavilyExtractFetchProvider
@@ -9,11 +10,22 @@ from .fetch_utils import is_fetch_failure
 
 FetchEventCallback = Callable[[str, dict[str, Any]], Awaitable[None]]
 
-_CHAIN = (
+_BASE_CHAIN = (
     ("httpx", HttpxFetchProvider),
     ("jina", JinaFetchProvider),
     ("tavily_extract", TavilyExtractFetchProvider),
 )
+
+
+def _active_chain() -> tuple[tuple[str, type], ...]:
+    """Prefer Jina reader first when API key is set (cleaner citation snapshots)."""
+    if config.jina_api_key:
+        return (
+            ("jina", JinaFetchProvider),
+            ("httpx", HttpxFetchProvider),
+            ("tavily_extract", TavilyExtractFetchProvider),
+        )
+    return _BASE_CHAIN
 
 
 class ChainedFetchProvider:
@@ -33,16 +45,17 @@ class ChainedFetchProvider:
     ) -> tuple[str, list[dict[str, str]]]:
         fallbacks: list[dict[str, str]] = []
         last_text = ""
+        chain = _active_chain()
 
-        for index, (provider_name, provider_cls) in enumerate(_CHAIN):
+        for index, (provider_name, provider_cls) in enumerate(chain):
             provider = provider_cls()
             last_text = await provider.fetch(url, timeout=timeout)
             if not is_fetch_failure(last_text):
                 return last_text, fallbacks
 
             reason = last_text.removeprefix(f"[Failed to fetch {url}: ").rstrip("]")
-            if index + 1 < len(_CHAIN):
-                next_name = _CHAIN[index + 1][0]
+            if index + 1 < len(chain):
+                next_name = chain[index + 1][0]
                 entry = {
                     "url": url,
                     "from": provider_name,

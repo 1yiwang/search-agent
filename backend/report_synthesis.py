@@ -54,8 +54,8 @@ Instructions:
 1. Write in the SAME language as the research topic (English topic → English prose).
 2. Preserve proper nouns from sources (fund names, managers, regulators).
 3. Use ONLY the facts above — do not add outside knowledge.
-4. executive_summary: 3–5 sentences on fundraising, deployment, credit risk, and relative value as supported by facts.
-5. structured_findings: one row per distinct entity/signal (funds, managers, market trends). Include signal_type when clear: fund_close, fundraise, deployment, refinance, default_distress, spread_market, regulatory, product_launch, team_move, or other.
+4. executive_summary: 4–6 sentences. Lead with the main conclusion; end with key risk or data gap. Cover fundraising, deployment, credit risk, and relative value only as supported by facts.
+5. structured_findings: one row per distinct entity/signal (funds, managers, market trends). Keep signal under ~120 characters. Include signal_type when clear: fund_close, fundraise, deployment, refinance, default_distress, spread_market, regulatory, product_launch, team_move, or other.
 6. fund_activity: paragraph on fund launches, closes, ELTIF/BDC/evergreen activity, or product milestones — cite fact indices inline as [^n] where helpful.
 7. credit_risk_watch: paragraph on defaults, leverage, spreads, borrower fundamentals — only from facts.
 8. coverage: sources and geographies covered.

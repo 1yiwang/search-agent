@@ -104,8 +104,10 @@ async def execute_router_decision(
             seen_urls.add(normalize_url(r.url))
         collected.extend(site_hits)
 
+    unique_domains = len({_domain_from_url(r.url) for r in collected if r.url})
     need_open = (
         force_open_web
+        or unique_domains < 2
         or (not decision.defer_open_web and len(collected) < max(3, budget_remaining // 2))
     )
     if need_open and len(collected) < budget_remaining:

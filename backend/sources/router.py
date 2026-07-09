@@ -22,9 +22,9 @@ Candidate sources (pick ONLY from this list by id):
 
 Instructions:
 1. Select 3-6 source ids most relevant to the topic.
-2. Propose up to {max_site_queries} site: search queries using selected domains.
-3. Propose up to {max_direct_urls} direct URLs ONLY from entry_urls of selected sources (or empty).
-4. Set defer_open_web true if curated sources should suffice this round.
+2. Propose up to {max_site_queries} site: search queries using selected domains — cover at least TWO different domains when candidates allow.
+3. Propose up to {max_direct_urls} direct URLs ONLY from entry_urls of selected sources (or empty). Prefer URLs from multiple domains, not only one site.
+4. Set defer_open_web true only if curated multi-domain sources should suffice this round.
 5. One-sentence rationale.
 
 Return ONLY valid JSON:
@@ -137,6 +137,25 @@ def _enforce_constraints(
             for template in entry.search_templates[:1]:
                 site_queries.append(template.replace("{topic}", compact))
             if len(site_queries) >= config.router_max_site_queries:
+                break
+
+    # Ensure site queries span at least two distinct domains when possible
+    if len(site_queries) < 2 and len(selected) >= 2:
+        seen_domains: set[str] = set()
+        for q in site_queries:
+            m = re.search(r"site:([^\s]+)", q, re.I)
+            if m:
+                seen_domains.add(m.group(1).lower().removeprefix("www."))
+        for sid in selected:
+            entry = get_source_by_id(sid)
+            if not entry:
+                continue
+            domain = entry.domain.lower().removeprefix("www.")
+            if domain in seen_domains:
+                continue
+            site_queries.append(f"site:{domain} {compact}")
+            seen_domains.add(domain)
+            if len(site_queries) >= 2:
                 break
 
     return RouterDecision(
