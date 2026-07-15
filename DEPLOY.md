@@ -1,7 +1,8 @@
 # Search Agent — Deployment Plan
 
-> **Default model (approved):** Mode B — local API on demand, $0, no Render required.  
-> Render / GHCR remain **optional** for later.
+> **Default model (approved):** Mode B — local API on demand, $0, no cloud VM required.  
+> **Mode C (next):** Always-on Fly.io API — open the website and research without running your PC.  
+> Render / GHCR remain optional.
 
 ## Target experience
 
@@ -9,8 +10,9 @@
 |---------------|--------------|
 | Open a URL and use the app | `https://search.yiwang.dev` (password) |
 | Edit LLM model / API key in the UI | Settings panel; stored in **your browser** (localStorage), personal use |
-| LLM actually runs | Only when you run **one terminal command** on your PC |
-| Turn off LLM / API | Stop that terminal command (Ctrl+C) — website still opens, research disabled |
+| LLM actually runs (Mode B) | Only when you run **one terminal command** on your PC |
+| LLM actually runs (Mode C) | Always, via Fly.io API — PC can be off |
+| Turn off LLM / API (Mode B) | Stop that terminal command (Ctrl+C) — website still opens, research disabled |
 | Public showcase | `https://search-demo.yiwang.dev` — static reports, no API |
 
 **Important:** The website is always viewable (with password). Settings are always editable.  
@@ -317,18 +319,95 @@ Backend `.env` keys remain optional fallback for local dev without BYOK.
 | 32 | Settings UI + per-request LLM BYOK | Done |
 | 33 | `search-demo` static gallery | Done |
 | 34 | DNS aliases + Vercel cleanup (remove temp tunnel env) | In progress |
+| 42 | Always-on Fly.io API (Mode C) — config in repo; deploy secrets/DNS on your account | Config ready |
 
 ---
 
 ## Optional: Render / Docker (not default)
 
-Use only if you later want 24/7 API without running your PC.
+Use only if you later want 24/7 API without running your PC — prefer **Mode C (Fly)** below.
 
 - [Deploy to Render](https://render.com/deploy?repo=https://github.com/1yiwang/search-agent) — free tier sleeps after 15 min idle
-- [`backend/Dockerfile`](backend/Dockerfile) — for Docker / GHCR / Render
+- [`backend/Dockerfile`](backend/Dockerfile) — for Docker / GHCR / Render / Fly
 
 Current Vercel deployment (interim): https://search-agent-seven.vercel.app  
 Will alias to `search.yiwang.dev` after DNS Step 34.
+
+---
+
+## Mode C — Always-on API on Fly.io (Step 42)
+
+**Goal:** Open `https://search.yiwang.dev`, research works without `start-tunnel.ps1` or a local `:8000` process.  
+LLM fees stay **BYOK** (browser Settings). Fly holds search/fetch secrets only (`TAVILY`, `JINA`) + `API_AUTH_SECRET`.
+
+### Files
+
+| File | Role |
+|------|------|
+| [`backend/Dockerfile`](backend/Dockerfile) | Python 3.12 + uvicorn |
+| [`backend/fly.toml`](backend/fly.toml) | App `search-agent-api`, region `fra`, auto-stop idle VMs, volume for reports |
+| [`backend/.dockerignore`](backend/.dockerignore) | Keeps image small |
+
+### One-time setup
+
+```powershell
+# Install flyctl: https://fly.io/docs/hands-on/install-flyctl/
+fly auth login
+cd backend
+fly launch --no-deploy --copy-config --name search-agent-api --region fra
+# Create persistent volume for reports (matches fly.toml mount)
+fly volumes create search_agent_reports --region fra --size 1
+
+fly secrets set `
+  API_AUTH_SECRET="<same as Vercel>" `
+  TAVILY_API_KEY="tvly-..." `
+  JINA_API_KEY="..." `
+  CORS_ORIGINS="https://search.yiwang.dev,https://search-demo.yiwang.dev,https://search-agent-seven.vercel.app"
+
+# Optional server-side LLM fallback (not required if BYOK):
+# fly secrets set LLM_API_KEY="..." LLM_BASE_URL="..." LLM_MODEL="..."
+
+fly deploy
+```
+
+Health check: `https://search-agent-api.fly.dev/api/health`
+
+### DNS
+
+Point API hostname at Fly (pick one):
+
+**A. Custom domain on Fly (recommended)**
+
+```powershell
+fly certs add api-search.yiwang.dev
+```
+
+Then Cloudflare DNS:
+
+| Type | Name | Target | Proxy |
+|------|------|--------|-------|
+| CNAME | `api-search` | `search-agent-api.fly.dev` | DNS only (grey cloud) |
+
+**B. Temporary:** set Vercel `NEXT_PUBLIC_API_URL=https://search-agent-api.fly.dev` until certs propagate.
+
+Keep `API_AUTH_SECRET` identical on Vercel and Fly.
+
+### Cost / idle behaviour
+
+`fly.toml` sets `auto_stop_machines = 'stop'` and `min_machines_running = 0` — idle API stops; first request wakes it (~a few seconds). Raise `min_machines_running = 1` for always-warm.
+
+### Acceptance
+
+1. Stop local backend + tunnel
+2. On phone or another PC, open `search.yiwang.dev`, log in, set BYOK keys if needed
+3. Run European PD preset research end-to-end; open Saved report
+
+### Rollback to Mode B
+
+```powershell
+# Revert DNS / Vercel NEXT_PUBLIC_API_URL to tunnel workflow
+# Or: fly apps suspend search-agent-api
+```
 
 ---
 

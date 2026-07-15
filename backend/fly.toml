@@ -1,0 +1,40 @@
+# Always-on Search Agent API on Fly.io
+# Deploy from repo:  cd backend && fly deploy
+# First-time:        fly launch --no-deploy  (then set secrets + fly deploy)
+
+app = 'search-agent-api'
+primary_region = 'fra'
+
+[build]
+  dockerfile = 'Dockerfile'
+
+[env]
+  REPORT_OUTPUT_DIR = '/data/reports'
+  PORT = '8000'
+  # CORS: browser origins for search.yiwang.dev + Vercel previews
+  CORS_ORIGINS = 'https://search.yiwang.dev,https://search-demo.yiwang.dev,https://search-agent-seven.vercel.app'
+
+[http_service]
+  internal_port = 8000
+  force_https = true
+  auto_stop_machines = 'stop'
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ['app']
+
+  [[http_service.checks]]
+    interval = '30s'
+    timeout = '5s'
+    grace_period = '15s'
+    method = 'GET'
+    path = '/api/health'
+
+[[vm]]
+  memory = '512mb'
+  cpu_kind = 'shared'
+  cpus = 1
+
+[mounts]
+  source = 'search_agent_reports'
+  destination = '/data/reports'
+  initial_size = '1gb'

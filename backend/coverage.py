@@ -34,6 +34,20 @@ INVESTOR_BRIEF_DIMENSIONS: dict[str, list[str]] = {
     ],
 }
 
+# Map extraction signal_type → coverage dimensions (AND with keyword match)
+SIGNAL_TYPE_DIMENSIONS: dict[str, list[str]] = {
+    "fundraise": ["fundraising"],
+    "fund_close": ["fundraising", "product_evergreen"],
+    "deployment": ["volume_deals"],
+    "refinance": ["volume_deals"],
+    "default_distress": ["credit_risk"],
+    "spread_market": ["returns_spreads", "relative_value"],
+    "regulatory": ["product_evergreen"],
+    "product_launch": ["product_evergreen"],
+    "team_move": [],
+    "other": [],
+}
+
 MIN_UNIQUE_DOMAINS = 2
 
 
@@ -56,6 +70,15 @@ def _fact_corpus(facts: list[ExtractedFact]) -> str:
 
 def _dimension_covered(corpus: str, keywords: list[str]) -> bool:
     return any(kw in corpus for kw in keywords)
+
+
+def _dimensions_from_signal_types(facts: list[ExtractedFact]) -> set[str]:
+    covered: set[str] = set()
+    for fact in facts:
+        st = (getattr(fact, "signal_type", "") or "").lower()
+        for dim in SIGNAL_TYPE_DIMENSIONS.get(st, []):
+            covered.add(dim)
+    return covered
 
 
 def _unique_domains_from_facts(facts: list[ExtractedFact]) -> int:
@@ -91,6 +114,7 @@ def evaluate_coverage(
         )
 
     corpus = _fact_corpus(facts)
+    signal_dims = _dimensions_from_signal_types(facts)
     covered: list[str] = []
     missing: list[str] = []
 
@@ -104,7 +128,7 @@ def evaluate_coverage(
     }
 
     for dim, keywords in INVESTOR_BRIEF_DIMENSIONS.items():
-        if _dimension_covered(corpus, keywords):
+        if _dimension_covered(corpus, keywords) or dim in signal_dims:
             covered.append(dim)
         else:
             missing.append(dim)

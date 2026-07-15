@@ -170,8 +170,10 @@ agent.run_research()
 - [x] **DACH Phase 1**：`sources/dach_registry.yaml` + `site:` 种子查询 + 90 天新鲜度
 
 - [x] **Phase 2a (Wave 6)**：`private_debt_registry.yaml` + `investor_brief` + Entity/Signal 枚举 + European PD demo
-- [x] **Wave 7**：`sources/catalog/`（36 信源）+ Source Router + Coverage 驱动 `research_loop`
-- [ ] **Phase 2b**：提取阶段 `signal_type` + eval golden case（欧洲 PD）
+- [x] **Wave 7**：`sources/catalog/`（36+ 信源）+ Source Router + Coverage 驱动 `research_loop`
+- [x] **Phase 2b**：提取阶段 `signal_type`/`entity_type` + eval golden case（欧洲 PD）
+- [x] **报告 UX**：引用弹窗 + editorial 排版（无 Entity 重复列）
+- [ ] **Wave 8**：常驻 FastAPI（Fly.io）— 打开网页即可研究，无需本机 backend
 - [ ] Phase 3：Watchlist + 周刊增量
 - [ ] `job_brief`（swiss-job-agent 集成，非主叙事）
 - [ ] `search-demo.yiwang.dev` DNS（demo 公开展示）

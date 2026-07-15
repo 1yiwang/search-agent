@@ -50,11 +50,13 @@ sources:
     category: media
     tags: [credit]
     trust_tier: primary
-    access_modes: [site_search]
+    access_modes: [site_search, direct_urls]
     notes: Global PE/PD industry news — fundraising, direct lending
     search_templates:
       - "site:privateequityinternational.com {topic} private debt OR direct lending"
       - "site:privateequityinternational.com Europe private credit fundraising"
+    entry_urls:
+      - "https://www.privateequityinternational.com/category/private-debt/"
 
   - id: altassets
     name: AltAssets
@@ -75,10 +77,12 @@ sources:
     category: institution
     tags: [credit, geo, regulatory]
     trust_tier: primary
-    access_modes: [site_search]
+    access_modes: [site_search, direct_urls]
     notes: EU SME finance, venture debt, policy
     search_templates:
       - "site:eif.org {topic} private debt OR venture debt OR SME finance"
+    entry_urls:
+      - "https://www.eif.org/news_centre/publications/index.htm"
 
   - id: eib
     name: European Investment Bank
@@ -129,16 +133,18 @@ sources:
       - "site:levfininsights.com {topic} direct lending OR private credit"
 
   - id: icg_news
-    name: ICG / Industry press
+    name: ICG
     domain: icgam.com
     language: en
     category: research
     tags: [credit, geo]
     trust_tier: secondary
-    access_modes: [site_search]
+    access_modes: [site_search, direct_urls]
     notes: European direct lending manager insights
     search_templates:
       - "site:icgam.com {topic} private debt OR direct lending"
+    entry_urls:
+      - "https://www.icgam.com/strategies/private-debt/"
 
   - id: ardian
     name: Ardian
@@ -151,6 +157,32 @@ sources:
     notes: European private markets manager — credit strategies
     search_templates:
       - "site:ardian.com {topic} private debt OR direct lending"
+
+  - id: ares_europe
+    name: Ares Management
+    domain: aresmgmt.com
+    language: en
+    category: research
+    tags: [credit]
+    trust_tier: secondary
+    access_modes: [site_search, direct_urls]
+    notes: Large private credit / direct lending manager insights
+    search_templates:
+      - "site:aresmgmt.com {topic} private credit OR direct lending Europe"
+    entry_urls:
+      - "https://www.aresmgmt.com/our-business/credit"
+
+  - id: blackstone_credit
+    name: Blackstone Credit
+    domain: blackstone.com
+    language: en
+    category: research
+    tags: [credit]
+    trust_tier: secondary
+    access_modes: [site_search]
+    notes: Private credit market commentary
+    search_templates:
+      - "site:blackstone.com {topic} private credit OR direct lending"
 
   - id: pension_policy
     name: IPE / Institutional Investor Europe
@@ -171,7 +203,36 @@ sources:
     category: association
     tags: [credit, geo, regulatory]
     trust_tier: primary
-    access_modes: [site_search]
+    access_modes: [site_search, direct_urls]
     notes: Luxembourg fund industry — RAIF, ELTIF, private credit vehicles
     search_templates:
       - "site:alfi.lu {topic} private debt OR ELTIF OR private credit"
+    entry_urls:
+      - "https://www.alfi.lu/en-gb/pages/setting-up/funds/eltif"
+
+  - id: preqin_insights
+    name: Preqin Insights (public)
+    domain: preqin.com
+    language: en
+    category: research
+    tags: [credit]
+    trust_tier: primary
+    access_modes: [site_search, direct_urls]
+    notes: Public Preqin blog / insights on private debt fundraising
+    search_templates:
+      - "site:preqin.com {topic} private debt OR private credit Europe"
+      - "site:preqin.com insights private debt fundraising"
+    entry_urls:
+      - "https://www.preqin.com/insights/research"
+
+  - id: pitchbook_news
+    name: PitchBook News
+    domain: pitchbook.com
+    language: en
+    category: media
+    tags: [credit]
+    trust_tier: secondary
+    access_modes: [site_search]
+    notes: Deal / fund coverage including European private credit
+    search_templates:
+      - "site:pitchbook.com {topic} private debt OR direct lending Europe"

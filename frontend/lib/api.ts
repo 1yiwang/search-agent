@@ -84,6 +84,8 @@ export interface ExtractedFact {
   quoted_text: string;
   event_date?: string;
   confidence: "high" | "medium" | "low";
+  signal_type?: string;
+  entity_type?: string;
 }
 
 export interface StructuredFinding {

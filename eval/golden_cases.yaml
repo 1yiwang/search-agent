@@ -1,4 +1,4 @@
-# Golden evaluation cases for Search Agent Wave 1.
+# Golden evaluation cases for Search Agent Wave 1+.
 # Run: backend/.venv/Scripts/python.exe -m eval.run
 
 cases:
@@ -25,3 +25,15 @@ cases:
     min_facts: 3
     required_keywords:
       - "FastAPI"
+
+  - id: european-pd-smoke
+    topic: "European corporate direct lending fundraising and deployment trends H1 2026"
+    max_sources: 10
+    min_sources: 2
+    min_facts: 5
+    min_unique_domains: 2
+    require_non_other_signal: true
+    expect_report_type: investor_brief
+    required_keywords:
+      - "Europe"
+      - "direct lending"

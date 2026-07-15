@@ -126,7 +126,11 @@ def _parse_synthesis_json(content: str) -> dict:
     return {}
 
 
-def _normalize_findings(raw: list, fact_count: int) -> list[StructuredFinding]:
+def _normalize_findings(
+    raw: list,
+    fact_count: int,
+    facts: list[ExtractedFact] | None = None,
+) -> list[StructuredFinding]:
     findings: list[StructuredFinding] = []
     for item in raw:
         if not isinstance(item, dict):
@@ -137,14 +141,27 @@ def _normalize_findings(raw: list, fact_count: int) -> list[StructuredFinding]:
         conf = str(item.get("confidence") or "medium").lower()
         if conf not in ("high", "medium", "low"):
             conf = "medium"
+        signal_type = str(item.get("signal_type") or "").strip()
+        entity_type = str(item.get("entity_type") or "").strip()
+        # Prefer extraction-time classification when synthesis leaves blanks
+        if facts and 1 <= idx <= len(facts):
+            fact = facts[idx - 1]
+            if not signal_type or signal_type == "other":
+                fact_sig = getattr(fact, "signal_type", "") or ""
+                if fact_sig and fact_sig != "other":
+                    signal_type = fact_sig
+            if not entity_type or entity_type == "other":
+                fact_ent = getattr(fact, "entity_type", "") or ""
+                if fact_ent and fact_ent != "other":
+                    entity_type = fact_ent
         findings.append(StructuredFinding(
             entity=str(item.get("entity") or "").strip(),
             signal=str(item.get("signal") or "").strip(),
             date=str(item.get("date") or "").strip(),
             confidence=conf,
             citation_index=idx,
-            signal_type=str(item.get("signal_type") or "").strip(),
-            entity_type=str(item.get("entity_type") or "").strip(),
+            signal_type=signal_type,
+            entity_type=entity_type,
         ))
     return findings
 
@@ -182,6 +199,8 @@ def fallback_synthesis(
             date=getattr(fact, "event_date", "") or "",
             confidence=fact.confidence,
             citation_index=i + 1,
+            signal_type=getattr(fact, "signal_type", "") or "other",
+            entity_type=getattr(fact, "entity_type", "") or "other",
         )
         for i, fact in enumerate(facts[:15])
     ]
@@ -220,6 +239,8 @@ async def synthesize_report(
             "source_title": f.source_title,
             "source_url": f.source_url,
             "quoted_excerpt": f.quoted_text[:200],
+            "signal_type": getattr(f, "signal_type", "") or "other",
+            "entity_type": getattr(f, "entity_type", "") or "other",
         }
         for i, f in enumerate(facts)
     ]
@@ -241,7 +262,9 @@ async def synthesize_report(
             max_tokens=2048,
         )
         raw = _parse_synthesis_json(response.choices[0].message.content or "")
-        findings = _normalize_findings(raw.get("structured_findings") or [], len(facts))
+        findings = _normalize_findings(
+            raw.get("structured_findings") or [], len(facts), facts=facts,
+        )
         if not findings:
             findings = fallback_synthesis(topic, facts, topics_searched).structured_findings
 

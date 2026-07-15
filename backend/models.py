@@ -75,6 +75,14 @@ class ExtractedFact(BaseModel):
         description="Event date if stated in source (YYYY, YYYY-MM, or YYYY-MM-DD)",
     )
     confidence: str = Field(default="medium", pattern="^(high|medium|low)$")
+    signal_type: str = Field(
+        default="other",
+        description="SignalType value for private markets facts",
+    )
+    entity_type: str = Field(
+        default="other",
+        description="EntityType value when classified",
+    )
 
 
 class Citation(BaseModel):

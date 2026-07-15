@@ -2,8 +2,8 @@
 
 > **Single source of truth** for implementation progress. Update this file at the end of each Step.
 
-**Current phase:** Wave 7 — Source Router + Coverage Loop **complete**  
-**Next step:** Step 38b — extraction `signal_type` + eval golden case
+**Current phase:** Wave 8 — Always-on API hosting (next)  
+**Next step:** Deploy FastAPI on Fly.io so research works without a local backend
 
 ## Usability timeline
 
@@ -11,6 +11,7 @@
 |------|-----------------|
 | **Now (local)** | Full stack: quick + deep search, `/plan` wizard, citations, event logs |
 | **Now (production)** | `search.yiwang.dev` — password gate, BYOK settings, research + **Saved reports** (`/history`); API via `api-search.yiwang.dev` tunnel when `start-tunnel.ps1` runs — see [DEPLOY.md](DEPLOY.md) |
+| **Next** | Always-on API on Fly.io — open the site and research without running local backend |
 | **Pending** | `search-demo.yiwang.dev` static gallery DNS |
 
 ## Frontend roadmap
@@ -34,7 +35,9 @@
 | Wave 4 (Step 36) | Done | Phase 0: report synthesis, intelligence brief UI, Swiss robotics demo |
 | Wave 5 (Step 37) | Done | Phase 1: DACH source registry + site: seed queries + 90d recency |
 | Wave 6 (Step 38a) | Done | Phase 2a: private debt registry + investor_brief + Entity/Signal enums + EU PD demo |
-| Wave 7 (Step 39–40) | Done | Source catalog (36 entries) + LLM Router + Coverage-driven research loop |
+| Wave 7 (Step 39–40) | Done | Source catalog (36+ entries) + LLM Router + Coverage-driven research loop |
+| Wave 7b (Step 38b–38c) | Done | Extraction `signal_type` + European PD golden eval + catalog/links enrichment |
+| Wave 8 | Next | Always-on FastAPI hosting (Fly.io) — no local backend required |
 
 ## Phase 1-alpha checklist (complete)
 
@@ -125,13 +128,15 @@
 | 38a | `investor_brief` report template (`reporter.py`, `report_synthesis.py`) | Done |
 | 38a | `SignalType` / `EntityType` enums in `models.py` | Done |
 | 38a | European direct lending demo `public/demos/european-direct-lending-2026/` | Done |
-| 38b | Extraction prompt with `signal_type` for private debt topics | Pending |
-| 38c | `eval/golden_cases.yaml` — European PD smoke case | Pending |
-| 39 | Source catalog `sources/catalog/` (36 entries) + `links/` direct URLs | Done |
+| 38b | Extraction prompt with `signal_type` / `entity_type` for private debt topics | Done |
+| 38c | `eval/golden_cases.yaml` — European PD smoke case + signal_type checks | Done |
+| 39 | Source catalog `sources/catalog/` (36+ entries) + `links/` direct URLs | Done |
 | 39 | `sources/router.py` — LLM constrained source selection + SSE `source_router_decision` | Done |
 | 39 | `sources/executor.py` — direct_fetch → site_search → open_search | Done |
 | 40 | `coverage.py` + `research_loop.py` — coverage-driven hops + SSE `coverage_eval` | Done |
+| 40b | Citation modal + editorial report layout (frontend) | Done |
 | 41 | Watchlist + weekly delta (Phase 3 preview) | Pending |
+| 42 | Always-on API (Fly.io) — remove local-backend requirement for research | Next |
 
 `job_brief` deferred — integration point for swiss-job-agent, not StepStone interview narrative.
 

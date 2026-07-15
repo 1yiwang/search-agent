@@ -32,6 +32,18 @@ function confidenceBadge(conf: string) {
   );
 }
 
+function signalTypeBadge(signalType?: string) {
+  const label = (signalType || "other").replace(/_/g, " ");
+  if (!signalType || signalType === "other") {
+    return <span className="text-[var(--muted)] text-xs">{label}</span>;
+  }
+  return (
+    <span className="inline-block rounded px-2 py-0.5 text-[10px] font-medium border border-[var(--border)] bg-[var(--surface)] text-[var(--ink)]/80 uppercase tracking-wide">
+      {label}
+    </span>
+  );
+}
+
 function FindingsTable({
   rows,
   onCitationClick,
@@ -41,6 +53,7 @@ function FindingsTable({
 }) {
   const [sortKey, setSortKey] = useState<SortKey>("confidence");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
+  const showType = rows.some((r) => r.signal_type && r.signal_type !== "other");
 
   const sorted = useMemo(() => {
     const copy = [...rows];
@@ -78,6 +91,11 @@ function FindingsTable({
             <th className={thClass} onClick={() => toggleSort("signal")}>
               Signal {sortKey === "signal" ? (sortDir === "asc" ? "↑" : "↓") : ""}
             </th>
+            {showType && (
+              <th className="text-left text-xs uppercase tracking-wider text-[var(--muted)] py-3 px-3 w-28">
+                Type
+              </th>
+            )}
             <th className={`${thClass} w-28`} onClick={() => toggleSort("date")}>
               Date {sortKey === "date" ? (sortDir === "asc" ? "↑" : "↓") : ""}
             </th>
@@ -98,6 +116,9 @@ function FindingsTable({
               <td className="py-3.5 px-3 text-[var(--ink)]/90 align-top leading-relaxed">
                 {row.signal}
               </td>
+              {showType && (
+                <td className="py-3.5 px-3 align-top">{signalTypeBadge(row.signal_type)}</td>
+              )}
               <td className="py-3.5 px-3 text-[var(--muted)] align-top whitespace-nowrap">
                 {row.date || "—"}
               </td>

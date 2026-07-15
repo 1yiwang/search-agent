@@ -15,3 +15,31 @@ urls:
   - url: https://www.stepstonegroup.com/what-we-do/asset-classes/private-debt/
     source_id: stepstone_insights
     label: StepStone Private Debt overview
+
+  - url: https://www.privateequityinternational.com/category/private-debt/
+    source_id: pei
+    label: PEI Private Debt category
+
+  - url: https://www.eif.org/news_centre/publications/index.htm
+    source_id: eif
+    label: EIF publications index
+
+  - url: https://www.icgam.com/strategies/private-debt/
+    source_id: icg_news
+    label: ICG Private Debt strategies
+
+  - url: https://www.aresmgmt.com/our-business/credit
+    source_id: ares_europe
+    label: Ares Credit platform
+
+  - url: https://www.preqin.com/insights/research
+    source_id: preqin_insights
+    label: Preqin public research insights
+
+  - url: https://www.alfi.lu/en-gb/pages/setting-up/funds/eltif
+    source_id: lux_flag
+    label: ALFI ELTIF overview
+
+  - url: https://www.esma.europa.eu/esmas-activities/fund-management/eltifs
+    source_id: esma
+    label: ESMA ELTIF page

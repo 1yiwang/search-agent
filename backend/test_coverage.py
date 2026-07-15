@@ -62,8 +62,65 @@ def test_coverage_continue_when_gaps():
     print("test_coverage_continue_when_gaps: PASS")
 
 
+def test_coverage_signal_type_fills_gap():
+    """Signal types alone can cover a dimension even with weak keyword text."""
+    facts = [
+        ExtractedFact(
+            fact="European activity strengthened last year versus peers.",
+            source_url="https://a.com/1",
+            source_title="A",
+            quoted_text="activity strengthened",
+            confidence="high",
+            signal_type="fundraise",
+        ),
+        ExtractedFact(
+            fact="Deal mix stayed within historical norms.",
+            source_url="https://b.com/2",
+            source_title="B",
+            quoted_text="within historical norms",
+            confidence="high",
+            signal_type="deployment",
+        ),
+        ExtractedFact(
+            fact="Pricing stayed attractive versus liquid credit.",
+            source_url="https://c.com/3",
+            source_title="C",
+            quoted_text="pricing stayed attractive",
+            confidence="medium",
+            signal_type="spread_market",
+        ),
+        ExtractedFact(
+            fact="Credit quality showed contained stress.",
+            source_url="https://d.com/4",
+            source_title="D",
+            quoted_text="contained stress",
+            confidence="medium",
+            signal_type="default_distress",
+        ),
+        ExtractedFact(
+            fact="A new evergreen vehicle was announced.",
+            source_url="https://e.com/5",
+            source_title="E",
+            quoted_text="evergreen vehicle",
+            confidence="high",
+            signal_type="product_launch",
+        ),
+    ]
+    topic = "European corporate direct lending fundraising trends 2026"
+    result = evaluate_coverage(
+        topic, facts, hop=0, max_hops=3, coverage_threshold=0.65,
+        sources_budget_remaining=5, stagnant_hops=0,
+    )
+    assert "fundraising" in result.covered_dimensions
+    assert "product_evergreen" in result.covered_dimensions
+    assert "credit_risk" in result.covered_dimensions
+    assert result.score >= 0.65
+    print("test_coverage_signal_type_fills_gap: PASS")
+
+
 if __name__ == "__main__":
     test_coverage_high_when_all_dimensions()
     test_coverage_continue_when_gaps()
     test_coverage_continue_when_low_diversity()
+    test_coverage_signal_type_fills_gap()
     print("All coverage tests passed!")
