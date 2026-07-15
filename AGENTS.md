@@ -173,8 +173,9 @@ agent.run_research()
 - [x] **Wave 7**：`sources/catalog/`（36+ 信源）+ Source Router + Coverage 驱动 `research_loop`
 - [x] **Phase 2b**：提取阶段 `signal_type`/`entity_type` + eval golden case（欧洲 PD）
 - [x] **报告 UX**：引用弹窗 + editorial 排版（无 Entity 重复列）
-- [ ] **Wave 8**：常驻 FastAPI（Fly.io）— 打开网页即可研究，无需本机 backend
+- [ ] **搜全优先（Mode B）**：多查询扩展 + open_web 召回 + 抓取失败补救 — **当前主线**
 - [ ] Phase 3：Watchlist + 周刊增量
+- [ ] Always-on Fly API（**延后**；个人自用默认本机 Mode B，省钱更安全）
 - [ ] `job_brief`（swiss-job-agent 集成，非主叙事）
 - [ ] `search-demo.yiwang.dev` DNS（demo 公开展示）
 

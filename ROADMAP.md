@@ -2,10 +2,14 @@
 
 > **Single source of truth** for implementation progress. Update this file at the end of each Step.
 
-**Current phase:** Wave 8 — Always-on API hosting (next)  
-**Next step:** Deploy FastAPI on Fly.io so research works without a local backend
+**Current phase:** Search quality — maximize useful source recall (Mode B / local-only)  
+**Next step:** Improve query planning + open-web recall so coverage fills gaps (not hosting)
 
-## Usability timeline
+## Product constraints (personal use)
+
+- **Deploy default: Mode B** — local FastAPI + optional tunnel; **$0**, PC off = API off  
+- **Always-on cloud (Fly) is optional / deferred** — conflicts with free + minimal-attack-surface preference  
+- **Priority order:** find all useful sources → extract/verify → write brief → (UI polish last)
 
 | When | What you can do |
 |------|-----------------|
@@ -37,7 +41,8 @@
 | Wave 6 (Step 38a) | Done | Phase 2a: private debt registry + investor_brief + Entity/Signal enums + EU PD demo |
 | Wave 7 (Step 39–40) | Done | Source catalog (36+ entries) + LLM Router + Coverage-driven research loop |
 | Wave 7b (Step 38b–38c) | Done | Extraction `signal_type` + European PD golden eval + catalog/links enrichment |
-| Wave 8 | Next | Always-on FastAPI hosting (Fly.io) — no local backend required |
+| Wave 8 search-quality | **Next** | Query diversity, open-web recall, better fail-over when curated sources miss |
+| Always-on Fly API | Deferred | Optional paid hosting — not required for personal Mode B use |
 
 ## Phase 1-alpha checklist (complete)
 
@@ -136,7 +141,10 @@
 | 40 | `coverage.py` + `research_loop.py` — coverage-driven hops + SSE `coverage_eval` | Done |
 | 40b | Citation modal + editorial report layout (frontend) | Done |
 | 41 | Watchlist + weekly delta (Phase 3 preview) | Pending |
-| 42 | Always-on API (Fly.io) — remove local-backend requirement for research | Next |
+| 42 | Always-on API (Fly.io) — optional paid; deferred for personal Mode B | Deferred |
+| 43 | Search recall: multi-query expand + prefer successful open_web when catalog thin | Next |
+| 44 | Search recall: failed-fetch retry / alternate URL from same domain | Pending |
+| 45 | Search recall: coverage hints → concrete site:/open queries (not vague strings) | Pending |
 
 `job_brief` deferred — integration point for swiss-job-agent, not StepStone interview narrative.
 
