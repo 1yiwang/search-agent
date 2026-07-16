@@ -36,6 +36,9 @@ D:/Projects/search-agent/
 │   ├── extraction.py          ← LLM 结构化事实提取（OpenAI SDK）
 │   ├── dedup.py               ← URL 去重 + 文本相似度去重
 │   ├── reporter.py            ← Markdown 报告生成（[^n] 引用系统）
+│   ├── coverage.py            ← 覆盖度评估 + GapHint（research_goal）
+│   ├── query_expand.py        ← 确定性查询扩维（维度×信息类型×日期）
+│   ├── research_loop.py       ← coverage 驱动多跳 + Source Router
 │   ├── agent.py               ← 研究管线编排（6 步 pipeline）
 │   ├── deploy.py              ← 静态 HTML 部署到 reports/
 │   ├── .env                   ← 本地环境变量（gitignored）
@@ -87,6 +90,10 @@ D:/Projects/search-agent/
 | `plan_ready` | 方案生成完毕（deep stream） | `{title, dimensions}` |
 | `dimension_start` | 维度并行搜索开始 | `{title, queries, info_type}` |
 | `dimension_complete` | 维度搜索完成 | `{title, results_found}` |
+| `coverage_eval` | 覆盖度评估 | `{hop, score, missing, gap_hints, unique_domains, …}` |
+| `query_expand` | 确定性查询扩维 | `{hop, query_count, capped, queries[{channel,template_id,…}]}` |
+| `open_search_forced` | 缺维/低多样性强制 open | `{reason, unique_domains, missing_dimensions}` |
+| `fetch_retry` | 同源 entry_url 重试 | `{from, to}` |
 | `session_start` | SSE 会话开始 | `{topic, mode, seq, run_id}` |
 | `report_start` | 开始生成报告 | `{fact_count}` |
 | `report_complete` | 报告对象生成 | `{slug, citation_count}` |
@@ -173,7 +180,7 @@ agent.run_research()
 - [x] **Wave 7**：`sources/catalog/`（36+ 信源）+ Source Router + Coverage 驱动 `research_loop`
 - [x] **Phase 2b**：提取阶段 `signal_type`/`entity_type` + eval golden case（欧洲 PD）
 - [x] **报告 UX**：引用弹窗 + editorial 排版（无 Entity 重复列）
-- [ ] **搜全优先（Mode B）**：多查询扩展 + open_web 召回 + 抓取失败补救 — **当前主线**
+- [x] **搜全优先（Mode B）**：`query_expand` + open_web 预算保护 + fetch retry + `GapHint`（Step 43–45）
 - [ ] Phase 3：Watchlist + 周刊增量
 - [ ] Always-on Fly API（**延后**；个人自用默认本机 Mode B，省钱更安全）
 - [ ] `job_brief`（swiss-job-agent 集成，非主叙事）

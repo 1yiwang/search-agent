@@ -40,6 +40,7 @@ async def _test_research_loop_completes_with_mocks():
     with (
         patch("research_loop.route_sources", new_callable=AsyncMock, return_value=decision),
         patch("research_loop.execute_router_decision", new_callable=AsyncMock, return_value=([], ["site:q"])),
+        patch("research_loop.expand_queries") as mock_expand,
         patch("research_loop.extract_facts", new_callable=AsyncMock, return_value=rich_facts),
         patch("research_loop.verify_and_review", return_value=(rich_facts, MagicMock(
             corroborated=1, boosted=0, demoted=0, removed_by_review=0, follow_up_queries=[],
@@ -55,6 +56,9 @@ async def _test_research_loop_completes_with_mocks():
 
         mock_synth.return_value = ReportSynthesis(executive_summary="Summary.")
         mock_report.return_value = MagicMock(slug="test-slug", citations=[1, 2])
+        from query_expand import ExpandResult
+
+        mock_expand.return_value = ExpandResult(queries=[], capped=False)
 
         events: list[str] = []
 

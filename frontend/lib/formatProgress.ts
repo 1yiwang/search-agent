@@ -21,6 +21,15 @@ export function formatProgressEvent(event: SSEEvent): string {
       const domains = d.unique_domains != null ? ` · ${d.unique_domains} domains` : "";
       return `Coverage hop ${d.hop}: ${Math.round(Number(d.score) * 100)}% (${(d.missing as string[])?.length || 0} gaps)${domains}`;
     }
+    case "query_expand": {
+      const site = (d.queries as { channel?: string }[])?.filter((q) => q.channel === "site").length ?? 0;
+      const open = (d.queries as { channel?: string }[])?.filter((q) => q.channel === "open").length ?? 0;
+      return `Query expand hop ${d.hop}: ${d.query_count} queries (${site} site, ${open} open)${d.capped ? " · capped" : ""}`;
+    }
+    case "open_search_forced":
+      return `Open search forced: ${d.reason} (${d.unique_domains} domains)`;
+    case "fetch_retry":
+      return `Fetch retry: ${d.from} → ${d.to}`;
     case "search_start":
       return `Searching: “${d.topic}”`;
     case "search_complete":

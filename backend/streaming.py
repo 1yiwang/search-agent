@@ -31,13 +31,19 @@ def stream_research(
 
         task = asyncio.create_task(run_pipeline(event_callback))
 
+        idle_ticks = 0
         while True:
             try:
-                event = await asyncio.wait_for(queue.get(), timeout=0.1)
+                event = await asyncio.wait_for(queue.get(), timeout=0.5)
+                idle_ticks = 0
                 yield format_sse(event)
             except asyncio.TimeoutError:
                 if task.done():
                     break
+                idle_ticks += 1
+                # Keep proxies/browsers from buffering/closing idle SSE (~15s).
+                if idle_ticks % 30 == 0:
+                    yield ": keepalive\n\n"
 
         try:
             report = await task

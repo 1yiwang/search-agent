@@ -40,6 +40,9 @@ class ResearchState(BaseModel):
     seen_urls: list[str] = Field(default_factory=list)
     topics_searched: list[str] = Field(default_factory=list)
     coverage_hints: list[str] = Field(default_factory=list)
+    pending_site_queries: list[str] = Field(default_factory=list)
+    pending_open_queries: list[str] = Field(default_factory=list)
+    last_missing_dimensions: list[str] = Field(default_factory=list)
     last_coverage_score: float = 0.0
     stagnant_hops: int = 0
 

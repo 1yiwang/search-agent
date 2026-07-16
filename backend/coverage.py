@@ -50,6 +50,23 @@ SIGNAL_TYPE_DIMENSIONS: dict[str, list[str]] = {
 
 MIN_UNIQUE_DOMAINS = 2
 
+RESEARCH_GOALS: dict[str, str] = {
+    "fundraising": "European vs US private debt fundraising trends",
+    "volume_deals": "direct lending volume LBO refinancings dividend recaps",
+    "returns_spreads": "direct lending yields spreads returns 2025",
+    "credit_risk": "private debt defaults leverage credit risk",
+    "product_evergreen": "ELTIF evergreen BDC private credit fund launch Europe",
+    "relative_value": "direct lending premium vs leveraged loans high yield",
+    "_diversity": "Broaden sources across multiple managers and data providers",
+}
+
+
+@dataclass
+class GapHint:
+    dimension: str
+    research_goal: str
+    suggested_queries: list[str] = field(default_factory=list)
+
 
 @dataclass
 class CoverageResult:
@@ -57,6 +74,7 @@ class CoverageResult:
     missing_dimensions: list[str] = field(default_factory=list)
     covered_dimensions: list[str] = field(default_factory=list)
     suggested_router_hints: list[str] = field(default_factory=list)
+    gap_hints: list[GapHint] = field(default_factory=list)
     should_continue: bool = False
     unique_domains: int = 0
     source_diversity_ok: bool = True
@@ -118,15 +136,6 @@ def evaluate_coverage(
     covered: list[str] = []
     missing: list[str] = []
 
-    hint_map = {
-        "fundraising": "European vs US private debt fundraising trends",
-        "volume_deals": "direct lending volume LBO refinancings dividend recaps",
-        "returns_spreads": "direct lending yields spreads returns 2025",
-        "credit_risk": "private debt defaults leverage credit risk",
-        "product_evergreen": "ELTIF evergreen BDC private credit fund launch Europe",
-        "relative_value": "direct lending premium vs leveraged loans high yield",
-    }
-
     for dim, keywords in INVESTOR_BRIEF_DIMENSIONS.items():
         if _dimension_covered(corpus, keywords) or dim in signal_dims:
             covered.append(dim)
@@ -134,9 +143,17 @@ def evaluate_coverage(
             missing.append(dim)
 
     score = len(covered) / len(INVESTOR_BRIEF_DIMENSIONS) if INVESTOR_BRIEF_DIMENSIONS else 1.0
-    hints = [hint_map[m] for m in missing[:3]]
+
+    gap_hints: list[GapHint] = [
+        GapHint(dimension=m, research_goal=RESEARCH_GOALS[m])
+        for m in missing[:3]
+    ]
     if not source_diversity_ok:
-        hints.insert(0, "Broaden sources across multiple managers and data providers")
+        gap_hints.insert(0, GapHint(
+            dimension="_diversity",
+            research_goal=RESEARCH_GOALS["_diversity"],
+        ))
+    hints = [h.research_goal for h in gap_hints]
 
     content_satisfied = score >= coverage_threshold
     should_continue = (
@@ -152,6 +169,7 @@ def evaluate_coverage(
         missing_dimensions=missing,
         covered_dimensions=covered,
         suggested_router_hints=hints,
+        gap_hints=gap_hints,
         should_continue=should_continue,
         unique_domains=unique_domains,
         source_diversity_ok=source_diversity_ok,

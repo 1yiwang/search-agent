@@ -59,6 +59,8 @@ def test_coverage_continue_when_gaps():
     assert result.score < 0.65
     assert result.should_continue
     assert result.suggested_router_hints
+    assert result.gap_hints
+    assert result.gap_hints[0].research_goal
     print("test_coverage_continue_when_gaps: PASS")
 
 

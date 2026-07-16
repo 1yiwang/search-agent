@@ -142,9 +142,9 @@
 | 40b | Citation modal + editorial report layout (frontend) | Done |
 | 41 | Watchlist + weekly delta (Phase 3 preview) | Pending |
 | 42 | Always-on API (Fly.io) — optional paid; deferred for personal Mode B | Deferred |
-| 43 | Search recall: multi-query expand + prefer successful open_web when catalog thin | Next |
-| 44 | Search recall: failed-fetch retry / alternate URL from same domain | Pending |
-| 45 | Search recall: coverage hints → concrete site:/open queries (not vague strings) | Pending |
+| 43 | Search recall: `query_expand.py` — dimension × info_type × date matrix; hard cap ≤6/hop; SSE `query_expand` (borrowed from DeerFlow skill methodology, code-only) | Done |
+| 44 | Search recall: executor open_budget `max(2, budget//3)`; force open on gaps / low diversity; fetch retry via catalog `entry_urls`; SSE `open_search_forced` / `fetch_retry` | Done |
+| 45 | Search recall: `GapHint(dimension, research_goal, suggested_queries)` in `coverage.py`; expander fills concrete site:/open queries | Done |
 
 `job_brief` deferred — integration point for swiss-job-agent, not StepStone interview narrative.
 

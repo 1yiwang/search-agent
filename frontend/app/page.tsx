@@ -6,6 +6,7 @@ import { useState } from "react";
 import {
   streamResearch,
   streamDeepResearch,
+  checkApiHealth,
   type SSEEvent,
 } from "@/lib/api";
 import { formatProgressEvent } from "@/lib/formatProgress";
@@ -31,8 +32,17 @@ export default function SearchPage() {
     setLoading(true);
     setProgress([]);
 
-    if (!getApiToken()) {
-      setProgress(["Error: Not signed in to API — log out and sign in again."]);
+    const health = await checkApiHealth();
+    if (!health.ok) {
+      setProgress(["Error: API offline — start backend on :8000 first."]);
+      setLoading(false);
+      return;
+    }
+    // Token only required when backend has API_AUTH_SECRET (Mode B local often has none).
+    if (health.apiAuthRequired && !getApiToken()) {
+      setProgress([
+        "Error: API requires login — open /login, enter site password, then retry.",
+      ]);
       setLoading(false);
       return;
     }

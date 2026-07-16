@@ -36,6 +36,9 @@ class Config:
     research_max_hops: int = int(os.getenv("RESEARCH_MAX_HOPS", "3"))
     research_max_router_calls: int = int(os.getenv("RESEARCH_MAX_ROUTER_CALLS", "4"))
     research_coverage_threshold: float = float(os.getenv("RESEARCH_COVERAGE_THRESHOLD", "0.65"))
+    query_expand_max_per_hop: int = int(os.getenv("QUERY_EXPAND_MAX_PER_HOP", "6"))
+    tavily_deep_on_gap_hop: bool = os.getenv("TAVILY_DEEP_ON_GAP", "false").lower() in ("1", "true", "yes")
+    min_unique_domains_target: int = int(os.getenv("MIN_UNIQUE_DOMAINS_TARGET", "3"))
     report_output_dir: str = os.getenv(
         "REPORT_OUTPUT_DIR",
         os.path.join(os.path.dirname(__file__), "..", "reports"),

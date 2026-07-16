@@ -11,6 +11,7 @@ from coverage import evaluate_coverage
 from dedup import deduplicate_facts, deduplicate_search_results, normalize_url
 from extraction import extract_facts
 from models import ExtractedFact, ResearchRequest, ResearchReport
+from query_expand import expand_queries, gap_hints_to_router_hints
 from reporter import generate_report
 from report_synthesis import detect_report_type, synthesize_report
 from sources.catalog import filter_candidates, intent_labels
@@ -94,6 +95,13 @@ async def run_research_loop(
             candidates=candidates,
         )
 
+        if state.pending_site_queries:
+            merged = (state.pending_site_queries + decision.site_queries)[
+                : config.router_max_site_queries
+            ]
+            decision.site_queries = merged
+            state.pending_site_queries = []
+
         await emit("source_router_decision", {
             "hop": state.hop,
             "selected_source_ids": decision.selected_source_ids,
@@ -111,7 +119,11 @@ async def run_research_loop(
             budget_remaining=budget_remaining,
             event_callback=emit,
             force_open_web=(state.hop == 0 and not decision.defer_open_web),
+            open_queries=state.pending_open_queries or None,
+            missing_dimensions=state.last_missing_dimensions or None,
+            gap_hop=state.hop > 0 and bool(state.last_missing_dimensions),
         )
+        state.pending_open_queries = []
         for q in searched:
             if q not in state.topics_searched:
                 state.topics_searched.append(q)
@@ -147,7 +159,8 @@ async def run_research_loop(
             stagnant_hops=state.stagnant_hops,
         )
         state.last_coverage_score = coverage.score
-        state.coverage_hints = coverage.suggested_router_hints
+        state.last_missing_dimensions = coverage.missing_dimensions
+        state.coverage_hints = gap_hints_to_router_hints(coverage.gap_hints)
 
         await emit("coverage_eval", {
             "hop": state.hop,
@@ -156,8 +169,47 @@ async def run_research_loop(
             "missing": coverage.missing_dimensions,
             "should_continue": coverage.should_continue,
             "hints": coverage.suggested_router_hints,
+            "gap_hints": [
+                {
+                    "dimension": h.dimension,
+                    "research_goal": h.research_goal,
+                    "suggested_queries": h.suggested_queries,
+                }
+                for h in coverage.gap_hints
+            ],
             "unique_domains": coverage.unique_domains,
             "source_diversity_ok": coverage.source_diversity_ok,
+        })
+
+        if not coverage.should_continue:
+            break
+
+        expand_result = expand_queries(request.topic, coverage.gap_hints, candidates)
+        for hint in coverage.gap_hints:
+            hint.suggested_queries = [
+                eq.query for eq in expand_result.queries if eq.dimension == hint.dimension
+            ]
+        state.pending_site_queries = [
+            eq.query for eq in expand_result.queries if eq.channel == "site"
+        ]
+        state.pending_open_queries = [
+            eq.query for eq in expand_result.queries if eq.channel == "open"
+        ]
+
+        await emit("query_expand", {
+            "hop": state.hop,
+            "query_count": len(expand_result.queries),
+            "capped": expand_result.capped,
+            "queries": [
+                {
+                    "query": eq.query,
+                    "channel": eq.channel,
+                    "template_id": eq.template_id,
+                    "research_goal": eq.research_goal,
+                    "dimension": eq.dimension,
+                }
+                for eq in expand_result.queries
+            ],
         })
 
         if len(state.facts) == prev_fact_count:
@@ -165,9 +217,6 @@ async def run_research_loop(
         else:
             state.stagnant_hops = 0
         prev_fact_count = len(state.facts)
-
-        if not coverage.should_continue:
-            break
 
         state.hop += 1
 
