@@ -12,6 +12,7 @@ __pycache__/
 
 # Generated reports (runtime output at repo root only)
 /reports/
+/data/
 
 # IDE / OS
 .DS_Store

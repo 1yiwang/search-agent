@@ -303,3 +303,103 @@ export async function listReports(limit = 30): Promise<ReportSummary[]> {
   const data = await response.json();
   return (data.reports ?? []) as ReportSummary[];
 }
+
+export interface WatchItem {
+  id: string;
+  topic: string;
+  max_sources: number;
+  cadence: "manual" | "weekly";
+  enabled: boolean;
+  baseline_slug: string;
+  latest_slug: string;
+  last_run_at: string;
+  created_at: string;
+  recency_days: number;
+  latest_delta_id: string;
+}
+
+export interface DeltaFinding {
+  key: string;
+  entity: string;
+  signal: string;
+  signal_type: string;
+  date: string;
+  confidence: string;
+  citation_index: number;
+  fact: string;
+  source_url: string;
+  change_note: string;
+}
+
+export interface WatchDelta {
+  watch_id: string;
+  run_id: string;
+  prev_slug: string;
+  curr_slug: string;
+  created_at: string;
+  added: DeltaFinding[];
+  removed: DeltaFinding[];
+  changed: DeltaFinding[];
+  unchanged_count: number;
+  summary_markdown: string;
+}
+
+export async function listWatches(): Promise<WatchItem[]> {
+  const response = await apiFetch("/api/watchlist", {
+    method: "GET",
+    headers: getRequestHeaders(),
+    cache: "no-store",
+  });
+  if (!response.ok) {
+    throw new Error(`Failed to load watchlist (${response.status})`);
+  }
+  return response.json();
+}
+
+export async function createWatch(payload: {
+  topic: string;
+  max_sources?: number;
+  cadence?: "manual" | "weekly";
+  recency_days?: number;
+  baseline_slug?: string;
+}): Promise<WatchItem> {
+  const response = await apiFetch("/api/watchlist", {
+    method: "POST",
+    headers: getRequestHeaders(),
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) {
+    throw new Error(`Create watch failed (${response.status})`);
+  }
+  return response.json();
+}
+
+export async function deleteWatch(watchId: string): Promise<void> {
+  const response = await apiFetch(`/api/watchlist/${encodeURIComponent(watchId)}`, {
+    method: "DELETE",
+    headers: getRequestHeaders(),
+  });
+  if (!response.ok) {
+    throw new Error(`Delete watch failed (${response.status})`);
+  }
+}
+
+export async function getLatestWatchDelta(watchId: string): Promise<WatchDelta | null> {
+  const response = await apiFetch(
+    `/api/watchlist/${encodeURIComponent(watchId)}/delta/latest`,
+    { method: "GET", headers: getRequestHeaders(), cache: "no-store" },
+  );
+  if (response.status === 404) return null;
+  if (!response.ok) {
+    throw new Error(`Failed to load delta (${response.status})`);
+  }
+  return response.json();
+}
+
+export async function* streamWatchRun(watchId: string): AsyncGenerator<SSEEvent> {
+  const response = await apiFetch(
+    `/api/watchlist/${encodeURIComponent(watchId)}/run/stream`,
+    { method: "POST", headers: getRequestHeaders() },
+  );
+  yield* parseSSEStream(response);
+}

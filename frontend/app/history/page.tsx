@@ -33,6 +33,10 @@ export default function HistoryPage() {
         <Link href="/" className="text-sm text-[var(--muted)] hover:text-[var(--ink)]">
           ← New search
         </Link>
+        {" · "}
+        <Link href="/watchlist" className="text-sm text-[var(--link)] hover:underline">
+          Watchlist
+        </Link>
         <h1 className="font-display text-4xl text-[var(--ink)] mt-4">Saved reports</h1>
         <p className="mt-2 text-sm text-[var(--muted)]">
           Reports are stored on your personal API — bookmark a report URL or find it here.

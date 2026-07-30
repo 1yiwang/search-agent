@@ -103,6 +103,9 @@ export default function SearchPage() {
           <Link href="/history" className="text-sm text-[var(--link)] hover:underline">
             Saved reports
           </Link>
+          <Link href="/watchlist" className="text-sm text-[var(--link)] hover:underline">
+            Watchlist
+          </Link>
         </div>
       </header>
 

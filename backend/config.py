@@ -39,6 +39,10 @@ class Config:
     query_expand_max_per_hop: int = int(os.getenv("QUERY_EXPAND_MAX_PER_HOP", "6"))
     tavily_deep_on_gap_hop: bool = os.getenv("TAVILY_DEEP_ON_GAP", "true").lower() in ("1", "true", "yes")
     min_unique_domains_target: int = int(os.getenv("MIN_UNIQUE_DOMAINS_TARGET", "3"))
+    watchlist_dir: str = os.getenv(
+        "WATCHLIST_DIR",
+        os.path.join(os.path.dirname(__file__), "..", "data", "watchlists"),
+    )
     report_output_dir: str = os.getenv(
         "REPORT_OUTPUT_DIR",
         os.path.join(os.path.dirname(__file__), "..", "reports"),

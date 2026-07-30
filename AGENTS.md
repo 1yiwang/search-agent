@@ -67,6 +67,10 @@ D:/Projects/search-agent/
 | POST | `/api/meta/plan` | 带人工答案/反馈生成研究方案 |
 | POST | `/api/meta/research/stream` | 执行已批准方案（SSE） |
 | GET | `/api/research/{slug}/events` | 获取研究过程 JSONL 事件日志 |
+| GET/POST | `/api/watchlist` | 列出 / 创建主题订阅 |
+| GET/PATCH/DELETE | `/api/watchlist/{id}` | 读写删订阅 |
+| POST | `/api/watchlist/{id}/run/stream` | 再跑研究 + delta（SSE） |
+| GET | `/api/watchlist/{id}/delta/latest` | 最近一次增量 |
 
 ### 请求/响应格式
 
@@ -96,6 +100,9 @@ D:/Projects/search-agent/
 | `fetch_retry` | 同源 entry_url 重试 | `{from, to}` |
 | `fetch_failover` | 跨源 entry_url 降级 | `{from, to}` |
 | `site_search_failover` | 空 site 结果换域 | `{from, to}` |
+| `watch_run_start` | Watchlist 再跑开始 | `{watch_id, run_id, topic, prev_slug}` |
+| `delta_ready` | 增量对比完成 | `{added, removed, changed, unchanged_count, …}` |
+| `watch_run_complete` | Watchlist 再跑完成 | `{watch_id, slug, delta_id}` |
 | `session_start` | SSE 会话开始 | `{topic, mode, seq, run_id}` |
 | `report_start` | 开始生成报告 | `{fact_count}` |
 | `report_complete` | 报告对象生成 | `{slug, citation_count}` |
@@ -188,7 +195,8 @@ agent.run_research()
 - [x] **Wave 8 Step 48**：open 查询嵌入 research_goal + info_type 轮换 + 预算感知条数
 - [x] **Wave 8 Step 49**：空 site / fetch 失败换源 fail-over；gap hop 默认 Tavily advanced
 - [x] **Wave 8 Step 50**：research_loop 事件链 + stagnant 停跳集成测（Wave 8 收官）
-- [ ] Phase 3：Watchlist + 周刊增量
+- [x] **Phase 3 Watchlist（41a–e）**：文件订阅 + 手动再跑 + finding delta + `/watchlist` UI
+- [ ] Phase 3 41f：本机周更脚本（Task Scheduler）
 - [ ] Always-on Fly API（**延后**；个人自用默认本机 Mode B，省钱更安全）
 - [ ] `job_brief`（swiss-job-agent 集成）
 - [ ] `search-demo.yiwang.dev` DNS（demo 公开展示）

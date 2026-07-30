@@ -2,8 +2,8 @@
 
 > **Single source of truth** for implementation progress. Update this file at the end of each Step.
 
-**Current phase:** Wave 8 — search quality **complete** (Mode B)  
-**Next step:** Phase 3 Watchlist (Step 41), or raise european-pd-smoke eval thresholds after a live run
+**Current phase:** Phase 3 Watchlist (Step 41) — first slice done  
+**Next step:** Optional 41f local weekly script / Task Scheduler; or raise live eval thresholds
 
 ## Product constraints (personal use)
 
@@ -13,9 +13,9 @@
 
 | When | What you can do |
 |------|-----------------|
-| **Now (local)** | Full stack: quick + deep search, `/plan` wizard, citations, event logs |
-| **Now (production)** | `search.yiwang.dev` — password gate, BYOK settings, research + **Saved reports** (`/history`); API via `api-search.yiwang.dev` tunnel when `start-tunnel.ps1` runs — see [DEPLOY.md](DEPLOY.md) |
-| **Next** | Always-on API on Fly.io — open the site and research without running local backend |
+| **Now (local)** | Full stack: quick + deep search, `/plan`, `/watchlist`, citations, event logs |
+| **Now (production)** | `search.yiwang.dev` — password gate, BYOK settings, research + **Saved reports** (`/history`) + Watchlist; API via tunnel when running — see [DEPLOY.md](DEPLOY.md) |
+| **Next** | Optional local weekly watch script; Always-on Fly still deferred |
 | **Pending** | `search-demo.yiwang.dev` static gallery DNS |
 
 ## Frontend roadmap
@@ -42,6 +42,7 @@
 | Wave 7 (Step 39–40) | Done | Source catalog (36+ entries) + LLM Router + Coverage-driven research loop |
 | Wave 7b (Step 38b–38c) | Done | Extraction `signal_type` + European PD golden eval + catalog/links enrichment |
 | Wave 8 search-quality | **Done** | Eval gate → diversity alignment → open-query quality → fail-over → loop tests |
+| Phase 3 Watchlist | **Done (preview)** | Topic watch + manual re-run + finding delta + `/watchlist` UI |
 | Always-on Fly API | Deferred | Optional paid hosting — not required for personal Mode B use |
 
 ## Phase 1-alpha checklist (complete)
@@ -140,7 +141,7 @@
 | 39 | `sources/executor.py` — direct_fetch → site_search → open_search | Done |
 | 40 | `coverage.py` + `research_loop.py` — coverage-driven hops + SSE `coverage_eval` | Done |
 | 40b | Citation modal + editorial report layout (frontend) | Done |
-| 41 | Watchlist + weekly delta (Phase 3 preview) | Pending |
+| 41 | Watchlist + weekly delta (Phase 3 preview) — see Wave below | Done |
 | 42 | Always-on API (Fly.io) — optional paid; deferred for personal Mode B | Deferred |
 | 43 | Search recall: `query_expand.py` — dimension × info_type × date matrix; hard cap ≤6/hop; SSE `query_expand` (borrowed from DeerFlow skill methodology, code-only) | Done |
 | 44 | Search recall: executor open_budget `max(2, budget//3)`; force open on gaps / low diversity; fetch retry via catalog `entry_urls`; SSE `open_search_forced` / `fetch_retry` | Done |
@@ -159,6 +160,19 @@
 | 50 | Research-loop integration tests: gap → expand → pending → open/site hop-2 event chain | Done |
 
 `job_brief` deferred — swiss-job-agent integration only.
+
+## Phase 3 — Watchlist + weekly delta (Mode B)
+
+> File-based topic monitoring. Manual Run (no cloud cron). Diff vs last report.
+
+| Step | Task | Status |
+|------|------|--------|
+| 41a | `WatchItem` + `data/watchlists/` store + REST CRUD | Done |
+| 41b | `POST /api/watchlist/{id}/run/stream` → research_loop + runs.jsonl | Done |
+| 41c | `delta.compare_reports` + SSE `delta_ready` + unit tests | Done |
+| 41d | Delta summary markdown written beside JSON | Done |
+| 41e | Frontend `/watchlist` + report “Watch this topic” | Done |
+| 41f | Optional `scripts/run-watchlist.ps1` + Task Scheduler docs | Pending |
 
 ## Progress ritual
 

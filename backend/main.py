@@ -19,6 +19,16 @@ from meta import (
     generate_clarifying_questions,
     get_session,
 )
+from watchlist.models import WatchCreate, WatchItem, WatchUpdate
+from watchlist.store import (
+    create_watch,
+    delete_watch,
+    get_watch,
+    list_watches,
+    load_latest_delta,
+    update_watch,
+)
+from watchlist.runner import run_watch_item
 
 app = FastAPI(title="Search Agent", version="0.1.0")
 
@@ -259,6 +269,78 @@ async def meta_research_stream(request: MetaResearchRequest):
 
     return StreamingResponse(
         stream_research(session.topic, "meta", run_pipeline),
+        media_type="text/event-stream",
+        headers=SSE_HEADERS,
+    )
+
+
+# --- Watchlist (Phase 3 / Step 41) ---
+
+
+@app.get("/api/watchlist", response_model=list[WatchItem])
+async def watchlist_list():
+    return list_watches()
+
+
+@app.post("/api/watchlist", response_model=WatchItem)
+async def watchlist_create(payload: WatchCreate):
+    return create_watch(payload)
+
+
+@app.get("/api/watchlist/{watch_id}", response_model=WatchItem)
+async def watchlist_get(watch_id: str):
+    item = get_watch(watch_id)
+    if item is None:
+        raise HTTPException(status_code=404, detail="Watch not found")
+    return item
+
+
+@app.patch("/api/watchlist/{watch_id}", response_model=WatchItem)
+async def watchlist_patch(watch_id: str, payload: WatchUpdate):
+    item = update_watch(watch_id, payload)
+    if item is None:
+        raise HTTPException(status_code=404, detail="Watch not found")
+    return item
+
+
+@app.delete("/api/watchlist/{watch_id}")
+async def watchlist_delete(watch_id: str):
+    if not delete_watch(watch_id):
+        raise HTTPException(status_code=404, detail="Watch not found")
+    return {"ok": True, "id": watch_id}
+
+
+@app.get("/api/watchlist/{watch_id}/delta/latest")
+async def watchlist_latest_delta(watch_id: str):
+    if get_watch(watch_id) is None:
+        raise HTTPException(status_code=404, detail="Watch not found")
+    delta = load_latest_delta(watch_id)
+    if delta is None:
+        raise HTTPException(status_code=404, detail="No delta yet")
+    return delta
+
+
+@app.post("/api/watchlist/{watch_id}/run/stream")
+async def watchlist_run_stream(watch_id: str):
+    """Run watch research with SSE (research events + delta_ready)."""
+    item = get_watch(watch_id)
+    if item is None:
+        raise HTTPException(status_code=404, detail="Watch not found")
+    if not item.enabled:
+        raise HTTPException(status_code=400, detail="Watch is disabled")
+
+    async def run_pipeline(event_callback):
+        updated, _delta = await run_watch_item(watch_id, event_callback=event_callback)
+        # stream_research expects a ResearchReport; load the latest run report.
+        from report_store import load_report
+
+        report = load_report(updated.latest_slug)
+        if report is None:
+            raise RuntimeError("Watch run completed but report missing")
+        return report
+
+    return StreamingResponse(
+        stream_research(item.topic, "watch", run_pipeline),
         media_type="text/event-stream",
         headers=SSE_HEADERS,
     )

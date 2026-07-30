@@ -34,6 +34,12 @@ export function formatProgressEvent(event: SSEEvent): string {
       return `Fetch failover: ${d.from} → ${d.to}`;
     case "site_search_failover":
       return `Site search failover: ${String(d.from || "").slice(0, 40)} → ${String(d.to || "").slice(0, 40)}`;
+    case "watch_run_start":
+      return `Watch run: ${d.topic || d.watch_id}`;
+    case "delta_ready":
+      return `Delta ready: +${d.added} / −${d.removed} / ~${d.changed} (unchanged ${d.unchanged_count})`;
+    case "watch_run_complete":
+      return `Watch complete → ${d.slug}`;
     case "search_start":
       return `Searching: “${d.topic}”`;
     case "search_complete":

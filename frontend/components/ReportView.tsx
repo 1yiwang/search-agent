@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import type { Citation, ResearchReport, StructuredFinding } from "@/lib/api";
+import { createWatch } from "@/lib/api";
 import { CitationModal } from "@/components/CitationModal";
 import { countUniqueDomains, normalizeUrl } from "@/lib/normalizeUrl";
 import { snapshotForUrl } from "@/lib/sourcePreview";
@@ -283,6 +284,29 @@ export function ReportView({
     if (c) onCitationSelect(c);
   }
 
+  const [watchMsg, setWatchMsg] = useState<string | null>(null);
+  const [watching, setWatching] = useState(false);
+
+  async function handleWatchTopic() {
+    if (watching) return;
+    setWatching(true);
+    setWatchMsg(null);
+    try {
+      const item = await createWatch({
+        topic: report.topic,
+        max_sources: 10,
+        cadence: "manual",
+        recency_days: 14,
+        baseline_slug: report.slug,
+      });
+      setWatchMsg(`Watching — open /watchlist (${item.id.slice(0, 12)}…)`);
+    } catch (err) {
+      setWatchMsg(err instanceof Error ? err.message : "Failed to add watch");
+    } finally {
+      setWatching(false);
+    }
+  }
+
   return (
     <main className="min-h-screen report-doc">
       <header className="border-b border-[var(--border)] bg-[var(--surface)]/60 backdrop-blur-sm sticky top-0 z-20">
@@ -295,14 +319,42 @@ export function ReportView({
             <Link href="/history" className="hover:text-[var(--ink)]">
               Saved reports
             </Link>
+            <span className="text-[var(--border)]">|</span>
+            <Link href="/watchlist" className="hover:text-[var(--ink)]">
+              Watchlist
+            </Link>
           </nav>
-          {report.metadata && (
-            <p className="text-xs text-[var(--muted)] tabular-nums">
-              {report.metadata.execution_time_seconds.toFixed(0)}s ·{" "}
-              {displaySourceCount} sources · {report.facts.length} facts
-            </p>
-          )}
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={handleWatchTopic}
+              disabled={watching}
+              className="text-xs text-[var(--link)] hover:underline disabled:opacity-50"
+            >
+              {watching ? "Adding…" : "Watch this topic"}
+            </button>
+            {report.metadata && (
+              <p className="text-xs text-[var(--muted)] tabular-nums">
+                {report.metadata.execution_time_seconds.toFixed(0)}s ·{" "}
+                {displaySourceCount} sources · {report.facts.length} facts
+              </p>
+            )}
+          </div>
         </div>
+        {watchMsg && (
+          <div className={`${PAGE_GUTTER} pb-2 text-xs text-[var(--muted)]`}>
+            {watchMsg.includes("/watchlist") ? (
+              <>
+                Watching —{" "}
+                <Link href="/watchlist" className="text-[var(--link)] hover:underline">
+                  open watchlist
+                </Link>
+              </>
+            ) : (
+              watchMsg
+            )}
+          </div>
+        )}
       </header>
 
       <div className={`${PAGE_GUTTER} py-12 sm:py-14`}>
