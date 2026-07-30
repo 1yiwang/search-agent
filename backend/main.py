@@ -141,6 +141,7 @@ async def research_deep_stream(request: DeepStreamRequest):
 class StreamRequest(BaseModel):
     topic: str = Field(..., min_length=3, max_length=500)
     max_sources: int = Field(default=10, ge=3, le=30)
+    depth: str = Field(default="standard", pattern="^(fast|standard|deep)$")
 
 
 @app.post("/api/research/stream")
@@ -149,7 +150,11 @@ async def research_stream(request: StreamRequest):
 
     async def run_pipeline(event_callback):
         return await run_research(
-            ResearchRequest(topic=request.topic, max_sources=request.max_sources),
+            ResearchRequest(
+                topic=request.topic,
+                max_sources=request.max_sources,
+                depth=request.depth,
+            ),
             event_callback=event_callback,
         )
 

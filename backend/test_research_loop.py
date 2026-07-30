@@ -4,11 +4,24 @@ Step 50 locks the Wave 8 event chain:
   catalog → router → execute → coverage_eval → query_expand → hop-2 → report
 """
 import asyncio
+from contextlib import contextmanager
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from models import ExtractedFact, ResearchRequest, SearchResult
 from research_loop import run_research_loop
 from sources.models import RouterDecision, SourceEntry
+
+
+@contextmanager
+def _passthrough_depth(profile):
+    """Do not override config.* so existing hop patches keep working."""
+    yield profile
+
+
+def _resolve_keep_budget(request):
+    from depth_profile import get_depth_profile
+
+    return request, get_depth_profile(getattr(request, "depth", None) or "standard")
 
 
 def _fact(text: str, url: str = "https://stepstonegroup.com/a") -> ExtractedFact:
@@ -63,6 +76,8 @@ async def _test_research_loop_completes_with_mocks():
         patch("research_loop.synthesize_report", new_callable=AsyncMock) as mock_synth,
         patch("research_loop.generate_report") as mock_report,
         patch("research_loop.config.router_enabled", True),
+        patch("research_loop.depth_overrides", _passthrough_depth),
+        patch("research_loop.resolve_request", side_effect=_resolve_keep_budget),
         patch("research_loop.config.research_max_hops", 1),
         patch("research_loop.config.research_max_router_calls", 2),
         patch("research_loop.config.research_coverage_threshold", 0.65),
@@ -94,6 +109,7 @@ async def _test_research_loop_wires_gap_hints_to_next_hop():
     request = ResearchRequest(
         topic="European corporate direct lending fundraising trends 2026",
         max_sources=10,
+        depth="fast",
     )
     thin_facts = [
         _fact("European fundraising rebounded in 2025.", "https://a.com/1"),
@@ -110,7 +126,8 @@ async def _test_research_loop_wires_gap_hints_to_next_hop():
         rationale="hop1",
         defer_open_web=True,
     )
-    route_mock = AsyncMock(side_effect=[decision_hop0, decision_hop1])
+    # Extra slots in case hop accounting differs under depth profiles
+    route_mock = AsyncMock(side_effect=[decision_hop0, decision_hop1, decision_hop1, decision_hop1])
     execute_mock = AsyncMock(
         side_effect=[
             (
@@ -120,6 +137,14 @@ async def _test_research_loop_wires_gap_hints_to_next_hop():
             (
                 [SearchResult(url="https://b.com/2", title="B", snippet="s", full_text="body")],
                 ["site:pei.com European private debt fundraising", "open q"],
+            ),
+            (
+                [SearchResult(url="https://c.com/3", title="C", snippet="s", full_text="body")],
+                ["open q2"],
+            ),
+            (
+                [SearchResult(url="https://d.com/4", title="D", snippet="s", full_text="body")],
+                ["open q3"],
             ),
         ]
     )
@@ -171,6 +196,8 @@ async def _test_research_loop_wires_gap_hints_to_next_hop():
         patch("research_loop.synthesize_report", new_callable=AsyncMock) as mock_synth,
         patch("research_loop.generate_report") as mock_report,
         patch("research_loop.config.router_enabled", True),
+        patch("research_loop.depth_overrides", _passthrough_depth),
+        patch("research_loop.resolve_request", side_effect=_resolve_keep_budget),
         patch("research_loop.config.research_max_hops", 2),
         patch("research_loop.config.research_max_router_calls", 4),
         patch("research_loop.config.research_coverage_threshold", 0.65),
@@ -297,6 +324,8 @@ async def _test_research_loop_event_chain_with_real_expand():
         patch("research_loop.generate_report") as mock_report,
         patch("research_loop.filter_candidates", return_value=candidates),
         patch("research_loop.config.router_enabled", True),
+        patch("research_loop.depth_overrides", _passthrough_depth),
+        patch("research_loop.resolve_request", side_effect=_resolve_keep_budget),
         patch("research_loop.config.research_max_hops", 3),
         patch("research_loop.config.research_max_router_calls", 4),
         patch("research_loop.config.research_coverage_threshold", 0.65),
@@ -412,6 +441,8 @@ async def _test_research_loop_stops_when_stagnant():
             return_value=[_candidate("pei", "privateequityinternational.com")],
         ),
         patch("research_loop.config.router_enabled", True),
+        patch("research_loop.depth_overrides", _passthrough_depth),
+        patch("research_loop.resolve_request", side_effect=_resolve_keep_budget),
         patch("research_loop.config.research_max_hops", 5),
         patch("research_loop.config.research_max_router_calls", 6),
         patch("research_loop.config.research_coverage_threshold", 0.65),

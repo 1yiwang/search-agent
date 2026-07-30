@@ -9,6 +9,7 @@ from typing import Any
 from config import config
 from coverage import evaluate_coverage
 from dedup import deduplicate_facts, deduplicate_search_results, normalize_url
+from depth_profile import depth_overrides, resolve_request
 from extraction import extract_facts
 from models import ExtractedFact, ResearchRequest, ResearchReport
 from multilang import initial_open_queries
@@ -59,11 +60,24 @@ async def run_research_loop(
 ) -> ResearchReport:
     """Execute coverage-driven search → extract → verify → report."""
     started_at = datetime.now(timezone.utc)
+    request, profile = resolve_request(request)
 
     async def emit(event_type: str, data: dict) -> None:
         if event_callback:
             await event_callback(event_type, data)
 
+    with depth_overrides(profile):
+        return await _run_research_loop_body(
+            request, profile.name, started_at, emit,
+        )
+
+
+async def _run_research_loop_body(
+    request: ResearchRequest,
+    depth_name: str,
+    started_at: datetime,
+    emit: EmitCallback,
+) -> ResearchReport:
     state = ResearchState(
         topic=request.topic,
         max_sources=request.max_sources,
@@ -74,6 +88,7 @@ async def run_research_loop(
     await emit("search_start", {
         "topic": request.topic,
         "max_sources": request.max_sources,
+        "depth": depth_name,
         "router_enabled": config.router_enabled,
     })
 

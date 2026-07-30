@@ -2,8 +2,8 @@
 
 > **Single source of truth** for implementation progress. Update this file at the end of each Step.
 
-**Current phase:** Wave 10–11 — comprehensiveness + Swiss telecom  
-**Next step:** Step 62 fast/deep tiers; optional Wave 12 second search provider
+**Current phase:** Wave 10–11 done (through Step 62)  
+**Next step:** Live Unicom/CH brief; Wave 12 second search provider / early-stop eval
 
 ## Product constraints (personal use)
 
@@ -189,8 +189,16 @@
 | 58 | Parallel open-web queries per hop (`OPEN_SEARCH_PARALLEL`) | Done |
 | 59 | Snippet rank → `FETCH_TOP_K_PER_HOP` deep fetch (`rank_fetch.py`) | Done |
 | 60 | General synthesis gates: examples / challenges / experts | Done |
-| 61 | Authority / report-type query templates | Pending |
-| 62 | Fast / standard / deep UI tiers | Pending |
+| 61 | Authority / report-type query templates | Done |
+| 62 | Fast / standard / deep UI tiers | Done |
+
+## Wave 11 — Swiss telecom catalog
+
+| Step | Task | Status |
+|------|------|--------|
+| 63 | `swiss_telecom.yaml` + telecom intent → BAKOM/Swisscom/Sunrise/Salt | Done |
+| 64 | Expand ZH telecom term map (already in multilang; extend as needed) | Done |
+| 65 | Force multilang open seeds even when catalog matched | Done |
 
 `job_brief` deferred — swiss-job-agent integration only.
 

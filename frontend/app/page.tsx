@@ -17,11 +17,13 @@ import { ApiStatus } from "@/components/ApiStatus";
 import { SettingsPanel } from "@/components/SettingsPanel";
 
 type Mode = "quick" | "deep";
+type Depth = "fast" | "standard" | "deep";
 
 export default function SearchPage() {
   const router = useRouter();
   const [topic, setTopic] = useState("");
   const [mode, setMode] = useState<Mode>("quick");
+  const [depth, setDepth] = useState<Depth>("deep");
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState<string[]>([]);
 
@@ -57,7 +59,7 @@ export default function SearchPage() {
       const stream =
         mode === "deep"
           ? streamDeepResearch({ topic: topic.trim(), max_sections: 4 })
-          : streamResearch({ topic: topic.trim(), max_sources: 20 });
+          : streamResearch({ topic: topic.trim(), depth });
 
       for await (const event of stream) {
         events.push(event);
@@ -159,9 +161,40 @@ export default function SearchPage() {
               onChange={() => setMode("deep")}
               className="accent-[var(--accent)]"
             />
-            <span>Deep research</span>
+            <span>Multi-section deep</span>
           </label>
         </div>
+
+        {mode === "quick" && (
+          <div className="flex flex-wrap items-center justify-center gap-4 text-sm">
+            {(
+              [
+                ["fast", "Fast", "8 sources"],
+                ["standard", "Standard", "15 sources"],
+                ["deep", "Deep", "20 sources"],
+              ] as const
+            ).map(([value, label, hint]) => (
+              <label
+                key={value}
+                className="flex items-center gap-2 cursor-pointer text-[var(--ink)]"
+                title={hint}
+              >
+                <input
+                  type="radio"
+                  name="depth"
+                  value={value}
+                  checked={depth === value}
+                  onChange={() => setDepth(value)}
+                  className="accent-[var(--accent)]"
+                />
+                <span>
+                  {label}
+                  <span className="ml-1 text-[var(--muted)]">({hint})</span>
+                </span>
+              </label>
+            ))}
+          </div>
+        )}
 
         <div className="text-center pt-2 space-y-3">
           <button
@@ -174,8 +207,8 @@ export default function SearchPage() {
             {loading
               ? "Researching…"
               : mode === "deep"
-                ? "Start deep research"
-                : "Start research"}
+                ? "Start multi-section research"
+                : `Start ${depth} research`}
           </button>
           <p className="text-sm text-[var(--muted)]">
             <Link href="/plan" className="text-[var(--link)] hover:underline">

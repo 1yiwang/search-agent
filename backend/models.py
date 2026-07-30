@@ -33,6 +33,11 @@ class ResearchRequest(BaseModel):
     """Incoming research request from the frontend."""
     topic: str = Field(..., min_length=3, max_length=500, description="Research topic/question")
     max_sources: int = Field(default=10, ge=3, le=30, description="Maximum sources to fetch")
+    depth: str = Field(
+        default="standard",
+        description="Research depth tier: fast | standard | deep",
+        pattern="^(fast|standard|deep)$",
+    )
 
 
 class ResearchDimension(BaseModel):

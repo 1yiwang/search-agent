@@ -32,6 +32,8 @@ export async function checkApiHealth(): Promise<{
 export interface ResearchRequest {
   topic: string;
   max_sources?: number;
+  /** fast | standard | deep — Wave 10 Step 62 */
+  depth?: "fast" | "standard" | "deep";
 }
 
 export interface DeepResearchRequest {

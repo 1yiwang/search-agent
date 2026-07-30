@@ -201,7 +201,8 @@ agent.run_research()
 - [x] **Wave 9b**：多语言召回 — 中文主题 pivot EN + CH 扇出 de/fr/it；报告仍可用中文但优先本地源
 - [x] **Wave 10 Step 58–60**：并行 open 扇出 + snippet 排序 top-K 深读 + 通用合成门禁（examples/challenges/experts）
 - [x] **Wave 10 Step 61 + Wave 11**：权威 query 模板；瑞士电信 catalog（BAKOM/运营商）+ 联通意图
-- [ ] Wave 10 Step 62：快 / 标准 / 深 UI 档位
+- [x] **Wave 10 Step 62**：快 / 标准 / 深档位（`depth` → sources/hops/open/fetch）
+- [ ] Wave 12：第二搜索源 failover + 早停 eval
 - [ ] Phase 3 41f：本机周更脚本（Task Scheduler）
 - [ ] Always-on Fly API（**延后**；个人自用默认本机 Mode B，省钱更安全）
 - [ ] `job_brief`（swiss-job-agent 集成）
