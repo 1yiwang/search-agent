@@ -90,11 +90,29 @@ def test_expand_hard_cap():
 
 def test_gap_hints_to_router_hints():
     hints = [
-        GapHint(dimension="fundraising", research_goal="goal A"),
+        GapHint(dimension="fundraising", research_goal="goal A", suggested_queries=["q1", "q2"]),
         GapHint(dimension="credit_risk", research_goal="goal B"),
     ]
-    assert gap_hints_to_router_hints(hints) == ["goal A", "goal B"]
+    out = gap_hints_to_router_hints(hints)
+    assert out[0].startswith("goal A")
+    assert "dimension=fundraising" in out[0]
+    assert "try: q1; q2" in out[0]
+    assert out[1] == "goal B | dimension=credit_risk"
     print("test_gap_hints_to_router_hints: PASS")
+
+
+def test_preferred_source_ids_for_gaps():
+    from query_expand import preferred_source_ids_for_gaps
+
+    hints = [
+        GapHint(dimension="fundraising", research_goal="g"),
+        GapHint(dimension="credit_risk", research_goal="g"),
+    ]
+    ids = preferred_source_ids_for_gaps(hints)
+    assert "pei" in ids
+    assert ids.index("pei") == 0
+    assert "altassets" in ids
+    print("test_preferred_source_ids_for_gaps: PASS")
 
 
 if __name__ == "__main__":
@@ -102,4 +120,5 @@ if __name__ == "__main__":
     test_expand_injects_date_granularity()
     test_expand_hard_cap()
     test_gap_hints_to_router_hints()
+    test_preferred_source_ids_for_gaps()
     print("All query expand tests passed!")

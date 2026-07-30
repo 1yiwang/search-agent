@@ -3,7 +3,7 @@
 > **Single source of truth** for implementation progress. Update this file at the end of each Step.
 
 **Current phase:** Wave 8 — search quality / useful source recall (Mode B)  
-**Next step:** Step 47 — align diversity thresholds + wire GapHint into next-hop routing
+**Next step:** Step 48 — open-web query quality (embed research_goal; rotate info_types)
 
 ## Product constraints (personal use)
 
@@ -153,8 +153,8 @@
 | Step | Task | Status |
 |------|------|--------|
 | 46 | Recall eval gate: `min_coverage_score` / `min_covered_dimensions` / `require_open_web_query` in `eval/validate.py`; tighten `european-pd-smoke` | Done |
-| 47 | Align diversity thresholds (`coverage` / `executor` / eval) + wire GapHint into next-hop routing | **Next** |
-| 48 | Open-web query quality: embed `research_goal`; rotate info_types; budget-aware open query count | Pending |
+| 47 | Align diversity thresholds (`coverage` / `executor` / eval) + wire GapHint into next-hop routing | Done |
+| 48 | Open-web query quality: embed `research_goal`; rotate info_types; budget-aware open query count | **Next** |
 | 49 | Fail-over: empty site / failed fetch → alternate catalog sources; optional `TAVILY_DEEP_ON_GAP` | Pending |
 | 50 | Research-loop integration tests: gap → expand → pending → open/site hop-2 event chain | Pending |
 

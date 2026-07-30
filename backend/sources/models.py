@@ -42,6 +42,7 @@ class ResearchState(BaseModel):
     coverage_hints: list[str] = Field(default_factory=list)
     pending_site_queries: list[str] = Field(default_factory=list)
     pending_open_queries: list[str] = Field(default_factory=list)
+    pending_preferred_source_ids: list[str] = Field(default_factory=list)
     last_missing_dimensions: list[str] = Field(default_factory=list)
     last_coverage_score: float = 0.0
     stagnant_hops: int = 0

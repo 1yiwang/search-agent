@@ -42,11 +42,33 @@ def test_coverage_continue_when_low_diversity():
     result = evaluate_coverage(
         topic, facts, hop=0, max_hops=3, coverage_threshold=0.65,
         sources_budget_remaining=10, stagnant_hops=0,
+        min_unique_domains=3,
     )
     assert result.unique_domains == 1
     assert not result.source_diversity_ok
     assert result.should_continue
     print("test_coverage_continue_when_low_diversity: PASS")
+
+
+def test_coverage_diversity_uses_explicit_threshold():
+    facts = [
+        _fact("European fundraising rebounded.", "https://a.com/1"),
+        _fact("Direct lending volumes rose.", "https://b.com/2"),
+    ]
+    topic = "European corporate direct lending fundraising trends 2026"
+    ok_at_2 = evaluate_coverage(
+        topic, facts, hop=0, max_hops=3, coverage_threshold=0.99,
+        sources_budget_remaining=10, stagnant_hops=0,
+        min_unique_domains=2,
+    )
+    need_3 = evaluate_coverage(
+        topic, facts, hop=0, max_hops=3, coverage_threshold=0.99,
+        sources_budget_remaining=10, stagnant_hops=0,
+        min_unique_domains=3,
+    )
+    assert ok_at_2.source_diversity_ok
+    assert not need_3.source_diversity_ok
+    print("test_coverage_diversity_uses_explicit_threshold: PASS")
 
 
 def test_coverage_continue_when_gaps():
@@ -124,5 +146,6 @@ if __name__ == "__main__":
     test_coverage_high_when_all_dimensions()
     test_coverage_continue_when_gaps()
     test_coverage_continue_when_low_diversity()
+    test_coverage_diversity_uses_explicit_threshold()
     test_coverage_signal_type_fills_gap()
     print("All coverage tests passed!")

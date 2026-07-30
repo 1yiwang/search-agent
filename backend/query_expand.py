@@ -165,8 +165,31 @@ def expand_queries(
 
 
 def gap_hints_to_router_hints(gap_hints: list[GapHint]) -> list[str]:
-    """Back-compat string hints for the LLM router."""
-    return [h.research_goal for h in gap_hints]
+    """String hints for the LLM router (goal + dimension + suggested queries)."""
+    hints: list[str] = []
+    for h in gap_hints:
+        parts: list[str] = []
+        if h.research_goal:
+            parts.append(h.research_goal)
+        if h.dimension and h.dimension != "_diversity":
+            parts.append(f"dimension={h.dimension}")
+        if h.suggested_queries:
+            parts.append("try: " + "; ".join(h.suggested_queries[:2]))
+        if parts:
+            hints.append(" | ".join(parts))
+    return hints
+
+
+def preferred_source_ids_for_gaps(gap_hints: list[GapHint]) -> list[str]:
+    """Catalog source ids preferred for missing dimensions (deterministic)."""
+    seen: set[str] = set()
+    ordered: list[str] = []
+    for h in gap_hints:
+        for sid in DIMENSION_SOURCE_IDS.get(h.dimension, []):
+            if sid not in seen:
+                seen.add(sid)
+                ordered.append(sid)
+    return ordered
 
 
 def alternate_entry_urls(failed_url: str) -> list[str]:

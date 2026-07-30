@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from urllib.parse import urlparse
 
+from config import config
 from models import ExtractedFact
 from report_synthesis import detect_report_type
 
@@ -48,7 +49,8 @@ SIGNAL_TYPE_DIMENSIONS: dict[str, list[str]] = {
     "other": [],
 }
 
-MIN_UNIQUE_DOMAINS = 2
+# Deprecated alias — prefer config.min_unique_domains_target (Step 47).
+MIN_UNIQUE_DOMAINS = config.min_unique_domains_target
 
 RESEARCH_GOALS: dict[str, str] = {
     "fundraising": "European vs US private debt fundraising trends",
@@ -117,11 +119,17 @@ def evaluate_coverage(
     coverage_threshold: float,
     sources_budget_remaining: int,
     stagnant_hops: int,
+    min_unique_domains: int | None = None,
 ) -> CoverageResult:
     """Rule-based coverage check for private debt investor briefs."""
     report_type = detect_report_type(topic)
     unique_domains = _unique_domains_from_facts(facts)
-    source_diversity_ok = unique_domains >= MIN_UNIQUE_DOMAINS
+    domain_target = (
+        config.min_unique_domains_target
+        if min_unique_domains is None
+        else min_unique_domains
+    )
+    source_diversity_ok = unique_domains >= domain_target
 
     if report_type != "investor_brief" or not facts:
         return CoverageResult(

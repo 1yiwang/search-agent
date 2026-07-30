@@ -11,7 +11,11 @@ from coverage import evaluate_coverage
 from dedup import deduplicate_facts, deduplicate_search_results, normalize_url
 from extraction import extract_facts
 from models import ExtractedFact, ResearchRequest, ResearchReport
-from query_expand import expand_queries, gap_hints_to_router_hints
+from query_expand import (
+    expand_queries,
+    gap_hints_to_router_hints,
+    preferred_source_ids_for_gaps,
+)
 from reporter import generate_report
 from report_synthesis import detect_report_type, synthesize_report
 from sources.catalog import filter_candidates, intent_labels
@@ -102,6 +106,20 @@ async def run_research_loop(
             decision.site_queries = merged
             state.pending_site_queries = []
 
+        if state.pending_preferred_source_ids:
+            preferred = [
+                sid for sid in state.pending_preferred_source_ids
+                if sid in {c.id for c in candidates}
+            ]
+            if preferred:
+                merged_ids = preferred + [
+                    sid for sid in decision.selected_source_ids if sid not in preferred
+                ]
+                decision.selected_source_ids = merged_ids[
+                    : config.router_max_sources_per_round
+                ]
+            state.pending_preferred_source_ids = []
+
         await emit("source_router_decision", {
             "hop": state.hop,
             "selected_source_ids": decision.selected_source_ids,
@@ -160,7 +178,29 @@ async def run_research_loop(
         )
         state.last_coverage_score = coverage.score
         state.last_missing_dimensions = coverage.missing_dimensions
+
+        expand_result = None
+        if coverage.should_continue:
+            expand_result = expand_queries(request.topic, coverage.gap_hints, candidates)
+            for hint in coverage.gap_hints:
+                hint.suggested_queries = [
+                    eq.query
+                    for eq in expand_result.queries
+                    if eq.dimension == hint.dimension
+                ]
+            state.pending_site_queries = [
+                eq.query for eq in expand_result.queries if eq.channel == "site"
+            ]
+            state.pending_open_queries = [
+                eq.query for eq in expand_result.queries if eq.channel == "open"
+            ]
+            state.pending_preferred_source_ids = preferred_source_ids_for_gaps(
+                coverage.gap_hints
+            )
+
+        # Hints for next hop include filled suggested_queries when expanding.
         state.coverage_hints = gap_hints_to_router_hints(coverage.gap_hints)
+        coverage.suggested_router_hints = state.coverage_hints
 
         await emit("coverage_eval", {
             "hop": state.hop,
@@ -181,20 +221,8 @@ async def run_research_loop(
             "source_diversity_ok": coverage.source_diversity_ok,
         })
 
-        if not coverage.should_continue:
+        if not coverage.should_continue or expand_result is None:
             break
-
-        expand_result = expand_queries(request.topic, coverage.gap_hints, candidates)
-        for hint in coverage.gap_hints:
-            hint.suggested_queries = [
-                eq.query for eq in expand_result.queries if eq.dimension == hint.dimension
-            ]
-        state.pending_site_queries = [
-            eq.query for eq in expand_result.queries if eq.channel == "site"
-        ]
-        state.pending_open_queries = [
-            eq.query for eq in expand_result.queries if eq.channel == "open"
-        ]
 
         await emit("query_expand", {
             "hop": state.hop,
