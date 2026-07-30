@@ -57,7 +57,7 @@ export default function SearchPage() {
       const stream =
         mode === "deep"
           ? streamDeepResearch({ topic: topic.trim(), max_sections: 4 })
-          : streamResearch({ topic: topic.trim(), max_sources: 10 });
+          : streamResearch({ topic: topic.trim(), max_sources: 20 });
 
       for await (const event of stream) {
         events.push(event);

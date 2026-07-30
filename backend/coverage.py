@@ -69,7 +69,9 @@ RESEARCH_GOALS: dict[str, str] = {
     "funding": "Funding fundraising valuation investment rounds",
 }
 
-GENERAL_MIN_FACTS = 3
+GENERAL_MIN_FACTS = 8
+GENERAL_MIN_DOMAINS = 5
+GENERAL_GAP_ORDER = ("overview", "ranking", "competitors", "market", "funding")
 
 
 @dataclass
@@ -143,8 +145,9 @@ def _evaluate_general_coverage(
     domain_target: int,
 ) -> CoverageResult:
     """Open-web deep search coverage: fact count + source diversity."""
+    target_domains = max(domain_target, GENERAL_MIN_DOMAINS)
     unique_domains = _unique_domains_from_facts(facts)
-    source_diversity_ok = unique_domains >= domain_target
+    source_diversity_ok = unique_domains >= target_domains
     fact_count = len(facts)
     can = _can_continue(
         hop=hop,
@@ -154,14 +157,16 @@ def _evaluate_general_coverage(
     )
 
     if not facts:
+        # Multi-angle first hop: empty + ranking + overview + market (+ funding via expand)
         gap_hints = [
             GapHint(dimension="_empty", research_goal=RESEARCH_GOALS["_empty"]),
             GapHint(dimension="ranking", research_goal=RESEARCH_GOALS["ranking"]),
             GapHint(dimension="overview", research_goal=RESEARCH_GOALS["overview"]),
+            GapHint(dimension="market", research_goal=RESEARCH_GOALS["market"]),
         ]
         return CoverageResult(
             score=0.0,
-            missing_dimensions=["_empty", "ranking", "overview"],
+            missing_dimensions=["_empty", "ranking", "overview", "market"],
             covered_dimensions=[],
             suggested_router_hints=[h.research_goal for h in gap_hints],
             gap_hints=gap_hints,
@@ -170,20 +175,20 @@ def _evaluate_general_coverage(
             source_diversity_ok=False,
         )
 
-    score = min(1.0, fact_count / float(max(GENERAL_MIN_FACTS * 2, 6)))
+    score = min(1.0, fact_count / float(max(GENERAL_MIN_FACTS * 2, 16)))
     missing: list[str] = []
     gap_hints: list[GapHint] = []
     covered = ["facts"] if fact_count else []
 
     if fact_count < GENERAL_MIN_FACTS:
-        missing.extend(["overview", "ranking", "market"])
+        missing.extend(list(GENERAL_GAP_ORDER))
         gap_hints.extend([
-            GapHint(dimension="overview", research_goal=RESEARCH_GOALS["overview"]),
-            GapHint(dimension="ranking", research_goal=RESEARCH_GOALS["ranking"]),
-            GapHint(dimension="market", research_goal=RESEARCH_GOALS["market"]),
+            GapHint(dimension=dim, research_goal=RESEARCH_GOALS[dim])
+            for dim in GENERAL_GAP_ORDER
         ])
     if not source_diversity_ok:
-        missing.insert(0, "_diversity")
+        if "_diversity" not in missing:
+            missing.insert(0, "_diversity")
         gap_hints.insert(0, GapHint(
             dimension="_diversity",
             research_goal=RESEARCH_GOALS["_diversity"],

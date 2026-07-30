@@ -228,26 +228,38 @@ async def execute_router_decision(
             budget_remaining - len(collected),
         )
         queries_to_run = open_queries or [topic]
-        # Budget-aware open query count: ≥2 when possible, ≤4, scales with budget.
+        # Budget-aware open query count: ≥2 when possible; up to open_max (default 6) on force_open.
+        open_cap = (
+            config.open_max_queries_per_hop
+            if force_open_web
+            else min(4, config.open_max_queries_per_hop)
+        )
         max_open_queries = min(
             len(queries_to_run),
-            max(1, min(4, max(2, open_budget // 2))),
+            max(1, min(open_cap, max(2, open_budget // 2))),
         )
         queries_slice = queries_to_run[:max_open_queries]
         per_query = max(1, open_budget // max(1, len(queries_slice)))
+        max_results = config.search_max_results
+        if force_open_web:
+            max_results = max(max_results, min(12, open_budget))
+        use_advanced = (
+            (force_open_web and config.tavily_deep_on_open_web)
+            or (gap_hop and config.tavily_deep_on_gap_hop)
+        )
         for open_query in queries_slice:
             if len(collected) >= budget_remaining:
                 break
             topics_searched.append(open_query)
             depth_ctx = (
                 _tavily_depth_override("advanced")
-                if gap_hop and config.tavily_deep_on_gap_hop
+                if use_advanced
                 else _nullcontext()
             )
             with depth_ctx:
                 open_hits = await search_and_fetch(
                     open_query,
-                    min(per_query, config.search_max_results),
+                    min(per_query, max_results),
                     event_callback=event_callback,
                     days=recency_days,
                 )

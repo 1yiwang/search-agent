@@ -187,6 +187,46 @@ def test_general_expand_is_open_only():
     print("test_general_expand_is_open_only: PASS")
 
 
+def test_general_expand_adds_region_and_entity_followups():
+    from types import SimpleNamespace
+    from query_expand import extract_followup_entities
+
+    entities = extract_followup_entities([
+        SimpleNamespace(
+            fact='Runway ML leads generative video tools in Europe.',
+            quoted_text='"Kling AI" expanded distribution.',
+            source_title="Sifted analysis",
+            entity="",
+        ),
+    ], topic="European AI short video platform ranking H1 2026")
+    assert any("Runway" in e or "Kling" in e for e in entities)
+
+    hints = [
+        GapHint(dimension="_empty", research_goal="Primary sources for the topic"),
+    ]
+    facts = [
+        SimpleNamespace(
+            fact="Runway ML raised a new round for European growth.",
+            quoted_text="",
+            source_title="TechCrunch",
+            entity="",
+        ),
+    ]
+    result = expand_queries(
+        "European AI short video platform ranking H1 2026",
+        hints,
+        candidates=[],
+        current_date=date(2026, 7, 9),
+        max_queries=8,
+        facts=facts,
+    )
+    joined = " ".join(q.query.lower() for q in result.queries)
+    assert any(q.template_id in ("region_variant", "ranking_source", "prior_year")
+               for q in result.queries)
+    assert "runway" in joined or "sensor" in joined or "europe" in joined
+    print("test_general_expand_adds_region_and_entity_followups: PASS")
+
+
 if __name__ == "__main__":
     test_expand_generates_site_and_open_per_gap()
     test_expand_injects_date_granularity()
@@ -197,4 +237,5 @@ if __name__ == "__main__":
     test_open_query_embeds_research_goal()
     test_info_type_rotates_across_hops()
     test_general_expand_is_open_only()
+    test_general_expand_adds_region_and_entity_followups()
     print("All query expand tests passed!")

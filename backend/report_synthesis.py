@@ -172,9 +172,10 @@ def fallback_synthesis(
     topics_searched: list[str],
 ) -> ReportSynthesis:
     """Deterministic summary when LLM is unavailable."""
+    searched_preview = ", ".join(topics_searched[:8]) if topics_searched else "(none recorded)"
+    more = f" (+{len(topics_searched) - 8} more)" if len(topics_searched) > 8 else ""
+
     if not facts:
-        searched_preview = ", ".join(topics_searched[:8]) if topics_searched else "(none recorded)"
-        more = f" (+{len(topics_searched) - 8} more)" if len(topics_searched) > 8 else ""
         return ReportSynthesis(
             executive_summary=(
                 f"No verified facts were extracted for «{topic}». "
@@ -183,24 +184,37 @@ def fallback_synthesis(
             ),
             coverage=f"Searched: {searched_preview}{more}",
             gaps=(
+                "Likely gaps: primary rankings, market-size reports, named competitors, "
+                "and recent funding rounds. "
                 "Possible causes: sparse public coverage for this exact query, "
                 "paywalled sources, geo/language mismatch, or search API limits. "
-                "Try a broader topic, alternate language keywords, or a longer recency window."
+                "Try broader keywords, alternate language terms, or a longer recency window."
             ),
         )
 
     lang = _topic_language_hint(topic)
+    thin = len(facts) < 8
     if lang == "zh":
         summary = f"本报告围绕「{topic}」整理了 {len(facts)} 条已验证事实，来自 {len({f.source_url for f in facts})} 个独立来源。"
-        coverage = f"已检索主题：{'、'.join(topics_searched)}。"
-        gaps = "可能遗漏未公开或需订阅的信源；请以原文引用为准。"
+        coverage = f"已检索主题：{'、'.join(topics_searched[:12])}。"
+        gaps = (
+            "可能仍缺：排行榜原始数据、市场份额、竞品对比、融资轮次或付费报告。"
+            if thin
+            else "可能遗漏未公开或需订阅的信源；请以原文引用为准。"
+        )
     else:
         summary = (
             f"This brief covers {len(facts)} verified facts on «{topic}» "
             f"from {len({f.source_url for f in facts})} unique sources."
         )
-        coverage = f"Topics searched: {', '.join(topics_searched)}."
-        gaps = "Non-public or paywalled sources may be missing; verify via citations."
+        coverage = f"Topics searched: {searched_preview}{more}."
+        gaps = (
+            "Still thin on: primary rankings, market share, competitor matrix, "
+            "and funding rounds. Re-run with more specific entity names or "
+            "alternate languages if public coverage exists."
+            if thin
+            else "Non-public or paywalled sources may be missing; verify via citations."
+        )
 
     structured = [
         StructuredFinding(

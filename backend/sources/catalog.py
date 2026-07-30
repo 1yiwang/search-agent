@@ -10,7 +10,7 @@ import yaml
 
 from sources.models import SourceEntry
 from sources.pd_registry import has_private_debt_intent, private_debt_intent_score
-from sources.registry import dach_intent_score
+from sources.registry import dach_intent_score, has_dach_intent
 
 _CATALOG_DIR = Path(__file__).parent / "catalog"
 _LINKS_PATH = Path(__file__).parent / "links" / "private_debt_seed_urls.yaml"

@@ -2,8 +2,8 @@
 
 > **Single source of truth** for implementation progress. Update this file at the end of each Step.
 
-**Current phase:** General deep search + Phase 3 Watchlist  
-**Next step:** Re-test general topics (open-web first); optional 41f weekly script
+**Current phase:** Wave 9a — general search depth  
+**Next step:** Live re-test thoroughness vs Perplexity; optional 41f weekly script; Wave 9b (extra search providers) later
 
 ## Product constraints (personal use)
 
@@ -158,6 +158,17 @@
 | 48 | Open-web query quality: embed `research_goal`; rotate info_types; budget-aware open query count | Done |
 | 49 | Fail-over: empty site / failed fetch → alternate catalog sources; `TAVILY_DEEP_ON_GAP` default on | Done |
 | 50 | Research-loop integration tests: gap → expand → pending → open/site hop-2 event chain | Done |
+
+## Wave 9a — General search depth (vs thin open-web)
+
+> Raise stop bar + open fan-out so general topics are not “done” after 3 facts.
+
+| Step | Task | Status |
+|------|------|--------|
+| 51 | Coverage: `GENERAL_MIN_FACTS=8`, ≥5 domains; multi-angle empty gaps | Done |
+| 52 | Defaults: frontend `max_sources=20`, `RESEARCH_MAX_HOPS=5`, expand cap 8 | Done |
+| 53 | Executor: up to 6 open queries on force_open; Tavily advanced on open-web | Done |
+| 54 | Expand: region / ranking-source / prior-year + entity follow-ups | Done |
 
 `job_brief` deferred — swiss-job-agent integration only.
 

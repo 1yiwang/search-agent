@@ -214,6 +214,7 @@ async def run_research_loop(
                 coverage.gap_hints,
                 candidates,
                 hop=state.hop,
+                facts=state.facts,
             )
             for hint in coverage.gap_hints:
                 hint.suggested_queries = [

@@ -33,11 +33,15 @@ class Config:
     router_max_sources_per_round: int = int(os.getenv("ROUTER_MAX_SOURCES_PER_ROUND", "6"))
     router_max_site_queries: int = int(os.getenv("ROUTER_MAX_SITE_QUERIES", "5"))
     router_max_direct_fetches: int = int(os.getenv("ROUTER_MAX_DIRECT_FETCHES", "4"))
-    research_max_hops: int = int(os.getenv("RESEARCH_MAX_HOPS", "3"))
+    research_max_hops: int = int(os.getenv("RESEARCH_MAX_HOPS", "5"))
     research_max_router_calls: int = int(os.getenv("RESEARCH_MAX_ROUTER_CALLS", "4"))
     research_coverage_threshold: float = float(os.getenv("RESEARCH_COVERAGE_THRESHOLD", "0.65"))
-    query_expand_max_per_hop: int = int(os.getenv("QUERY_EXPAND_MAX_PER_HOP", "6"))
+    query_expand_max_per_hop: int = int(os.getenv("QUERY_EXPAND_MAX_PER_HOP", "8"))
+    open_max_queries_per_hop: int = int(os.getenv("OPEN_MAX_QUERIES_PER_HOP", "6"))
     tavily_deep_on_gap_hop: bool = os.getenv("TAVILY_DEEP_ON_GAP", "true").lower() in ("1", "true", "yes")
+    tavily_deep_on_open_web: bool = os.getenv("TAVILY_DEEP_ON_OPEN_WEB", "true").lower() in (
+        "1", "true", "yes",
+    )
     min_unique_domains_target: int = int(os.getenv("MIN_UNIQUE_DOMAINS_TARGET", "3"))
     watchlist_dir: str = os.getenv(
         "WATCHLIST_DIR",

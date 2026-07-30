@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import date, datetime, timezone
+from typing import Any
 
 from config import config
 from coverage import GapHint
@@ -32,7 +33,7 @@ DIMENSION_INFO_TYPES: dict[str, list[str]] = {
     "product_evergreen": ["examples", "trends"],
     "relative_value": ["comparisons", "experts"],
     "_diversity": ["facts_data", "experts"],
-    "_empty": ["landscape", "ranking_data"],
+    "_empty": ["landscape", "ranking_data", "market_forecast", "funding_rounds"],
     "overview": ["landscape", "trends"],
     "ranking": ["ranking_data", "comp_matrix"],
     "competitors": ["comp_matrix", "examples"],
@@ -42,8 +43,14 @@ DIMENSION_INFO_TYPES: dict[str, list[str]] = {
 
 # Dimensions that should never use vertical catalog site: queries
 OPEN_ONLY_DIMENSIONS = frozenset({
-    "_empty", "overview", "ranking", "competitors", "market", "funding",
+    "_empty", "overview", "ranking", "competitors", "market", "funding", "_diversity",
 })
+
+# Geographic / time / ranking-source angles for general open-web expand
+GENERAL_REGION_VARIANTS = ("Europe", "EU", "UK", "Germany")
+GENERAL_RANKING_SOURCES = (
+    "Sensor Tower", "data.ai", "Similarweb", "TechCrunch", "Sifted",
+)
 
 DIMENSION_SOURCE_IDS: dict[str, list[str]] = {
     "fundraising": ["pei", "preqin_insights", "stepstone_insights"],
@@ -152,6 +159,122 @@ def _build_open_query(
     return f"{core} {suffix} {dates['yyyy_mm']}".strip()
 
 
+_ENTITY_STOPWORDS = frozenset({
+    "the", "and", "for", "with", "from", "that", "this", "into", "over", "under",
+    "european", "europe", "market", "platform", "platforms", "company", "companies",
+    "report", "according", "said", "year", "years", "billion", "million", "percent",
+    "ranking", "rankings", "video", "short", "series", "ai", "h1", "h2",
+})
+
+
+def extract_followup_entities(
+    facts: list[Any],
+    *,
+    topic: str = "",
+    max_entities: int = 3,
+) -> list[str]:
+    """Deterministic proper-noun / quoted-name harvest for next-hop open queries."""
+    import re
+    from collections import Counter
+
+    topic_lower = topic.lower()
+    counts: Counter[str] = Counter()
+
+    for fact in facts:
+        text = " ".join(
+            filter(
+                None,
+                [
+                    getattr(fact, "fact", "") or "",
+                    getattr(fact, "quoted_text", "") or "",
+                    getattr(fact, "source_title", "") or "",
+                    getattr(fact, "entity", "") or "",
+                ],
+            )
+        )
+        for m in re.finditer(r'"([^"]{2,60})"', text):
+            name = m.group(1).strip()
+            if name.lower() not in topic_lower and len(name) > 2:
+                counts[name] += 3
+        # Capitalized multi-word names (e.g. "Runway ML", "Kling AI")
+        for m in re.finditer(r"\b([A-Z][a-zA-Z0-9]+(?:\s+[A-Z][a-zA-Z0-9]+){0,3})\b", text):
+            name = m.group(1).strip()
+            tokens = name.split()
+            if name.lower() in _ENTITY_STOPWORDS:
+                continue
+            if all(t.lower() in _ENTITY_STOPWORDS for t in tokens):
+                continue
+            if name.lower() in topic_lower:
+                continue
+            if len(name) < 3:
+                continue
+            counts[name] += 1
+
+    ranked = [n for n, _ in counts.most_common(max_entities * 3)]
+    out: list[str] = []
+    seen_lower: set[str] = set()
+    for name in ranked:
+        key = name.lower()
+        if key in seen_lower:
+            continue
+        seen_lower.add(key)
+        out.append(name)
+        if len(out) >= max_entities:
+            break
+    return out
+
+
+def _general_angle_queries(
+    topic: str,
+    dates: dict[str, str],
+    *,
+    hop: int,
+    research_goal: str = "",
+) -> list[ExpandedQuery]:
+    """Region / ranking-source / prior-year variants for general open-web depth."""
+    region = GENERAL_REGION_VARIANTS[hop % len(GENERAL_REGION_VARIANTS)]
+    source = GENERAL_RANKING_SOURCES[hop % len(GENERAL_RANKING_SOURCES)]
+    prior_year = str(max(2000, int(dates["year"]) - 1))
+    goal = research_goal or RESEARCH_GOAL_FALLBACK
+    queries = [
+        ExpandedQuery(
+            query=_build_open_query(
+                topic, f"{region} ranking", dates, research_goal=goal,
+            ),
+            research_goal=goal,
+            channel="open",
+            template_id="region_variant",
+            dimension="ranking",
+        ),
+        ExpandedQuery(
+            query=_build_open_query(
+                topic, f"{source} ranking data", dates, research_goal=goal,
+            ),
+            research_goal=goal,
+            channel="open",
+            template_id="ranking_source",
+            dimension="ranking",
+        ),
+        ExpandedQuery(
+            query=_build_open_query(
+                topic,
+                f"market size {prior_year}",
+                dates,
+                research_goal=goal,
+            ),
+            research_goal=goal,
+            channel="open",
+            template_id="prior_year",
+            dimension="market",
+        ),
+    ]
+    return queries
+
+
+# Lazy import avoidance for research goal default text
+RESEARCH_GOAL_FALLBACK = "Primary sources rankings reports and recent coverage for the topic"
+
+
 def _build_site_query(
     entry: SourceEntry,
     topic: str,
@@ -173,29 +296,39 @@ def expand_queries(
     current_date: date | None = None,
     max_queries: int | None = None,
     hop: int = 0,
+    facts: list[Any] | None = None,
 ) -> ExpandResult:
     """Expand coverage gaps into executable site + open queries.
 
     ``hop`` rotates which info_type is used for site vs open so multi-hop
     searches do not repeat the same suffix matrix.
     """
-    if not gap_hints:
+    if not gap_hints and not facts:
         return ExpandResult()
 
     cap = max_queries if max_queries is not None else config.query_expand_max_per_hop
     when = current_date or datetime.now(timezone.utc).date()
     dates = _date_tokens(when)
     hop_index = max(0, hop)
+    open_only_topic = not candidates
 
     expanded: list[ExpandedQuery] = []
     used_domains: set[str] = set()
+    seen_queries: set[str] = set()
 
-    for hint in gap_hints[:3]:
+    def _append(eq: ExpandedQuery) -> None:
+        key = eq.query.lower().strip()
+        if key in seen_queries:
+            return
+        seen_queries.add(key)
+        expanded.append(eq)
+
+    for hint in (gap_hints or [])[:4]:
         dim = hint.dimension
         info_types = DIMENSION_INFO_TYPES.get(dim, ["facts_data", "experts"])
         n = len(info_types)
         goal = hint.research_goal
-        open_only = dim in OPEN_ONLY_DIMENSIONS or not candidates
+        open_only = dim in OPEN_ONLY_DIMENSIONS or open_only_topic
 
         if not open_only:
             source = _pick_source_for_dimension(dim, candidates, used_domains)
@@ -203,7 +336,7 @@ def expand_queries(
                 used_domains.add(source.domain)
                 info_type = info_types[hop_index % n]
                 suffix = _suffix_for_info_type(info_type, dates)
-                expanded.append(ExpandedQuery(
+                _append(ExpandedQuery(
                     query=_build_site_query(source, topic, suffix, dates),
                     research_goal=goal,
                     channel="site",
@@ -213,7 +346,7 @@ def expand_queries(
 
         open_type = info_types[(hop_index + 1) % n]
         open_suffix = _suffix_for_info_type(open_type, dates)
-        expanded.append(ExpandedQuery(
+        _append(ExpandedQuery(
             query=_build_open_query(
                 topic, open_suffix, dates, research_goal=goal,
             ),
@@ -222,12 +355,14 @@ def expand_queries(
             template_id=open_type,
             dimension=dim,
         ))
-        # Second open angle on empty first hop for general topics
+        # Extra open angles on empty / general dimensions
         if open_only and len(info_types) > 1:
-            alt_type = info_types[hop_index % n]
-            if alt_type != open_type:
+            for offset in range(n):
+                alt_type = info_types[(hop_index + offset) % n]
+                if alt_type == open_type:
+                    continue
                 alt_suffix = _suffix_for_info_type(alt_type, dates)
-                expanded.append(ExpandedQuery(
+                _append(ExpandedQuery(
                     query=_build_open_query(
                         topic, alt_suffix, dates, research_goal=goal,
                     ),
@@ -236,6 +371,29 @@ def expand_queries(
                     template_id=alt_type,
                     dimension=dim,
                 ))
+
+    if open_only_topic:
+        primary_goal = (
+            gap_hints[0].research_goal if gap_hints else RESEARCH_GOAL_FALLBACK
+        )
+        for eq in _general_angle_queries(
+            topic, dates, hop=hop_index, research_goal=primary_goal,
+        ):
+            _append(eq)
+
+        for entity in extract_followup_entities(facts or [], topic=topic):
+            _append(ExpandedQuery(
+                query=_build_open_query(
+                    f"{entity} {topic}",
+                    f"Europe {dates['half_year']}",
+                    dates,
+                    research_goal=f"Follow-up on {entity}",
+                ),
+                research_goal=f"Follow-up coverage for {entity}",
+                channel="open",
+                template_id="entity_followup",
+                dimension="competitors",
+            ))
 
     capped = len(expanded) > cap
     return ExpandResult(queries=expanded[:cap], capped=capped)

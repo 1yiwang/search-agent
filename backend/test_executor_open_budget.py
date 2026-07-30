@@ -125,9 +125,45 @@ async def _test_open_query_count_scales_with_budget():
         )
 
     # open_budget ≈ max(2, 9//3)=3 reserved; with force open and empty site, open_budget=9
-    # max_open = min(4, max(2, 9//2)) = 4
+    # open_cap=6; max_open = min(4 queries, min(6, max(2, 9//2)=4)) = 4
     assert mock_open.await_count == 4
     print("test_open_query_count_scales_with_budget: PASS")
+
+
+async def _test_open_query_cap_six_on_force_open():
+    decision = RouterDecision(
+        selected_source_ids=[],
+        site_queries=[],
+        defer_open_web=False,
+    )
+    seen: set[str] = set()
+    open_queries = [f"q{i} European AI video" for i in range(1, 8)]
+
+    with (
+        patch("sources.executor._site_searches", new_callable=AsyncMock, return_value=([], [])),
+        patch(
+            "sources.executor.search_and_fetch",
+            new_callable=AsyncMock,
+            return_value=[
+                SearchResult(url="https://x.com/1", title="X", snippet="s", full_text="ok"),
+            ],
+        ) as mock_open,
+        patch("sources.executor.config.min_unique_domains_target", 3),
+        patch("sources.executor.config.open_max_queries_per_hop", 6),
+        patch("sources.executor.config.tavily_deep_on_open_web", True),
+    ):
+        await execute_router_decision(
+            "European AI short video",
+            decision,
+            seen,
+            budget_remaining=18,
+            force_open_web=True,
+            open_queries=open_queries,
+        )
+
+    # open_budget=18; max_open = min(7, min(6, max(2, 18//2)=9)) = 6
+    assert mock_open.await_count == 6
+    print("test_open_query_cap_six_on_force_open: PASS")
 
 
 async def _test_site_search_failover_on_empty():
@@ -225,6 +261,7 @@ if __name__ == "__main__":
     asyncio.run(_test_open_budget_reserved_when_defer())
     asyncio.run(_test_fetch_retry_alternate_url())
     asyncio.run(_test_open_query_count_scales_with_budget())
+    asyncio.run(_test_open_query_cap_six_on_force_open())
     asyncio.run(_test_site_search_failover_on_empty())
     asyncio.run(_test_fetch_failover_cross_source())
     print("All executor tests passed!")
