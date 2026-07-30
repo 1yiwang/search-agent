@@ -38,6 +38,10 @@ class Config:
     research_coverage_threshold: float = float(os.getenv("RESEARCH_COVERAGE_THRESHOLD", "0.65"))
     query_expand_max_per_hop: int = int(os.getenv("QUERY_EXPAND_MAX_PER_HOP", "8"))
     open_max_queries_per_hop: int = int(os.getenv("OPEN_MAX_QUERIES_PER_HOP", "6"))
+    open_search_parallel: bool = os.getenv("OPEN_SEARCH_PARALLEL", "true").lower() in (
+        "1", "true", "yes",
+    )
+    fetch_top_k_per_hop: int = int(os.getenv("FETCH_TOP_K_PER_HOP", "12"))
     tavily_deep_on_gap_hop: bool = os.getenv("TAVILY_DEEP_ON_GAP", "true").lower() in ("1", "true", "yes")
     tavily_deep_on_open_web: bool = os.getenv("TAVILY_DEEP_ON_OPEN_WEB", "true").lower() in (
         "1", "true", "yes",

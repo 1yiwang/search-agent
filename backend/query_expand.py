@@ -40,11 +40,15 @@ DIMENSION_INFO_TYPES: dict[str, list[str]] = {
     "competitors": ["comp_matrix", "examples"],
     "market": ["market_forecast", "facts_data"],
     "funding": ["funding_rounds", "examples"],
+    "examples": ["examples", "landscape"],
+    "challenges": ["challenges", "experts"],
+    "experts": ["experts", "trends"],
 }
 
 # Dimensions that should never use vertical catalog site: queries
 OPEN_ONLY_DIMENSIONS = frozenset({
     "_empty", "overview", "ranking", "competitors", "market", "funding", "_diversity",
+    "examples", "challenges", "experts",
 })
 
 # Geographic / time / ranking-source angles for general open-web expand

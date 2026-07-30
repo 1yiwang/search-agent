@@ -30,8 +30,19 @@ async def _test_open_budget_reserved_when_defer():
 
     with (
         patch("sources.executor._site_searches", new_callable=AsyncMock, return_value=(site_hits, ["site:q"])),
-        patch("sources.executor.search_and_fetch", new_callable=AsyncMock, return_value=open_hits) as mock_open,
+        patch(
+            "sources.executor.search_web",
+            new_callable=AsyncMock,
+            return_value=open_hits,
+        ) as mock_open,
+        patch(
+            "sources.executor.fetch_page",
+            new_callable=AsyncMock,
+            return_value="full text ok",
+        ),
         patch("sources.executor.config.min_unique_domains_target", 3),
+        patch("sources.executor.config.fetch_top_k_per_hop", 12),
+        patch("sources.executor.config.open_search_parallel", True),
     ):
         results, searched = await execute_router_decision(
             "European private debt",
@@ -74,7 +85,7 @@ async def _test_fetch_retry_alternate_url():
             return_value=["https://www.stepstonegroup.com/news-insights/ok/"],
         ),
         patch("sources.executor.fetch_page", side_effect=fake_fetch),
-        patch("sources.executor.search_and_fetch", new_callable=AsyncMock, return_value=[]),
+        patch("sources.executor.search_web", new_callable=AsyncMock, return_value=[]),
     ):
         results, _ = await execute_router_decision(
             "European private debt",
@@ -107,13 +118,20 @@ async def _test_open_query_count_scales_with_budget():
     with (
         patch("sources.executor._site_searches", new_callable=AsyncMock, return_value=([], [])),
         patch(
-            "sources.executor.search_and_fetch",
+            "sources.executor.search_web",
             new_callable=AsyncMock,
-            return_value=[
-                SearchResult(url="https://x.com/1", title="X", snippet="s", full_text="ok"),
+            side_effect=lambda q, n, **kw: [
+                SearchResult(url=f"https://x.com/{abs(hash(q)) % 10000}", title="X", snippet=q),
             ],
         ) as mock_open,
+        patch(
+            "sources.executor.fetch_page",
+            new_callable=AsyncMock,
+            return_value="ok body",
+        ),
         patch("sources.executor.config.min_unique_domains_target", 3),
+        patch("sources.executor.config.fetch_top_k_per_hop", 12),
+        patch("sources.executor.config.open_search_parallel", True),
     ):
         await execute_router_decision(
             "European private debt",
@@ -142,15 +160,22 @@ async def _test_open_query_cap_six_on_force_open():
     with (
         patch("sources.executor._site_searches", new_callable=AsyncMock, return_value=([], [])),
         patch(
-            "sources.executor.search_and_fetch",
+            "sources.executor.search_web",
             new_callable=AsyncMock,
-            return_value=[
-                SearchResult(url="https://x.com/1", title="X", snippet="s", full_text="ok"),
+            side_effect=lambda q, n, **kw: [
+                SearchResult(url=f"https://x.com/{abs(hash(q)) % 100000}", title="X", snippet=q),
             ],
         ) as mock_open,
+        patch(
+            "sources.executor.fetch_page",
+            new_callable=AsyncMock,
+            return_value="ok body",
+        ),
         patch("sources.executor.config.min_unique_domains_target", 3),
         patch("sources.executor.config.open_max_queries_per_hop", 6),
         patch("sources.executor.config.tavily_deep_on_open_web", True),
+        patch("sources.executor.config.fetch_top_k_per_hop", 12),
+        patch("sources.executor.config.open_search_parallel", True),
     ):
         await execute_router_decision(
             "European AI short video",

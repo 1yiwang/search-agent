@@ -2,8 +2,8 @@
 
 > **Single source of truth** for implementation progress. Update this file at the end of each Step.
 
-**Current phase:** Wave 10 — comprehensiveness (vs DeerFlow / general agents)  
-**Next step:** Step 58 parallel gap fan-out; see [docs/overall-plan-vs-deerflow.md](docs/overall-plan-vs-deerflow.md)
+**Current phase:** Wave 10 — comprehensiveness (Steps 58–60 done)  
+**Next step:** Step 61–62 (authority templates + fast/deep tiers); Wave 11 Swiss telecom catalog
 
 ## Product constraints (personal use)
 
@@ -179,6 +179,18 @@
 | 55 | `multilang.py`: script/geo detect + zh→en pivot + locale open seeds | Done |
 | 56 | Wire hop-0 `initial_open_queries` + expand multilang seeds | Done |
 | 57 | Synthesis: prefer local EN/DE/FR sources for Swiss/DACH topics | Done |
+
+## Wave 10 — Comprehensiveness (vs DeerFlow)
+
+> Parallel fan-out + selective deep-read + hard synthesis gates. See [docs/overall-plan-vs-deerflow.md](docs/overall-plan-vs-deerflow.md).
+
+| Step | Task | Status |
+|------|------|--------|
+| 58 | Parallel open-web queries per hop (`OPEN_SEARCH_PARALLEL`) | Done |
+| 59 | Snippet rank → `FETCH_TOP_K_PER_HOP` deep fetch (`rank_fetch.py`) | Done |
+| 60 | General synthesis gates: examples / challenges / experts | Done |
+| 61 | Authority / report-type query templates | Pending |
+| 62 | Fast / standard / deep UI tiers | Pending |
 
 `job_brief` deferred — swiss-job-agent integration only.
 

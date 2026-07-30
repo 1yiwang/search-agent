@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from collections.abc import Awaitable, Callable
 from contextlib import contextmanager
 from typing import Any
@@ -15,7 +16,8 @@ from query_expand import (
     alternate_site_queries,
     alternate_source_entry_urls,
 )
-from search import fetch_page, search_and_fetch
+from rank_fetch import select_top_k_for_fetch
+from search import fetch_page, search_and_fetch, search_web
 from sources.models import RouterDecision
 from sources.seeds import has_registry_intent
 
@@ -247,23 +249,63 @@ async def execute_router_decision(
             (force_open_web and config.tavily_deep_on_open_web)
             or (gap_hop and config.tavily_deep_on_gap_hop)
         )
-        for open_query in queries_slice:
-            if len(collected) >= budget_remaining:
-                break
-            topics_searched.append(open_query)
+        topics_searched.extend(queries_slice)
+
+        async def _search_one(open_query: str) -> list[SearchResult]:
             depth_ctx = (
                 _tavily_depth_override("advanced")
                 if use_advanced
                 else _nullcontext()
             )
             with depth_ctx:
-                open_hits = await search_and_fetch(
+                return await search_web(
                     open_query,
                     min(per_query, max_results),
-                    event_callback=event_callback,
                     days=recency_days,
                 )
-            for r in open_hits:
+
+        if config.open_search_parallel and len(queries_slice) > 1:
+            batches = await asyncio.gather(*[_search_one(q) for q in queries_slice])
+            snippet_hits: list[SearchResult] = []
+            for batch in batches:
+                snippet_hits.extend(batch)
+        else:
+            snippet_hits = []
+            for open_query in queries_slice:
+                snippet_hits.extend(await _search_one(open_query))
+
+        # Dedup by URL before ranking
+        deduped_snips: list[SearchResult] = []
+        local_seen: set[str] = set(seen_urls)
+        for r in snippet_hits:
+            norm = normalize_url(r.url)
+            if not r.url or norm in local_seen:
+                continue
+            local_seen.add(norm)
+            deduped_snips.append(r)
+
+        fetch_budget = min(
+            open_budget,
+            budget_remaining - len(collected),
+            config.fetch_top_k_per_hop,
+        )
+        to_fetch = select_top_k_for_fetch(topic, deduped_snips, k=max(0, fetch_budget))
+        if event_callback and deduped_snips:
+            await event_callback("rank_fetch", {
+                "candidates": len(deduped_snips),
+                "fetching": len(to_fetch),
+                "queries": queries_slice,
+            })
+
+        async def _fetch_one(result: SearchResult) -> SearchResult:
+            result.full_text = await fetch_page(
+                result.url, event_callback=event_callback,
+            )
+            return result
+
+        if to_fetch:
+            fetched = await asyncio.gather(*[_fetch_one(r) for r in to_fetch])
+            for r in fetched:
                 norm = normalize_url(r.url)
                 if norm not in seen_urls:
                     seen_urls.add(norm)

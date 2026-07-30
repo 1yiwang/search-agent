@@ -170,7 +170,10 @@ def test_general_topic_enough_facts_can_stop():
     assert thin.should_continue is True
 
     many = [
-        _fact(f"Fact {i} about European AI video platforms.", f"https://d{i}.com/{i}")
+        _fact(
+            f"Case study {i}: expert analysts note challenges and market share in Europe.",
+            f"https://d{i}.com/{i}",
+        )
         for i in range(8)
     ]
     result = evaluate_coverage(
@@ -180,7 +183,7 @@ def test_general_topic_enough_facts_can_stop():
     )
     assert result.score > 0
     assert result.unique_domains >= 5
-    assert not result.should_continue  # 8 facts + 5 domains
+    assert not result.should_continue  # 8 facts + 5 domains + synthesis gates
     print("test_general_topic_enough_facts_can_stop: PASS")
 
 

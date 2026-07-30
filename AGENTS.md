@@ -199,6 +199,7 @@ agent.run_research()
 - [x] **通用深度搜索**：非 PD/DACH 主题 open-web 优先；0 事实继续跳；通用扩维；空报告明示
 - [x] **Wave 9a**：通用更彻底 — min 8 事实 / ≥5 域名、max_sources=20、hops=5、open×6 + Tavily advanced、地区/榜单源/实体追问
 - [x] **Wave 9b**：多语言召回 — 中文主题 pivot EN + CH 扇出 de/fr/it；报告仍可用中文但优先本地源
+- [x] **Wave 10 Step 58–60**：并行 open 扇出 + snippet 排序 top-K 深读 + 通用合成门禁（examples/challenges/experts）
 - [ ] Phase 3 41f：本机周更脚本（Task Scheduler）
 - [ ] Always-on Fly API（**延后**；个人自用默认本机 Mode B，省钱更安全）
 - [ ] `job_brief`（swiss-job-agent 集成）

@@ -67,11 +67,28 @@ RESEARCH_GOALS: dict[str, str] = {
     "competitors": "Competitor comparison platforms products feature matrix",
     "market": "Market size growth forecasts Europe 2025 2026",
     "funding": "Funding fundraising valuation investment rounds",
+    "examples": "Case studies real-world deployments implementations examples",
+    "challenges": "Challenges limitations risks criticisms barriers regulation",
+    "experts": "Expert analysis analyst commentary industry research opinions",
 }
 
 GENERAL_MIN_FACTS = 8
 GENERAL_MIN_DOMAINS = 5
 GENERAL_GAP_ORDER = ("overview", "ranking", "competitors", "market", "funding")
+GENERAL_SYNTHESIS_GATES: dict[str, list[str]] = {
+    "examples": [
+        "case study", "case studies", "example", "examples", "implementation",
+        "deployed", "pilot", "客户", "案例", "落地",
+    ],
+    "challenges": [
+        "challenge", "challenges", "limitation", "limitations", "risk", "risks",
+        "criticism", "barrier", "regulatory", "privacy", "挑战", "风险", "限制", "监管",
+    ],
+    "experts": [
+        "expert", "analyst", "according to", "research firm", "interview",
+        "commentary", "专家", "分析师", "认为",
+    ],
+}
 
 
 @dataclass
@@ -194,8 +211,27 @@ def _evaluate_general_coverage(
             research_goal=RESEARCH_GOALS["_diversity"],
         ))
 
+    # Synthesis gates (DeerFlow Phase 3/4 → hard gaps): examples / challenges / experts
+    corpus = _fact_corpus(facts)
+    for gate, keywords in GENERAL_SYNTHESIS_GATES.items():
+        if _dimension_covered(corpus, keywords):
+            if gate not in covered:
+                covered.append(gate)
+        else:
+            if gate not in missing:
+                missing.append(gate)
+            gap_hints.append(GapHint(
+                dimension=gate,
+                research_goal=RESEARCH_GOALS[gate],
+            ))
+
     content_ok = fact_count >= GENERAL_MIN_FACTS
-    should_continue = can and (not content_ok or not source_diversity_ok)
+    gates_ok = all(
+        _dimension_covered(corpus, kws) for kws in GENERAL_SYNTHESIS_GATES.values()
+    )
+    should_continue = can and (
+        not content_ok or not source_diversity_ok or not gates_ok
+    )
 
     return CoverageResult(
         score=round(score, 3),
