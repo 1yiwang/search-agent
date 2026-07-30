@@ -169,7 +169,17 @@ def _enforce_constraints(
 
 
 def fallback_decision(topic: str, candidates: list[SourceEntry]) -> RouterDecision:
-    """Deterministic routing when LLM unavailable or router disabled."""
+    """Deterministic routing when LLM unavailable, router disabled, or no catalog."""
+    if not candidates:
+        return RouterDecision(
+            selected_source_ids=[],
+            direct_url_fetches=[],
+            site_queries=[],
+            rationale="Open-web research (no curated catalog for this topic).",
+            defer_open_web=False,
+            fallback=True,
+        )
+
     selected = [c.id for c in candidates[: config.router_max_sources_per_round]]
     compact = _compact_topic(topic)
 

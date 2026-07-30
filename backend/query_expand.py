@@ -16,6 +16,12 @@ INFO_TYPE_SUFFIXES: dict[str, list[str]] = {
     "trends": ["trends", "outlook"],
     "comparisons": ["vs leveraged loans", "vs high yield", "vs US"],
     "challenges": ["default", "distress", "risk", "criticism"],
+    # General deep-search suffixes (non-PD)
+    "ranking_data": ["ranking", "market share", "users MAU", "top platforms"],
+    "landscape": ["landscape", "ecosystem", "key players"],
+    "comp_matrix": ["competitors", "vs", "comparison"],
+    "market_forecast": ["market size", "growth", "forecast"],
+    "funding_rounds": ["funding", "valuation", "Series", "investment"],
 }
 
 DIMENSION_INFO_TYPES: dict[str, list[str]] = {
@@ -26,7 +32,18 @@ DIMENSION_INFO_TYPES: dict[str, list[str]] = {
     "product_evergreen": ["examples", "trends"],
     "relative_value": ["comparisons", "experts"],
     "_diversity": ["facts_data", "experts"],
+    "_empty": ["landscape", "ranking_data"],
+    "overview": ["landscape", "trends"],
+    "ranking": ["ranking_data", "comp_matrix"],
+    "competitors": ["comp_matrix", "examples"],
+    "market": ["market_forecast", "facts_data"],
+    "funding": ["funding_rounds", "examples"],
 }
+
+# Dimensions that should never use vertical catalog site: queries
+OPEN_ONLY_DIMENSIONS = frozenset({
+    "_empty", "overview", "ranking", "competitors", "market", "funding",
+})
 
 DIMENSION_SOURCE_IDS: dict[str, list[str]] = {
     "fundraising": ["pei", "preqin_insights", "stepstone_insights"],
@@ -88,8 +105,10 @@ def _suffix_for_info_type(info_type: str, dates: dict[str, str]) -> str:
     suffixes = INFO_TYPE_SUFFIXES.get(info_type, ["research"])
     if info_type == "trends":
         return f"{suffixes[0]} {dates['half_year']} {suffixes[1]}"
-    if info_type == "facts_data":
+    if info_type in ("facts_data", "ranking_data", "market_forecast"):
         return f"{suffixes[0]} {dates['month_year']}"
+    if info_type in ("landscape", "comp_matrix", "funding_rounds"):
+        return f"{suffixes[0]} {dates['half_year']}"
     return suffixes[0]
 
 
@@ -176,19 +195,21 @@ def expand_queries(
         info_types = DIMENSION_INFO_TYPES.get(dim, ["facts_data", "experts"])
         n = len(info_types)
         goal = hint.research_goal
+        open_only = dim in OPEN_ONLY_DIMENSIONS or not candidates
 
-        source = _pick_source_for_dimension(dim, candidates, used_domains)
-        if source:
-            used_domains.add(source.domain)
-            info_type = info_types[hop_index % n]
-            suffix = _suffix_for_info_type(info_type, dates)
-            expanded.append(ExpandedQuery(
-                query=_build_site_query(source, topic, suffix, dates),
-                research_goal=goal,
-                channel="site",
-                template_id=info_type,
-                dimension=dim,
-            ))
+        if not open_only:
+            source = _pick_source_for_dimension(dim, candidates, used_domains)
+            if source:
+                used_domains.add(source.domain)
+                info_type = info_types[hop_index % n]
+                suffix = _suffix_for_info_type(info_type, dates)
+                expanded.append(ExpandedQuery(
+                    query=_build_site_query(source, topic, suffix, dates),
+                    research_goal=goal,
+                    channel="site",
+                    template_id=info_type,
+                    dimension=dim,
+                ))
 
         open_type = info_types[(hop_index + 1) % n]
         open_suffix = _suffix_for_info_type(open_type, dates)
@@ -201,6 +222,20 @@ def expand_queries(
             template_id=open_type,
             dimension=dim,
         ))
+        # Second open angle on empty first hop for general topics
+        if open_only and len(info_types) > 1:
+            alt_type = info_types[hop_index % n]
+            if alt_type != open_type:
+                alt_suffix = _suffix_for_info_type(alt_type, dates)
+                expanded.append(ExpandedQuery(
+                    query=_build_open_query(
+                        topic, alt_suffix, dates, research_goal=goal,
+                    ),
+                    research_goal=goal,
+                    channel="open",
+                    template_id=alt_type,
+                    dimension=dim,
+                ))
 
     capped = len(expanded) > cap
     return ExpandResult(queries=expanded[:cap], capped=capped)

@@ -168,6 +168,25 @@ def test_info_type_rotates_across_hops():
     print("test_info_type_rotates_across_hops: PASS")
 
 
+def test_general_expand_is_open_only():
+    hints = [
+        GapHint(dimension="_empty", research_goal="Primary sources for the topic"),
+        GapHint(dimension="ranking", research_goal="Rankings market share"),
+    ]
+    result = expand_queries(
+        "European AI short video platform ranking H1 2026",
+        hints,
+        candidates=[],
+        current_date=date(2026, 7, 9),
+        max_queries=6,
+    )
+    assert result.queries
+    assert all(q.channel == "open" for q in result.queries)
+    joined = " ".join(q.query.lower() for q in result.queries)
+    assert "ranking" in joined or "landscape" in joined or "market" in joined
+    print("test_general_expand_is_open_only: PASS")
+
+
 if __name__ == "__main__":
     test_expand_generates_site_and_open_per_gap()
     test_expand_injects_date_granularity()
@@ -177,4 +196,5 @@ if __name__ == "__main__":
     test_alternate_site_queries_switches_domain()
     test_open_query_embeds_research_goal()
     test_info_type_rotates_across_hops()
+    test_general_expand_is_open_only()
     print("All query expand tests passed!")

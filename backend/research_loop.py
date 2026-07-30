@@ -99,14 +99,29 @@ async def run_research_loop(
             candidates=candidates,
         )
 
-        if state.pending_site_queries:
+        intents = intent_labels(request.topic)
+        is_general = not candidates
+        if is_general:
+            # Open-web first: do not burn budget on irrelevant vertical site: queries.
+            decision.site_queries = []
+            decision.direct_url_fetches = []
+            decision.defer_open_web = False
+            decision.rationale = (
+                (decision.rationale + " | " if decision.rationale else "")
+                + "Open-web first (no vertical catalog match)"
+            )
+
+        if state.pending_site_queries and not is_general:
             merged = (state.pending_site_queries + decision.site_queries)[
                 : config.router_max_site_queries
             ]
             decision.site_queries = merged
             state.pending_site_queries = []
+        elif state.pending_site_queries and is_general:
+            # General expands are open-only; drop pending site queries.
+            state.pending_site_queries = []
 
-        if state.pending_preferred_source_ids:
+        if state.pending_preferred_source_ids and not is_general:
             preferred = [
                 sid for sid in state.pending_preferred_source_ids
                 if sid in {c.id for c in candidates}
@@ -119,6 +134,8 @@ async def run_research_loop(
                     : config.router_max_sources_per_round
                 ]
             state.pending_preferred_source_ids = []
+        else:
+            state.pending_preferred_source_ids = []
 
         await emit("source_router_decision", {
             "hop": state.hop,
@@ -128,18 +145,29 @@ async def run_research_loop(
             "rationale": decision.rationale,
             "defer_open_web": decision.defer_open_web,
             "fallback": decision.fallback,
+            "open_web_first": is_general,
         })
 
+        force_open = (
+            is_general
+            or (state.hop == 0 and not decision.defer_open_web)
+            or bool(state.pending_open_queries)
+            or (not state.facts and state.hop > 0)
+        )
         new_results, searched = await execute_router_decision(
             request.topic,
             decision,
             seen_urls,
             budget_remaining=budget_remaining,
             event_callback=emit,
-            force_open_web=(state.hop == 0 and not decision.defer_open_web),
-            open_queries=state.pending_open_queries or None,
+            force_open_web=force_open,
+            open_queries=state.pending_open_queries or (
+                [request.topic] if is_general else None
+            ),
             missing_dimensions=state.last_missing_dimensions or None,
-            gap_hop=state.hop > 0 and bool(state.last_missing_dimensions),
+            gap_hop=state.hop > 0 and (
+                bool(state.last_missing_dimensions) or not state.facts
+            ),
         )
         state.pending_open_queries = []
         for q in searched:
@@ -199,9 +227,16 @@ async def run_research_loop(
             state.pending_open_queries = [
                 eq.query for eq in expand_result.queries if eq.channel == "open"
             ]
+            # General topics: open-only expand (ignore site channel).
+            if not candidates:
+                state.pending_site_queries = []
+                if not state.pending_open_queries:
+                    state.pending_open_queries = [
+                        eq.query for eq in expand_result.queries
+                    ]
             state.pending_preferred_source_ids = preferred_source_ids_for_gaps(
                 coverage.gap_hints
-            )
+            ) if candidates else []
 
         # Hints for next hop include filled suggested_queries when expanding.
         state.coverage_hints = gap_hints_to_router_hints(coverage.gap_hints)

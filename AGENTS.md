@@ -196,6 +196,7 @@ agent.run_research()
 - [x] **Wave 8 Step 49**：空 site / fetch 失败换源 fail-over；gap hop 默认 Tavily advanced
 - [x] **Wave 8 Step 50**：research_loop 事件链 + stagnant 停跳集成测（Wave 8 收官）
 - [x] **Phase 3 Watchlist（41a–e）**：文件订阅 + 手动再跑 + finding delta + `/watchlist` UI
+- [x] **通用深度搜索**：非 PD/DACH 主题 open-web 优先；0 事实继续跳；通用扩维；空报告明示
 - [ ] Phase 3 41f：本机周更脚本（Task Scheduler）
 - [ ] Always-on Fly API（**延后**；个人自用默认本机 Mode B，省钱更安全）
 - [ ] `job_brief`（swiss-job-agent 集成）

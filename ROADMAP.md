@@ -2,8 +2,8 @@
 
 > **Single source of truth** for implementation progress. Update this file at the end of each Step.
 
-**Current phase:** Phase 3 Watchlist (Step 41) — first slice done  
-**Next step:** Optional 41f local weekly script / Task Scheduler; or raise live eval thresholds
+**Current phase:** General deep search + Phase 3 Watchlist  
+**Next step:** Re-test general topics (open-web first); optional 41f weekly script
 
 ## Product constraints (personal use)
 

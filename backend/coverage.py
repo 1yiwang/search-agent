@@ -1,4 +1,4 @@
-"""Coverage-driven gap evaluation for investor_brief topics (Step 40)."""
+"""Coverage-driven gap evaluation (investor_brief + general topics)."""
 
 from __future__ import annotations
 
@@ -59,8 +59,17 @@ RESEARCH_GOALS: dict[str, str] = {
     "credit_risk": "private debt defaults leverage credit risk",
     "product_evergreen": "ELTIF evergreen BDC private credit fund launch Europe",
     "relative_value": "direct lending premium vs leveraged loans high yield",
-    "_diversity": "Broaden sources across multiple managers and data providers",
+    "_diversity": "Broaden sources across multiple independent publishers",
+    # General deep-search gaps (non–private-debt topics)
+    "_empty": "Primary sources rankings reports and recent coverage for the topic",
+    "overview": "Market overview landscape key players Europe",
+    "ranking": "Rankings market share users downloads MAU revenue",
+    "competitors": "Competitor comparison platforms products feature matrix",
+    "market": "Market size growth forecasts Europe 2025 2026",
+    "funding": "Funding fundraising valuation investment rounds",
 }
+
+GENERAL_MIN_FACTS = 3
 
 
 @dataclass
@@ -110,6 +119,91 @@ def _unique_domains_from_facts(facts: list[ExtractedFact]) -> int:
     return len(domains)
 
 
+def _can_continue(
+    *,
+    hop: int,
+    max_hops: int,
+    sources_budget_remaining: int,
+    stagnant_hops: int,
+) -> bool:
+    return (
+        hop < max_hops
+        and sources_budget_remaining > 0
+        and stagnant_hops < 2
+    )
+
+
+def _evaluate_general_coverage(
+    facts: list[ExtractedFact],
+    *,
+    hop: int,
+    max_hops: int,
+    sources_budget_remaining: int,
+    stagnant_hops: int,
+    domain_target: int,
+) -> CoverageResult:
+    """Open-web deep search coverage: fact count + source diversity."""
+    unique_domains = _unique_domains_from_facts(facts)
+    source_diversity_ok = unique_domains >= domain_target
+    fact_count = len(facts)
+    can = _can_continue(
+        hop=hop,
+        max_hops=max_hops,
+        sources_budget_remaining=sources_budget_remaining,
+        stagnant_hops=stagnant_hops,
+    )
+
+    if not facts:
+        gap_hints = [
+            GapHint(dimension="_empty", research_goal=RESEARCH_GOALS["_empty"]),
+            GapHint(dimension="ranking", research_goal=RESEARCH_GOALS["ranking"]),
+            GapHint(dimension="overview", research_goal=RESEARCH_GOALS["overview"]),
+        ]
+        return CoverageResult(
+            score=0.0,
+            missing_dimensions=["_empty", "ranking", "overview"],
+            covered_dimensions=[],
+            suggested_router_hints=[h.research_goal for h in gap_hints],
+            gap_hints=gap_hints,
+            should_continue=can,
+            unique_domains=unique_domains,
+            source_diversity_ok=False,
+        )
+
+    score = min(1.0, fact_count / float(max(GENERAL_MIN_FACTS * 2, 6)))
+    missing: list[str] = []
+    gap_hints: list[GapHint] = []
+    covered = ["facts"] if fact_count else []
+
+    if fact_count < GENERAL_MIN_FACTS:
+        missing.extend(["overview", "ranking", "market"])
+        gap_hints.extend([
+            GapHint(dimension="overview", research_goal=RESEARCH_GOALS["overview"]),
+            GapHint(dimension="ranking", research_goal=RESEARCH_GOALS["ranking"]),
+            GapHint(dimension="market", research_goal=RESEARCH_GOALS["market"]),
+        ])
+    if not source_diversity_ok:
+        missing.insert(0, "_diversity")
+        gap_hints.insert(0, GapHint(
+            dimension="_diversity",
+            research_goal=RESEARCH_GOALS["_diversity"],
+        ))
+
+    content_ok = fact_count >= GENERAL_MIN_FACTS
+    should_continue = can and (not content_ok or not source_diversity_ok)
+
+    return CoverageResult(
+        score=round(score, 3),
+        missing_dimensions=missing,
+        covered_dimensions=covered,
+        suggested_router_hints=[h.research_goal for h in gap_hints],
+        gap_hints=gap_hints,
+        should_continue=should_continue,
+        unique_domains=unique_domains,
+        source_diversity_ok=source_diversity_ok,
+    )
+
+
 def evaluate_coverage(
     topic: str,
     facts: list[ExtractedFact],
@@ -121,7 +215,7 @@ def evaluate_coverage(
     stagnant_hops: int,
     min_unique_domains: int | None = None,
 ) -> CoverageResult:
-    """Rule-based coverage check for private debt investor briefs."""
+    """Rule-based coverage: investor_brief dimensions or general deep-search."""
     report_type = detect_report_type(topic)
     unique_domains = _unique_domains_from_facts(facts)
     domain_target = (
@@ -131,10 +225,37 @@ def evaluate_coverage(
     )
     source_diversity_ok = unique_domains >= domain_target
 
-    if report_type != "investor_brief" or not facts:
+    if report_type != "investor_brief":
+        return _evaluate_general_coverage(
+            facts,
+            hop=hop,
+            max_hops=max_hops,
+            sources_budget_remaining=sources_budget_remaining,
+            stagnant_hops=stagnant_hops,
+            domain_target=domain_target,
+        )
+
+    if not facts:
+        missing = list(INVESTOR_BRIEF_DIMENSIONS.keys())[:3]
+        gap_hints = [
+            GapHint(dimension=m, research_goal=RESEARCH_GOALS[m])
+            for m in missing
+        ]
+        gap_hints.insert(0, GapHint(
+            dimension="_empty",
+            research_goal=RESEARCH_GOALS["_empty"],
+        ))
         return CoverageResult(
-            score=1.0 if facts else 0.0,
-            should_continue=False,
+            score=0.0,
+            missing_dimensions=["_empty"] + missing,
+            gap_hints=gap_hints,
+            suggested_router_hints=[h.research_goal for h in gap_hints],
+            should_continue=_can_continue(
+                hop=hop,
+                max_hops=max_hops,
+                sources_budget_remaining=sources_budget_remaining,
+                stagnant_hops=stagnant_hops,
+            ),
             unique_domains=unique_domains,
             source_diversity_ok=source_diversity_ok,
         )
@@ -166,9 +287,12 @@ def evaluate_coverage(
     content_satisfied = score >= coverage_threshold
     should_continue = (
         (not content_satisfied or not source_diversity_ok)
-        and hop < max_hops
-        and sources_budget_remaining > 0
-        and stagnant_hops < 2
+        and _can_continue(
+            hop=hop,
+            max_hops=max_hops,
+            sources_budget_remaining=sources_budget_remaining,
+            stagnant_hops=stagnant_hops,
+        )
         and (bool(missing) or not source_diversity_ok)
     )
 

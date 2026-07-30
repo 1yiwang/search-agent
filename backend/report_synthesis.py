@@ -173,10 +173,20 @@ def fallback_synthesis(
 ) -> ReportSynthesis:
     """Deterministic summary when LLM is unavailable."""
     if not facts:
+        searched_preview = ", ".join(topics_searched[:8]) if topics_searched else "(none recorded)"
+        more = f" (+{len(topics_searched) - 8} more)" if len(topics_searched) > 8 else ""
         return ReportSynthesis(
-            executive_summary="No verified facts were extracted for this topic.",
-            coverage=f"Searched: {', '.join(topics_searched)}",
-            gaps="No sources returned usable content.",
+            executive_summary=(
+                f"No verified facts were extracted for «{topic}». "
+                "Open-web and curated searches did not yield usable page content, "
+                "or extraction found no citable claims."
+            ),
+            coverage=f"Searched: {searched_preview}{more}",
+            gaps=(
+                "Possible causes: sparse public coverage for this exact query, "
+                "paywalled sources, geo/language mismatch, or search API limits. "
+                "Try a broader topic, alternate language keywords, or a longer recency window."
+            ),
         )
 
     lang = _topic_language_hint(topic)

@@ -142,10 +142,41 @@ def test_coverage_signal_type_fills_gap():
     print("test_coverage_signal_type_fills_gap: PASS")
 
 
+def test_general_topic_empty_facts_continues():
+    topic = "European AI short video platform ranking H1 2026"
+    result = evaluate_coverage(
+        topic, [], hop=0, max_hops=3, coverage_threshold=0.65,
+        sources_budget_remaining=10, stagnant_hops=0,
+    )
+    assert result.score == 0.0
+    assert result.should_continue is True
+    assert any(h.dimension == "_empty" for h in result.gap_hints)
+    print("test_general_topic_empty_facts_continues: PASS")
+
+
+def test_general_topic_enough_facts_can_stop():
+    topic = "European AI short video platforms"
+    facts = [
+        _fact("Platform A leads Europe in AI short video MAU.", "https://a.com/1"),
+        _fact("Platform B raised a Series B in Berlin.", "https://b.com/2"),
+        _fact("Market share shifted toward generative tools.", "https://c.com/3"),
+    ]
+    result = evaluate_coverage(
+        topic, facts, hop=0, max_hops=3, coverage_threshold=0.65,
+        sources_budget_remaining=10, stagnant_hops=0,
+        min_unique_domains=3,
+    )
+    assert result.score > 0
+    assert not result.should_continue  # 3 facts + 3 domains
+    print("test_general_topic_enough_facts_can_stop: PASS")
+
+
 if __name__ == "__main__":
     test_coverage_high_when_all_dimensions()
     test_coverage_continue_when_gaps()
     test_coverage_continue_when_low_diversity()
     test_coverage_diversity_uses_explicit_threshold()
     test_coverage_signal_type_fills_gap()
+    test_general_topic_empty_facts_continues()
+    test_general_topic_enough_facts_can_stop()
     print("All coverage tests passed!")

@@ -10,7 +10,7 @@ import yaml
 
 from sources.models import SourceEntry
 from sources.pd_registry import has_private_debt_intent, private_debt_intent_score
-from sources.registry import dach_intent_score, has_dach_intent
+from sources.registry import dach_intent_score
 
 _CATALOG_DIR = Path(__file__).parent / "catalog"
 _LINKS_PATH = Path(__file__).parent / "links" / "private_debt_seed_urls.yaml"
@@ -113,13 +113,20 @@ def _score_source_for_topic(entry: SourceEntry, topic: str) -> int:
 
 
 def filter_candidates(topic: str, max_candidates: int = 25) -> list[SourceEntry]:
-    """Deterministic pre-filter before LLM Source Router."""
+    """Deterministic pre-filter before LLM Source Router.
+
+    General topics (including bare «European …» without venture/credit intent)
+    return an empty catalog so the loop runs open-web first.
+    """
     catalog = load_catalog()
     if not catalog:
         return []
 
-    if not has_private_debt_intent(topic) and not has_dach_intent(topic):
-        return catalog[:max_candidates]
+    pd = has_private_debt_intent(topic)
+    # geo alone (e.g. "European AI…") is score 3; require geo+venture (≥5) for DACH catalog.
+    dach_strong = dach_intent_score(topic) >= 5
+    if not pd and not dach_strong:
+        return []
 
     ranked = sorted(catalog, key=lambda e: _score_source_for_topic(e, topic), reverse=True)
     positive = [e for e in ranked if _score_source_for_topic(e, topic) > 0]
