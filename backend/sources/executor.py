@@ -10,7 +10,11 @@ from urllib.parse import urlparse
 from config import config
 from dedup import deduplicate_search_results, normalize_url
 from models import SearchResult
-from query_expand import alternate_entry_urls
+from query_expand import (
+    alternate_entry_urls,
+    alternate_site_queries,
+    alternate_source_entry_urls,
+)
 from search import fetch_page, search_and_fetch
 from sources.models import RouterDecision
 from sources.seeds import has_registry_intent
@@ -32,10 +36,20 @@ def _tavily_depth_override(depth: str):
         config.tavily_search_depth = original
 
 
+class _nullcontext:
+    def __enter__(self):
+        return None
+
+    def __exit__(self, *args):
+        return False
+
+
 async def _direct_fetch_urls(
     urls: list[str],
     seen_urls: set[str],
     event_callback: FetchEventCallback | None,
+    *,
+    missing_dimensions: list[str] | None = None,
 ) -> list[SearchResult]:
     results: list[SearchResult] = []
     for url in urls:
@@ -46,14 +60,25 @@ async def _direct_fetch_urls(
         final_url = url
 
         if text.startswith("[Failed"):
-            for alt in alternate_entry_urls(url):
+            retry_candidates = list(alternate_entry_urls(url))
+            retry_candidates.extend(
+                u for u in alternate_source_entry_urls(
+                    url, missing_dimensions=missing_dimensions,
+                )
+                if u not in retry_candidates
+            )
+            for alt in retry_candidates:
                 alt_norm = normalize_url(alt)
                 if alt_norm in seen_urls:
                     continue
                 retry_text = await fetch_page(alt, event_callback=event_callback)
                 if not retry_text.startswith("[Failed"):
                     if event_callback:
-                        await event_callback("fetch_retry", {"from": url, "to": alt})
+                        same_host = _domain_from_url(url) == _domain_from_url(alt)
+                        await event_callback(
+                            "fetch_retry" if same_host else "fetch_failover",
+                            {"from": url, "to": alt},
+                        )
                     final_url = alt
                     text = retry_text
                     seen_urls.add(alt_norm)
@@ -79,9 +104,13 @@ async def _site_searches(
     recency_days: int | None,
     max_per_query: int,
     *,
+    topic: str = "",
+    missing_dimensions: list[str] | None = None,
     gap_hop: bool = False,
-) -> list[SearchResult]:
+) -> tuple[list[SearchResult], list[str]]:
+    """Run site: searches; on empty hits, try alternate catalog domains."""
     all_results: list[SearchResult] = []
+    searched: list[str] = []
     depth_ctx = (
         _tavily_depth_override("advanced")
         if gap_hop and config.tavily_deep_on_gap_hop
@@ -89,24 +118,44 @@ async def _site_searches(
     )
     with depth_ctx:
         for query in queries:
+            searched.append(query)
             hits = await search_and_fetch(
                 query,
                 max_per_query,
                 event_callback=event_callback,
                 days=recency_days,
             )
-            for hit in hits:
-                if normalize_url(hit.url) not in seen_urls:
-                    all_results.append(hit)
-    return all_results
-
-
-class _nullcontext:
-    def __enter__(self):
-        return None
-
-    def __exit__(self, *args):
-        return False
+            new_hits = [
+                h for h in hits if normalize_url(h.url) not in seen_urls
+            ]
+            if not new_hits and topic:
+                for alt_q in alternate_site_queries(
+                    query,
+                    topic,
+                    missing_dimensions=missing_dimensions,
+                ):
+                    if event_callback:
+                        await event_callback("site_search_failover", {
+                            "from": query,
+                            "to": alt_q,
+                        })
+                    searched.append(alt_q)
+                    alt_hits = await search_and_fetch(
+                        alt_q,
+                        max_per_query,
+                        event_callback=event_callback,
+                        days=recency_days,
+                    )
+                    new_hits = [
+                        h for h in alt_hits
+                        if normalize_url(h.url) not in seen_urls
+                    ]
+                    if new_hits:
+                        break
+            for hit in new_hits:
+                seen_urls.add(normalize_url(hit.url))
+                all_results.append(hit)
+    return all_results, searched
 
 
 async def execute_router_decision(
@@ -135,21 +184,24 @@ async def execute_router_decision(
             decision.direct_url_fetches[: config.router_max_direct_fetches],
             seen_urls,
             event_callback,
+            missing_dimensions=missing_dimensions,
         )
         for r in direct:
             seen_urls.add(normalize_url(r.url))
         collected.extend(direct)
 
     if decision.site_queries and len(collected) < site_budget:
-        topics_searched.extend(decision.site_queries)
-        site_hits = await _site_searches(
+        site_hits, site_searched = await _site_searches(
             decision.site_queries,
             seen_urls,
             event_callback,
             recency_days,
             max_per_query,
+            topic=topic,
+            missing_dimensions=missing_dimensions,
             gap_hop=gap_hop,
         )
+        topics_searched.extend(site_searched)
         for r in site_hits:
             seen_urls.add(normalize_url(r.url))
         collected.extend(site_hits[: max(0, site_budget - len(collected))])

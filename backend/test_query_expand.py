@@ -115,6 +115,21 @@ def test_preferred_source_ids_for_gaps():
     print("test_preferred_source_ids_for_gaps: PASS")
 
 
+def test_alternate_site_queries_switches_domain():
+    from query_expand import alternate_site_queries
+
+    alts = alternate_site_queries(
+        "site:stepstonegroup.com European private debt",
+        "European private debt",
+        missing_dimensions=["fundraising"],
+        max_alternates=2,
+    )
+    assert alts
+    assert all("stepstonegroup.com" not in q for q in alts)
+    assert any("site:" in q for q in alts)
+    print("test_alternate_site_queries_switches_domain: PASS")
+
+
 def test_open_query_embeds_research_goal():
     candidates = [_candidate("pei", "privateequityinternational.com")]
     hints = [
@@ -159,6 +174,7 @@ if __name__ == "__main__":
     test_expand_hard_cap()
     test_gap_hints_to_router_hints()
     test_preferred_source_ids_for_gaps()
+    test_alternate_site_queries_switches_domain()
     test_open_query_embeds_research_goal()
     test_info_type_rotates_across_hops()
     print("All query expand tests passed!")

@@ -249,6 +249,94 @@ def alternate_entry_urls(failed_url: str) -> list[str]:
     return []
 
 
+def _domain_from_site_query(query: str) -> str | None:
+    import re
+
+    m = re.search(r"site:([^\s]+)", query or "", re.I)
+    if not m:
+        return None
+    return m.group(1).lower().removeprefix("www.").rstrip("/")
+
+
+def alternate_site_queries(
+    failed_query: str,
+    topic: str,
+    *,
+    missing_dimensions: list[str] | None = None,
+    max_alternates: int = 2,
+) -> list[str]:
+    """Build site: queries on other catalog domains after an empty site search."""
+    from sources.catalog import load_catalog
+
+    failed_domain = _domain_from_site_query(failed_query)
+    dims = missing_dimensions or ["_diversity"]
+    preferred_ids: list[str] = []
+    seen_ids: set[str] = set()
+    for dim in dims:
+        for sid in DIMENSION_SOURCE_IDS.get(dim, []):
+            if sid not in seen_ids:
+                seen_ids.add(sid)
+                preferred_ids.append(sid)
+
+    by_id = {e.id: e for e in load_catalog()}
+    used_domains = {failed_domain} if failed_domain else set()
+    alts: list[str] = []
+    for sid in preferred_ids:
+        entry = by_id.get(sid)
+        if not entry:
+            continue
+        domain = entry.domain.lower().removeprefix("www.")
+        if domain in used_domains:
+            continue
+        used_domains.add(domain)
+        if entry.search_templates:
+            q = entry.search_templates[0].replace("{topic}", topic[:80])
+        else:
+            q = f"site:{entry.domain} {topic[:60]}"
+        alts.append(q)
+        if len(alts) >= max_alternates:
+            break
+    return alts
+
+
+def alternate_source_entry_urls(
+    failed_url: str,
+    *,
+    missing_dimensions: list[str] | None = None,
+    max_alternates: int = 2,
+) -> list[str]:
+    """After same-domain entry_urls fail, try landing pages from other preferred sources."""
+    from urllib.parse import urlparse
+    from sources.catalog import load_catalog
+
+    host = (urlparse(failed_url).hostname or "").lower().removeprefix("www.")
+    dims = missing_dimensions or ["_diversity"]
+    preferred_ids: list[str] = []
+    seen_ids: set[str] = set()
+    for dim in dims:
+        for sid in DIMENSION_SOURCE_IDS.get(dim, []):
+            if sid not in seen_ids:
+                seen_ids.add(sid)
+                preferred_ids.append(sid)
+
+    by_id = {e.id: e for e in load_catalog()}
+    alts: list[str] = []
+    for sid in preferred_ids:
+        entry = by_id.get(sid)
+        if not entry or not entry.entry_urls:
+            continue
+        domain = entry.domain.lower().removeprefix("www.")
+        if host and domain == host:
+            continue
+        for url in entry.entry_urls:
+            if url != failed_url and url not in alts:
+                alts.append(url)
+                break
+        if len(alts) >= max_alternates:
+            break
+    return alts
+
+
 def _iter_catalog_by_domain(domain: str):
     from sources.catalog import load_catalog
 

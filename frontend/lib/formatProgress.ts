@@ -30,6 +30,10 @@ export function formatProgressEvent(event: SSEEvent): string {
       return `Open search forced: ${d.reason} (${d.unique_domains} domains)`;
     case "fetch_retry":
       return `Fetch retry: ${d.from} → ${d.to}`;
+    case "fetch_failover":
+      return `Fetch failover: ${d.from} → ${d.to}`;
+    case "site_search_failover":
+      return `Site search failover: ${String(d.from || "").slice(0, 40)} → ${String(d.to || "").slice(0, 40)}`;
     case "search_start":
       return `Searching: “${d.topic}”`;
     case "search_complete":

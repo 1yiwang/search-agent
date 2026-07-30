@@ -29,7 +29,7 @@ async def _test_open_budget_reserved_when_defer():
     ]
 
     with (
-        patch("sources.executor._site_searches", new_callable=AsyncMock, return_value=site_hits),
+        patch("sources.executor._site_searches", new_callable=AsyncMock, return_value=(site_hits, ["site:q"])),
         patch("sources.executor.search_and_fetch", new_callable=AsyncMock, return_value=open_hits) as mock_open,
         patch("sources.executor.config.min_unique_domains_target", 3),
     ):
@@ -105,7 +105,7 @@ async def _test_open_query_count_scales_with_budget():
     ]
 
     with (
-        patch("sources.executor._site_searches", new_callable=AsyncMock, return_value=[]),
+        patch("sources.executor._site_searches", new_callable=AsyncMock, return_value=([], [])),
         patch(
             "sources.executor.search_and_fetch",
             new_callable=AsyncMock,
@@ -130,8 +130,101 @@ async def _test_open_query_count_scales_with_budget():
     print("test_open_query_count_scales_with_budget: PASS")
 
 
+async def _test_site_search_failover_on_empty():
+    decision = RouterDecision(
+        site_queries=["site:stepstonegroup.com European private debt"],
+        defer_open_web=True,
+    )
+    seen: set[str] = set()
+    events: list[tuple[str, dict]] = []
+
+    async def emit(event_type: str, data: dict):
+        events.append((event_type, data))
+
+    failover_hit = [
+        SearchResult(
+            url="https://www.privateequityinternational.com/a",
+            title="PEI",
+            snippet="s",
+            full_text="ok",
+        ),
+    ]
+
+    async def fake_search(query, max_results, event_callback=None, days=None):
+        if "privateequityinternational.com" in query or "pei.com" in query:
+            return failover_hit
+        if "preqin" in query:
+            return failover_hit
+        return []
+
+    with (
+        patch("sources.executor.search_and_fetch", side_effect=fake_search),
+        patch("sources.executor.config.min_unique_domains_target", 3),
+        patch(
+            "sources.executor.alternate_site_queries",
+            return_value=["site:privateequityinternational.com European private debt"],
+        ),
+    ):
+        results, searched = await execute_router_decision(
+            "European private debt",
+            decision,
+            seen,
+            budget_remaining=9,
+            event_callback=emit,
+            missing_dimensions=["fundraising"],
+            force_open_web=False,
+            open_queries=[],
+        )
+
+    assert any(e[0] == "site_search_failover" for e in events)
+    assert any("privateequityinternational.com" in q for q in searched)
+    assert results and "privateequityinternational.com" in results[0].url
+    print("test_site_search_failover_on_empty: PASS")
+
+
+async def _test_fetch_failover_cross_source():
+    decision = RouterDecision(
+        direct_url_fetches=["https://www.stepstonegroup.com/news-insights/broken/"],
+        defer_open_web=True,
+    )
+    seen: set[str] = set()
+    events: list[tuple[str, dict]] = []
+
+    async def emit(event_type: str, data: dict):
+        events.append((event_type, data))
+
+    async def fake_fetch(url: str, event_callback=None):
+        if "stepstonegroup.com" in url:
+            return "[Failed to fetch]"
+        return "full article text about direct lending"
+
+    with (
+        patch("sources.executor.alternate_entry_urls", return_value=[]),
+        patch(
+            "sources.executor.alternate_source_entry_urls",
+            return_value=["https://www.privateequityinternational.com/insights/ok/"],
+        ),
+        patch("sources.executor.fetch_page", side_effect=fake_fetch),
+        patch("sources.executor.search_and_fetch", new_callable=AsyncMock, return_value=[]),
+    ):
+        results, _ = await execute_router_decision(
+            "European private debt",
+            decision,
+            seen,
+            budget_remaining=5,
+            event_callback=emit,
+            missing_dimensions=["fundraising"],
+        )
+
+    assert any(e[0] == "fetch_failover" for e in events)
+    assert results and "privateequityinternational.com" in results[0].url
+    print("test_fetch_failover_cross_source: PASS")
+
+
 if __name__ == "__main__":
     asyncio.run(_test_open_budget_reserved_when_defer())
     asyncio.run(_test_fetch_retry_alternate_url())
     asyncio.run(_test_open_query_count_scales_with_budget())
+    asyncio.run(_test_site_search_failover_on_empty())
+    asyncio.run(_test_fetch_failover_cross_source())
     print("All executor tests passed!")
