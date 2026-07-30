@@ -2,8 +2,8 @@
 
 > **Single source of truth** for implementation progress. Update this file at the end of each Step.
 
-**Current phase:** Wave 8 — search quality / useful source recall (Mode B)  
-**Next step:** Step 50 — research-loop integration tests (gap → expand → hop-2 event chain)
+**Current phase:** Wave 8 — search quality **complete** (Mode B)  
+**Next step:** Phase 3 Watchlist (Step 41), or raise european-pd-smoke eval thresholds after a live run
 
 ## Product constraints (personal use)
 
@@ -41,7 +41,7 @@
 | Wave 6 (Step 38a) | Done | Phase 2a: private debt registry + investor_brief + Entity/Signal enums + EU PD demo |
 | Wave 7 (Step 39–40) | Done | Source catalog (36+ entries) + LLM Router + Coverage-driven research loop |
 | Wave 7b (Step 38b–38c) | Done | Extraction `signal_type` + European PD golden eval + catalog/links enrichment |
-| Wave 8 search-quality | **In progress** | Eval gate → diversity alignment → open-query quality → fail-over → loop tests |
+| Wave 8 search-quality | **Done** | Eval gate → diversity alignment → open-query quality → fail-over → loop tests |
 | Always-on Fly API | Deferred | Optional paid hosting — not required for personal Mode B use |
 
 ## Phase 1-alpha checklist (complete)
@@ -156,7 +156,7 @@
 | 47 | Align diversity thresholds (`coverage` / `executor` / eval) + wire GapHint into next-hop routing | Done |
 | 48 | Open-web query quality: embed `research_goal`; rotate info_types; budget-aware open query count | Done |
 | 49 | Fail-over: empty site / failed fetch → alternate catalog sources; `TAVILY_DEEP_ON_GAP` default on | Done |
-| 50 | Research-loop integration tests: gap → expand → pending → open/site hop-2 event chain | **Next** |
+| 50 | Research-loop integration tests: gap → expand → pending → open/site hop-2 event chain | Done |
 
 `job_brief` deferred — swiss-job-agent integration only.
 

@@ -187,7 +187,7 @@ agent.run_research()
 - [x] **Wave 8 Step 47**：多样性阈值对齐 + GapHint → 下一跳 preferred sources / suggested_queries
 - [x] **Wave 8 Step 48**：open 查询嵌入 research_goal + info_type 轮换 + 预算感知条数
 - [x] **Wave 8 Step 49**：空 site / fetch 失败换源 fail-over；gap hop 默认 Tavily advanced
-- [ ] **Wave 8 续**：50 loop 集成测
+- [x] **Wave 8 Step 50**：research_loop 事件链 + stagnant 停跳集成测（Wave 8 收官）
 - [ ] Phase 3：Watchlist + 周刊增量
 - [ ] Always-on Fly API（**延后**；个人自用默认本机 Mode B，省钱更安全）
 - [ ] `job_brief`（swiss-job-agent 集成）
