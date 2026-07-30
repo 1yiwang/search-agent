@@ -2,8 +2,8 @@
 
 > **Single source of truth** for implementation progress. Update this file at the end of each Step.
 
-**Current phase:** Wave 9a — general search depth  
-**Next step:** Live re-test thoroughness vs Perplexity; optional 41f weekly script; Wave 9b (extra search providers) later
+**Current phase:** Wave 9b — multilingual recall  
+**Next step:** Live re-test Chinese+Switzerland topics; optional Swiss telecom catalog; 41f weekly script
 
 ## Product constraints (personal use)
 
@@ -169,6 +169,16 @@
 | 52 | Defaults: frontend `max_sources=20`, `RESEARCH_MAX_HOPS=5`, expand cap 8 | Done |
 | 53 | Executor: up to 6 open queries on force_open; Tavily advanced on open-web | Done |
 | 54 | Expand: region / ranking-source / prior-year + entity follow-ups | Done |
+
+## Wave 9b — Multilingual recall (CH / DACH)
+
+> Chinese topics must not collapse to Chinese-only web. Fan out EN/DE/FR for Swiss markets.
+
+| Step | Task | Status |
+|------|------|--------|
+| 55 | `multilang.py`: script/geo detect + zh→en pivot + locale open seeds | Done |
+| 56 | Wire hop-0 `initial_open_queries` + expand multilang seeds | Done |
+| 57 | Synthesis: prefer local EN/DE/FR sources for Swiss/DACH topics | Done |
 
 `job_brief` deferred — swiss-job-agent integration only.
 

@@ -11,6 +11,7 @@ from coverage import evaluate_coverage
 from dedup import deduplicate_facts, deduplicate_search_results, normalize_url
 from extraction import extract_facts
 from models import ExtractedFact, ResearchRequest, ResearchReport
+from multilang import initial_open_queries
 from query_expand import (
     expand_queries,
     gap_hints_to_router_hints,
@@ -162,7 +163,9 @@ async def run_research_loop(
             event_callback=emit,
             force_open_web=force_open,
             open_queries=state.pending_open_queries or (
-                [request.topic] if is_general else None
+                initial_open_queries(request.topic, hop=state.hop)
+                if is_general
+                else None
             ),
             missing_dimensions=state.last_missing_dimensions or None,
             gap_hop=state.hop > 0 and (

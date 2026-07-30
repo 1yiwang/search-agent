@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from datetime import date, datetime, timezone
 from typing import Any
@@ -323,6 +324,30 @@ def expand_queries(
         seen_queries.add(key)
         expanded.append(eq)
 
+    from multilang import build_multilang_plan, detect_script
+
+    plan = build_multilang_plan(topic, hop=hop_index)
+    pivot = plan.english_pivot
+    angle_topic = pivot if detect_script(topic) in ("zh", "mixed") else topic
+
+    # Open-web-first topics: prioritize multilingual + angle seeds before gap fan-out
+    if open_only_topic:
+        primary_goal = (
+            gap_hints[0].research_goal if gap_hints else RESEARCH_GOAL_FALLBACK
+        )
+        for seed in plan.open_seeds[:5]:
+            _append(ExpandedQuery(
+                query=seed,
+                research_goal=primary_goal,
+                channel="open",
+                template_id="multilang_seed",
+                dimension="_empty",
+            ))
+        for eq in _general_angle_queries(
+            angle_topic, dates, hop=hop_index, research_goal=primary_goal,
+        ):
+            _append(eq)
+
     for hint in (gap_hints or [])[:4]:
         dim = hint.dimension
         info_types = DIMENSION_INFO_TYPES.get(dim, ["facts_data", "experts"])
@@ -346,25 +371,24 @@ def expand_queries(
 
         open_type = info_types[(hop_index + 1) % n]
         open_suffix = _suffix_for_info_type(open_type, dates)
+        open_seed_topic = angle_topic if open_only_topic else topic
         _append(ExpandedQuery(
             query=_build_open_query(
-                topic, open_suffix, dates, research_goal=goal,
+                open_seed_topic, open_suffix, dates, research_goal=goal,
             ),
             research_goal=goal,
             channel="open",
             template_id=open_type,
             dimension=dim,
         ))
-        # Extra open angles on empty / general dimensions
+        # One alternate open angle (avoid flooding the cap on general topics)
         if open_only and len(info_types) > 1:
-            for offset in range(n):
-                alt_type = info_types[(hop_index + offset) % n]
-                if alt_type == open_type:
-                    continue
+            alt_type = info_types[hop_index % n]
+            if alt_type != open_type:
                 alt_suffix = _suffix_for_info_type(alt_type, dates)
                 _append(ExpandedQuery(
                     query=_build_open_query(
-                        topic, alt_suffix, dates, research_goal=goal,
+                        open_seed_topic, alt_suffix, dates, research_goal=goal,
                     ),
                     research_goal=goal,
                     channel="open",
@@ -373,18 +397,10 @@ def expand_queries(
                 ))
 
     if open_only_topic:
-        primary_goal = (
-            gap_hints[0].research_goal if gap_hints else RESEARCH_GOAL_FALLBACK
-        )
-        for eq in _general_angle_queries(
-            topic, dates, hop=hop_index, research_goal=primary_goal,
-        ):
-            _append(eq)
-
         for entity in extract_followup_entities(facts or [], topic=topic):
             _append(ExpandedQuery(
                 query=_build_open_query(
-                    f"{entity} {topic}",
+                    f"{entity} {angle_topic}",
                     f"Europe {dates['half_year']}",
                     dates,
                     research_goal=f"Follow-up on {entity}",
@@ -394,6 +410,43 @@ def expand_queries(
                 template_id="entity_followup",
                 dimension="competitors",
             ))
+        # Remaining multilang seeds after gap/entity fills
+        primary_goal = (
+            gap_hints[0].research_goal if gap_hints else RESEARCH_GOAL_FALLBACK
+        )
+        for seed in plan.open_seeds[5:]:
+            _append(ExpandedQuery(
+                query=seed,
+                research_goal=primary_goal,
+                channel="open",
+                template_id="multilang_seed",
+                dimension="_empty",
+            ))
+
+    # For Chinese topics: rewrite residual CJK open queries (keep multilang_seed as-is)
+    if detect_script(topic) in ("zh", "mixed"):
+        rewritten: list[ExpandedQuery] = []
+        for eq in expanded:
+            if eq.channel != "open":
+                rewritten.append(eq)
+                continue
+            if re.search(r"[\u4e00-\u9fff]", eq.query) and eq.template_id != "multilang_seed":
+                latinish = re.sub(r"[\u4e00-\u9fff]+", " ", eq.query)
+                latinish = " ".join(latinish.split())
+                new_q = f"{pivot} {latinish}".strip() if pivot else latinish
+                rewritten.append(ExpandedQuery(
+                    query=new_q or eq.query,
+                    research_goal=eq.research_goal,
+                    channel=eq.channel,
+                    template_id=eq.template_id,
+                    dimension=eq.dimension,
+                ))
+            else:
+                rewritten.append(eq)
+        expanded = []
+        seen_queries.clear()
+        for eq in rewritten:
+            _append(eq)
 
     capped = len(expanded) > cap
     return ExpandResult(queries=expanded[:cap], capped=capped)
