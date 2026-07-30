@@ -34,6 +34,10 @@ cases:
     min_unique_domains: 2
     require_non_other_signal: true
     expect_report_type: investor_brief
+    # Wave 8 recall gates (Step 46) — soft floor; raise as query quality improves
+    min_coverage_score: 0.33
+    min_covered_dimensions: 2
+    require_open_web_query: true
     required_keywords:
       - "Europe"
       - "direct lending"

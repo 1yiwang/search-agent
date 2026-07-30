@@ -181,9 +181,11 @@ agent.run_research()
 - [x] **Phase 2b**：提取阶段 `signal_type`/`entity_type` + eval golden case（欧洲 PD）
 - [x] **报告 UX**：引用弹窗 + editorial 排版（无 Entity 重复列）
 - [x] **搜全优先（Mode B）**：`query_expand` + open_web 预算保护 + fetch retry + `GapHint`（Step 43–45）
+- [x] **Wave 8 Step 46**：recall/coverage eval 门禁（`min_coverage_score` / dimensions / open-web query）
+- [ ] **Wave 8 续**：47 阈值对齐 → 48 open 查询质量 → 49 fail-over → 50 loop 集成测
 - [ ] Phase 3：Watchlist + 周刊增量
 - [ ] Always-on Fly API（**延后**；个人自用默认本机 Mode B，省钱更安全）
-- [ ] `job_brief`（swiss-job-agent 集成，非主叙事）
+- [ ] `job_brief`（swiss-job-agent 集成）
 - [ ] `search-demo.yiwang.dev` DNS（demo 公开展示）
 
 ## 设计哲学（为什么这样构建）

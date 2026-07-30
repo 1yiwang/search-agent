@@ -9,6 +9,7 @@ _BACKEND = Path(__file__).resolve().parent.parent / "backend"
 if str(_BACKEND) not in sys.path:
     sys.path.insert(0, str(_BACKEND))
 
+from coverage import evaluate_coverage
 from models import ResearchReport
 
 
@@ -23,6 +24,10 @@ class GoldenCase:
     min_unique_domains: int = 0
     require_non_other_signal: bool = False
     expect_report_type: str = ""
+    # Wave 8 recall gates (Step 46)
+    min_coverage_score: float = 0.0
+    min_covered_dimensions: int = 0
+    require_open_web_query: bool = False
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "GoldenCase":
@@ -36,7 +41,17 @@ class GoldenCase:
             min_unique_domains=int(data.get("min_unique_domains") or 0),
             require_non_other_signal=bool(data.get("require_non_other_signal", False)),
             expect_report_type=str(data.get("expect_report_type") or ""),
+            min_coverage_score=float(data.get("min_coverage_score") or 0.0),
+            min_covered_dimensions=int(data.get("min_covered_dimensions") or 0),
+            require_open_web_query=bool(data.get("require_open_web_query", False)),
         )
+
+
+def _is_open_web_query(query: str) -> bool:
+    q = (query or "").strip().lower()
+    if not q:
+        return False
+    return not q.startswith("site:")
 
 
 def validate_report(report: ResearchReport, case: GoldenCase) -> list[str]:
@@ -96,5 +111,36 @@ def validate_report(report: ResearchReport, case: GoldenCase) -> list[str]:
         errors.append(
             f"expected report_type={case.expect_report_type!r}, got {report.report_type!r}"
         )
+
+    needs_coverage = case.min_coverage_score > 0 or case.min_covered_dimensions > 0
+    if needs_coverage:
+        coverage = evaluate_coverage(
+            case.topic or report.topic,
+            report.facts,
+            hop=99,
+            max_hops=99,
+            coverage_threshold=1.0,
+            sources_budget_remaining=0,
+            stagnant_hops=0,
+        )
+        if case.min_coverage_score > 0 and coverage.score < case.min_coverage_score:
+            errors.append(
+                f"expected coverage_score >= {case.min_coverage_score}, got {coverage.score}"
+            )
+        if case.min_covered_dimensions > 0:
+            covered_n = len(coverage.covered_dimensions)
+            if covered_n < case.min_covered_dimensions:
+                errors.append(
+                    f"expected >= {case.min_covered_dimensions} covered dimensions, "
+                    f"got {covered_n} ({coverage.covered_dimensions})"
+                )
+
+    if case.require_open_web_query:
+        topics = list((report.metadata.topics_searched if report.metadata else None) or [])
+        if not any(_is_open_web_query(t) for t in topics):
+            errors.append(
+                "expected at least one open-web query in metadata.topics_searched "
+                "(not starting with site:)"
+            )
 
     return errors

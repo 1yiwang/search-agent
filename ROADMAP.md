@@ -2,8 +2,8 @@
 
 > **Single source of truth** for implementation progress. Update this file at the end of each Step.
 
-**Current phase:** Search quality — maximize useful source recall (Mode B / local-only)  
-**Next step:** Improve query planning + open-web recall so coverage fills gaps (not hosting)
+**Current phase:** Wave 8 — search quality / useful source recall (Mode B)  
+**Next step:** Step 47 — align diversity thresholds + wire GapHint into next-hop routing
 
 ## Product constraints (personal use)
 
@@ -41,7 +41,7 @@
 | Wave 6 (Step 38a) | Done | Phase 2a: private debt registry + investor_brief + Entity/Signal enums + EU PD demo |
 | Wave 7 (Step 39–40) | Done | Source catalog (36+ entries) + LLM Router + Coverage-driven research loop |
 | Wave 7b (Step 38b–38c) | Done | Extraction `signal_type` + European PD golden eval + catalog/links enrichment |
-| Wave 8 search-quality | **Next** | Query diversity, open-web recall, better fail-over when curated sources miss |
+| Wave 8 search-quality | **In progress** | Eval gate → diversity alignment → open-query quality → fail-over → loop tests |
 | Always-on Fly API | Deferred | Optional paid hosting — not required for personal Mode B use |
 
 ## Phase 1-alpha checklist (complete)
@@ -146,7 +146,19 @@
 | 44 | Search recall: executor open_budget `max(2, budget//3)`; force open on gaps / low diversity; fetch retry via catalog `entry_urls`; SSE `open_search_forced` / `fetch_retry` | Done |
 | 45 | Search recall: `GapHint(dimension, research_goal, suggested_queries)` in `coverage.py`; expander fills concrete site:/open queries | Done |
 
-`job_brief` deferred — integration point for swiss-job-agent, not StepStone interview narrative.
+## Wave 8 — Search quality (personal Mode B)
+
+> Priority: measure useful recall → align contracts → improve open-web queries → deepen fail-over. No interview/demo narrative required.
+
+| Step | Task | Status |
+|------|------|--------|
+| 46 | Recall eval gate: `min_coverage_score` / `min_covered_dimensions` / `require_open_web_query` in `eval/validate.py`; tighten `european-pd-smoke` | Done |
+| 47 | Align diversity thresholds (`coverage` / `executor` / eval) + wire GapHint into next-hop routing | **Next** |
+| 48 | Open-web query quality: embed `research_goal`; rotate info_types; budget-aware open query count | Pending |
+| 49 | Fail-over: empty site / failed fetch → alternate catalog sources; optional `TAVILY_DEEP_ON_GAP` | Pending |
+| 50 | Research-loop integration tests: gap → expand → pending → open/site hop-2 event chain | Pending |
+
+`job_brief` deferred — swiss-job-agent integration only.
 
 ## Progress ritual
 
