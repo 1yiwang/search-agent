@@ -164,7 +164,7 @@ async def run_research_loop(
             force_open_web=force_open,
             open_queries=state.pending_open_queries or (
                 initial_open_queries(request.topic, hop=state.hop)
-                if is_general
+                if (is_general or force_open)
                 else None
             ),
             missing_dimensions=state.last_missing_dimensions or None,

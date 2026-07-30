@@ -57,6 +57,15 @@ GENERAL_RANKING_SOURCES = (
     "Sensor Tower", "data.ai", "Similarweb", "TechCrunch", "Sifted",
 )
 
+# DeerFlow-style authority / content-type open templates (Step 61)
+AUTHORITY_OPEN_TEMPLATES: tuple[tuple[str, str], ...] = (
+    ("industry_report", "industry report OR McKinsey OR Deloitte OR PwC"),
+    ("regulator", "regulator OR BAKOM OR OFCOM OR ComCom OR license"),
+    ("case_study", "case study OR pilot OR deployment"),
+    ("limitations", "limitations OR challenges OR risks OR barriers"),
+    ("market_share_stats", "market share statistics OR revenue OR subscribers"),
+)
+
 DIMENSION_SOURCE_IDS: dict[str, list[str]] = {
     "fundraising": ["pei", "preqin_insights", "stepstone_insights"],
     "volume_deals": ["pei", "fnlondon", "levfin_insights"],
@@ -65,6 +74,15 @@ DIMENSION_SOURCE_IDS: dict[str, list[str]] = {
     "product_evergreen": ["stepstone_insights", "pei", "lux_flag"],
     "relative_value": ["stepstone_insights", "levfin_insights", "fnlondon"],
     "_diversity": ["pei", "preqin_insights", "stepstone_insights", "fnlondon"],
+    "_empty": ["bakom", "swisscom_ir", "comcom", "nzz_telecom"],
+    "overview": ["bakom", "swisscom_ir", "nzz_telecom"],
+    "ranking": ["bakom", "swisscom_ir", "sunrise_news"],
+    "competitors": ["swisscom_ir", "sunrise_news", "salt_news", "nzz_telecom"],
+    "market": ["bakom", "handelszeitung", "letemps"],
+    "funding": ["swisscom_ir", "handelszeitung"],
+    "examples": ["nzz_telecom", "ictjournal", "swisscom_ir"],
+    "challenges": ["bakom", "comcom", "nzz_telecom"],
+    "experts": ["nzz_telecom", "handelszeitung", "letemps"],
 }
 
 
@@ -276,8 +294,36 @@ def _general_angle_queries(
     return queries
 
 
-# Lazy import avoidance for research goal default text
 RESEARCH_GOAL_FALLBACK = "Primary sources rankings reports and recent coverage for the topic"
+
+
+def _authority_angle_queries(
+    core_topic: str,
+    dates: dict[str, str],
+    *,
+    hop: int,
+    research_goal: str = "",
+) -> list[ExpandedQuery]:
+    """Industry report / regulator / case study / limitations open templates."""
+    goal = research_goal or RESEARCH_GOAL_FALLBACK
+    # Rotate which authority templates lead each hop
+    templates = list(AUTHORITY_OPEN_TEMPLATES)
+    rot = hop % len(templates)
+    rotated = templates[rot:] + templates[:rot]
+    out: list[ExpandedQuery] = []
+    for tid, suffix in rotated[:3]:
+        out.append(ExpandedQuery(
+            query=_build_open_query(
+                core_topic, suffix, dates, research_goal=goal,
+            ),
+            research_goal=goal,
+            channel="open",
+            template_id=f"authority_{tid}",
+            dimension="experts" if tid in ("industry_report",) else (
+                "challenges" if tid == "limitations" else "examples"
+            ),
+        ))
+    return out
 
 
 def _build_site_query(
@@ -329,28 +375,39 @@ def expand_queries(
         expanded.append(eq)
 
     from multilang import build_multilang_plan, detect_script
+    from sources.telecom_intent import has_swiss_telecom_intent
 
     plan = build_multilang_plan(topic, hop=hop_index)
     pivot = plan.english_pivot
     angle_topic = pivot if detect_script(topic) in ("zh", "mixed") else topic
+    want_authority = open_only_topic or has_swiss_telecom_intent(topic)
 
     # Open-web-first topics: prioritize multilingual + angle seeds before gap fan-out
-    if open_only_topic:
+    if open_only_topic or want_authority:
         primary_goal = (
             gap_hints[0].research_goal if gap_hints else RESEARCH_GOAL_FALLBACK
         )
-        for seed in plan.open_seeds[:5]:
-            _append(ExpandedQuery(
-                query=seed,
+        if open_only_topic:
+            for seed in plan.open_seeds[:5]:
+                _append(ExpandedQuery(
+                    query=seed,
+                    research_goal=primary_goal,
+                    channel="open",
+                    template_id="multilang_seed",
+                    dimension="_empty",
+                ))
+            for eq in _general_angle_queries(
+                angle_topic, dates, hop=hop_index, research_goal=primary_goal,
+            ):
+                _append(eq)
+        if want_authority:
+            for eq in _authority_angle_queries(
+                angle_topic if detect_script(topic) in ("zh", "mixed") else topic.strip(),
+                dates,
+                hop=hop_index,
                 research_goal=primary_goal,
-                channel="open",
-                template_id="multilang_seed",
-                dimension="_empty",
-            ))
-        for eq in _general_angle_queries(
-            angle_topic, dates, hop=hop_index, research_goal=primary_goal,
-        ):
-            _append(eq)
+            ):
+                _append(eq)
 
     for hint in (gap_hints or [])[:4]:
         dim = hint.dimension

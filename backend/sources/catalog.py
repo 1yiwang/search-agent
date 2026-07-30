@@ -11,6 +11,7 @@ import yaml
 from sources.models import SourceEntry
 from sources.pd_registry import has_private_debt_intent, private_debt_intent_score
 from sources.registry import dach_intent_score, has_dach_intent
+from sources.telecom_intent import has_swiss_telecom_intent, telecom_intent_score
 
 _CATALOG_DIR = Path(__file__).parent / "catalog"
 _LINKS_PATH = Path(__file__).parent / "links" / "private_debt_seed_urls.yaml"
@@ -93,15 +94,20 @@ def _score_source_for_topic(entry: SourceEntry, topic: str) -> int:
     score = 0
     pd = has_private_debt_intent(topic)
     dach = has_dach_intent(topic)
+    telecom = has_swiss_telecom_intent(topic)
 
     tag_set = set(entry.tags)
     if pd and "credit" in tag_set:
         score += 4
     if dach and "venture" in tag_set:
         score += 3
-    if (pd or dach) and "geo" in tag_set:
+    if telecom and "telecom" in tag_set:
+        score += 5
+    if (pd or dach or telecom) and "geo" in tag_set:
         score += 2
-    if "regulatory" in tag_set and (pd or "regulatory" in t or "finma" in t):
+    if "regulatory" in tag_set and (
+        pd or telecom or "regulatory" in t or "finma" in t or "bakom" in t
+    ):
         score += 2
     if entry.trust_tier == "primary":
         score += 2
@@ -115,7 +121,7 @@ def _score_source_for_topic(entry: SourceEntry, topic: str) -> int:
 def filter_candidates(topic: str, max_candidates: int = 25) -> list[SourceEntry]:
     """Deterministic pre-filter before LLM Source Router.
 
-    General topics (including bare «European …» without venture/credit intent)
+    General topics (including bare «European …» without venture/credit/telecom intent)
     return an empty catalog so the loop runs open-web first.
     """
     catalog = load_catalog()
@@ -125,10 +131,15 @@ def filter_candidates(topic: str, max_candidates: int = 25) -> list[SourceEntry]
     pd = has_private_debt_intent(topic)
     # geo alone (e.g. "European AI…") is score 3; require geo+venture (≥5) for DACH catalog.
     dach_strong = dach_intent_score(topic) >= 5
-    if not pd and not dach_strong:
+    telecom = has_swiss_telecom_intent(topic)
+    if not pd and not dach_strong and not telecom:
         return []
 
     ranked = sorted(catalog, key=lambda e: _score_source_for_topic(e, topic), reverse=True)
+    if telecom and not pd:
+        telecom_hits = [e for e in ranked if "telecom" in e.tags]
+        if telecom_hits:
+            return telecom_hits[:max_candidates]
     positive = [e for e in ranked if _score_source_for_topic(e, topic) > 0]
     return (positive or ranked)[:max_candidates]
 
@@ -137,6 +148,8 @@ def intent_labels(topic: str) -> list[str]:
     labels: list[str] = []
     if private_debt_intent_score(topic) >= 3:
         labels.append("private_debt")
+    if has_swiss_telecom_intent(topic):
+        labels.append("swiss_telecom")
     if dach_intent_score(topic) >= 2:
         labels.append("dach_venture")
     return labels or ["general"]

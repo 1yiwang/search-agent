@@ -2,8 +2,8 @@
 
 > **Single source of truth** for implementation progress. Update this file at the end of each Step.
 
-**Current phase:** Wave 10 — comprehensiveness (Steps 58–60 done)  
-**Next step:** Step 61–62 (authority templates + fast/deep tiers); Wave 11 Swiss telecom catalog
+**Current phase:** Wave 10–11 — comprehensiveness + Swiss telecom  
+**Next step:** Step 62 fast/deep tiers; optional Wave 12 second search provider
 
 ## Product constraints (personal use)
 

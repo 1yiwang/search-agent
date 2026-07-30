@@ -1,0 +1,123 @@
+# Swiss telecom / connectivity market — source catalog (Wave 11)
+version: 1
+
+sources:
+  - id: bakom
+    name: BAKOM / OFCOM (Swiss telecom regulator)
+    domain: bakom.admin.ch
+    language: de
+    category: regulatory
+    tags: [telecom, geo, regulatory]
+    trust_tier: primary
+    access_modes: [site_search, direct_urls]
+    notes: Swiss Federal Office of Communications — market stats, licenses, regulation
+    search_templates:
+      - "site:bakom.admin.ch {topic}"
+      - "site:bakom.admin.ch Fernmeldestatistik OR telecom market"
+    entry_urls:
+      - "https://www.bakom.admin.ch/bakom/en/homepage.html"
+      - "https://www.bakom.admin.ch/bakom/de/home.html"
+
+  - id: comcom
+    name: ComCom (Swiss Communications Commission)
+    domain: comcom.admin.ch
+    language: de
+    category: regulatory
+    tags: [telecom, geo, regulatory]
+    trust_tier: primary
+    access_modes: [site_search, direct_urls]
+    notes: Independent Swiss telecom regulator — licensing and competition
+    search_templates:
+      - "site:comcom.admin.ch {topic}"
+    entry_urls:
+      - "https://www.comcom.admin.ch/comcom/en/home.html"
+
+  - id: swisscom_ir
+    name: Swisscom investor / news
+    domain: swisscom.ch
+    language: en
+    category: institution
+    tags: [telecom, geo]
+    trust_tier: primary
+    access_modes: [site_search, direct_urls]
+    notes: Incumbent Swiss operator — annual reports, market commentary
+    search_templates:
+      - "site:swisscom.ch {topic}"
+      - "site:swisscom.ch market OR competition OR MVNO"
+    entry_urls:
+      - "https://www.swisscom.ch/en/about/investors.html"
+
+  - id: sunrise_news
+    name: Sunrise (Switzerland)
+    domain: sunrise.ch
+    language: de
+    category: institution
+    tags: [telecom, geo]
+    trust_tier: secondary
+    access_modes: [site_search]
+    notes: Major Swiss mobile/broadband operator
+    search_templates:
+      - "site:sunrise.ch {topic}"
+      - "site:sunrise.ch Medien OR news"
+
+  - id: salt_news
+    name: Salt Mobile
+    domain: salt.ch
+    language: en
+    category: institution
+    tags: [telecom, geo]
+    trust_tier: secondary
+    access_modes: [site_search]
+    notes: Swiss mobile challenger brand
+    search_templates:
+      - "site:salt.ch {topic}"
+
+  - id: nzz_telecom
+    name: NZZ (business / telecom coverage)
+    domain: nzz.ch
+    language: de
+    category: media
+    tags: [telecom, geo, media]
+    trust_tier: secondary
+    access_modes: [site_search]
+    notes: Swiss quality press — telecom and China business coverage
+    search_templates:
+      - "site:nzz.ch {topic}"
+      - "site:nzz.ch Swisscom OR Sunrise OR Salt OR China Unicom"
+
+  - id: handelszeitung
+    name: Handelszeitung
+    domain: handelszeitung.ch
+    language: de
+    category: media
+    tags: [telecom, geo, media]
+    trust_tier: secondary
+    access_modes: [site_search]
+    notes: Swiss business newspaper
+    search_templates:
+      - "site:handelszeitung.ch {topic}"
+
+  - id: letemps
+    name: Le Temps
+    domain: letemps.ch
+    language: fr
+    category: media
+    tags: [telecom, geo, media]
+    trust_tier: secondary
+    access_modes: [site_search]
+    notes: Swiss French-language business news
+    search_templates:
+      - "site:letemps.ch {topic}"
+      - "site:letemps.ch télécoms OR Swisscom"
+
+  - id: ictjournal
+    name: ICT Journal (Switzerland)
+    domain: ictjournal.ch
+    language: fr
+    category: media
+    tags: [telecom, geo]
+    trust_tier: secondary
+    access_modes: [site_search]
+    notes: Swiss ICT / telecom trade press
+    search_templates:
+      - "site:ictjournal.ch {topic}"
