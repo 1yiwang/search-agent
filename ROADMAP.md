@@ -2,8 +2,8 @@
 
 > **Single source of truth** for implementation progress. Update this file at the end of each Step.
 
-**Current phase:** Wave 9b — multilingual recall  
-**Next step:** Live re-test Chinese+Switzerland topics; optional Swiss telecom catalog; 41f weekly script
+**Current phase:** Wave 10 — comprehensiveness (vs DeerFlow / general agents)  
+**Next step:** Step 58 parallel gap fan-out; see [docs/overall-plan-vs-deerflow.md](docs/overall-plan-vs-deerflow.md)
 
 ## Product constraints (personal use)
 
