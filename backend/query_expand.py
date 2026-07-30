@@ -93,11 +93,44 @@ def _suffix_for_info_type(info_type: str, dates: dict[str, str]) -> str:
     return suffixes[0]
 
 
-def _build_open_query(topic: str, suffix: str, dates: dict[str, str]) -> str:
+_GOAL_STOPWORDS = frozenset({
+    "a", "an", "and", "the", "of", "in", "for", "to", "or", "vs", "versus",
+    "on", "at", "by", "with", "from",
+})
+
+
+def _goal_keywords(goal: str, max_words: int = 8) -> str:
+    """Distinctive tokens from research_goal for open-web queries."""
+    words = [
+        w for w in goal.replace(",", " ").replace("/", " ").split()
+        if w and w.lower() not in _GOAL_STOPWORDS
+    ]
+    return " ".join(words[:max_words])
+
+
+def _build_open_query(
+    topic: str,
+    suffix: str,
+    dates: dict[str, str],
+    *,
+    research_goal: str = "",
+) -> str:
+    """Open-web query: topic seed + research_goal keywords + info_type suffix."""
     short_topic = topic.strip()
-    if len(short_topic) > 120:
-        short_topic = short_topic[:120].rsplit(" ", 1)[0]
-    return f"{short_topic} {suffix} {dates['yyyy_mm']}"
+    if len(short_topic) > 100:
+        short_topic = short_topic[:100].rsplit(" ", 1)[0]
+    topic_seed = " ".join(short_topic.split()[:6])
+    goal_part = _goal_keywords(research_goal)
+
+    seen: set[str] = set()
+    parts: list[str] = []
+    for token in f"{topic_seed} {goal_part}".split():
+        key = token.lower()
+        if key not in seen:
+            seen.add(key)
+            parts.append(token)
+    core = " ".join(parts[:12])
+    return f"{core} {suffix} {dates['yyyy_mm']}".strip()
 
 
 def _build_site_query(
@@ -120,14 +153,20 @@ def expand_queries(
     *,
     current_date: date | None = None,
     max_queries: int | None = None,
+    hop: int = 0,
 ) -> ExpandResult:
-    """Expand coverage gaps into executable site + open queries."""
+    """Expand coverage gaps into executable site + open queries.
+
+    ``hop`` rotates which info_type is used for site vs open so multi-hop
+    searches do not repeat the same suffix matrix.
+    """
     if not gap_hints:
         return ExpandResult()
 
     cap = max_queries if max_queries is not None else config.query_expand_max_per_hop
     when = current_date or datetime.now(timezone.utc).date()
     dates = _date_tokens(when)
+    hop_index = max(0, hop)
 
     expanded: list[ExpandedQuery] = []
     used_domains: set[str] = set()
@@ -135,12 +174,13 @@ def expand_queries(
     for hint in gap_hints[:3]:
         dim = hint.dimension
         info_types = DIMENSION_INFO_TYPES.get(dim, ["facts_data", "experts"])
+        n = len(info_types)
         goal = hint.research_goal
 
         source = _pick_source_for_dimension(dim, candidates, used_domains)
         if source:
             used_domains.add(source.domain)
-            info_type = info_types[0]
+            info_type = info_types[hop_index % n]
             suffix = _suffix_for_info_type(info_type, dates)
             expanded.append(ExpandedQuery(
                 query=_build_site_query(source, topic, suffix, dates),
@@ -150,10 +190,12 @@ def expand_queries(
                 dimension=dim,
             ))
 
-        open_type = info_types[-1] if len(info_types) > 1 else info_types[0]
+        open_type = info_types[(hop_index + 1) % n]
         open_suffix = _suffix_for_info_type(open_type, dates)
         expanded.append(ExpandedQuery(
-            query=_build_open_query(topic, open_suffix, dates),
+            query=_build_open_query(
+                topic, open_suffix, dates, research_goal=goal,
+            ),
             research_goal=goal,
             channel="open",
             template_id=open_type,

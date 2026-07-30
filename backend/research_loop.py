@@ -181,7 +181,12 @@ async def run_research_loop(
 
         expand_result = None
         if coverage.should_continue:
-            expand_result = expand_queries(request.topic, coverage.gap_hints, candidates)
+            expand_result = expand_queries(
+                request.topic,
+                coverage.gap_hints,
+                candidates,
+                hop=state.hop,
+            )
             for hint in coverage.gap_hints:
                 hint.suggested_queries = [
                     eq.query

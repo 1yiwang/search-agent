@@ -111,7 +111,7 @@ async def _test_research_loop_wires_gap_hints_to_next_hop():
 
     from query_expand import ExpandResult, ExpandedQuery
 
-    def fake_expand(topic, gap_hints, candidates, max_queries=None):
+    def fake_expand(topic, gap_hints, candidates, max_queries=None, hop=0):
         queries = []
         for h in gap_hints:
             queries.append(

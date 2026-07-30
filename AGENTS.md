@@ -183,7 +183,8 @@ agent.run_research()
 - [x] **搜全优先（Mode B）**：`query_expand` + open_web 预算保护 + fetch retry + `GapHint`（Step 43–45）
 - [x] **Wave 8 Step 46**：recall/coverage eval 门禁（`min_coverage_score` / dimensions / open-web query）
 - [x] **Wave 8 Step 47**：多样性阈值对齐 + GapHint → 下一跳 preferred sources / suggested_queries
-- [ ] **Wave 8 续**：48 open 查询质量 → 49 fail-over → 50 loop 集成测
+- [x] **Wave 8 Step 48**：open 查询嵌入 research_goal + info_type 轮换 + 预算感知条数
+- [ ] **Wave 8 续**：49 fail-over → 50 loop 集成测
 - [ ] Phase 3：Watchlist + 周刊增量
 - [ ] Always-on Fly API（**延后**；个人自用默认本机 Mode B，省钱更安全）
 - [ ] `job_brief`（swiss-job-agent 集成）

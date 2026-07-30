@@ -115,10 +115,50 @@ def test_preferred_source_ids_for_gaps():
     print("test_preferred_source_ids_for_gaps: PASS")
 
 
+def test_open_query_embeds_research_goal():
+    candidates = [_candidate("pei", "privateequityinternational.com")]
+    hints = [
+        GapHint(
+            dimension="credit_risk",
+            research_goal="private debt defaults leverage credit risk",
+        ),
+    ]
+    result = expand_queries(
+        "European corporate direct lending fundraising trends H1 2026",
+        hints,
+        candidates,
+        current_date=date(2026, 7, 9),
+        max_queries=4,
+    )
+    open_qs = [q for q in result.queries if q.channel == "open"]
+    assert open_qs
+    joined = " ".join(q.query.lower() for q in open_qs)
+    assert "default" in joined or "leverage" in joined or "credit" in joined
+    print("test_open_query_embeds_research_goal: PASS")
+
+
+def test_info_type_rotates_across_hops():
+    candidates = [_candidate("pei", "privateequityinternational.com")]
+    hints = [GapHint(dimension="fundraising", research_goal="EU fundraising trends")]
+    hop0 = expand_queries(
+        "European PD", hints, candidates, current_date=date(2026, 7, 9), hop=0,
+    )
+    hop1 = expand_queries(
+        "European PD", hints, candidates, current_date=date(2026, 7, 9), hop=1,
+    )
+    open0 = next(q for q in hop0.queries if q.channel == "open")
+    open1 = next(q for q in hop1.queries if q.channel == "open")
+    # fundraising info_types = [trends, facts_data]; hop0 open uses facts_data, hop1 uses trends
+    assert open0.template_id != open1.template_id
+    print("test_info_type_rotates_across_hops: PASS")
+
+
 if __name__ == "__main__":
     test_expand_generates_site_and_open_per_gap()
     test_expand_injects_date_granularity()
     test_expand_hard_cap()
     test_gap_hints_to_router_hints()
     test_preferred_source_ids_for_gaps()
+    test_open_query_embeds_research_goal()
+    test_info_type_rotates_across_hops()
     print("All query expand tests passed!")

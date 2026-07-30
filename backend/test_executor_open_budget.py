@@ -90,7 +90,48 @@ async def _test_fetch_retry_alternate_url():
     print("test_fetch_retry_alternate_url: PASS")
 
 
+async def _test_open_query_count_scales_with_budget():
+    decision = RouterDecision(
+        selected_source_ids=["pei"],
+        site_queries=[],
+        defer_open_web=False,
+    )
+    seen: set[str] = set()
+    open_queries = [
+        "q1 European defaults",
+        "q2 European spreads",
+        "q3 European ELTIF",
+        "q4 European volume",
+    ]
+
+    with (
+        patch("sources.executor._site_searches", new_callable=AsyncMock, return_value=[]),
+        patch(
+            "sources.executor.search_and_fetch",
+            new_callable=AsyncMock,
+            return_value=[
+                SearchResult(url="https://x.com/1", title="X", snippet="s", full_text="ok"),
+            ],
+        ) as mock_open,
+        patch("sources.executor.config.min_unique_domains_target", 3),
+    ):
+        await execute_router_decision(
+            "European private debt",
+            decision,
+            seen,
+            budget_remaining=9,
+            force_open_web=True,
+            open_queries=open_queries,
+        )
+
+    # open_budget ≈ max(2, 9//3)=3 reserved; with force open and empty site, open_budget=9
+    # max_open = min(4, max(2, 9//2)) = 4
+    assert mock_open.await_count == 4
+    print("test_open_query_count_scales_with_budget: PASS")
+
+
 if __name__ == "__main__":
     asyncio.run(_test_open_budget_reserved_when_defer())
     asyncio.run(_test_fetch_retry_alternate_url())
+    asyncio.run(_test_open_query_count_scales_with_budget())
     print("All executor tests passed!")

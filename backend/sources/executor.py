@@ -176,7 +176,14 @@ async def execute_router_decision(
             budget_remaining - len(collected),
         )
         queries_to_run = open_queries or [topic]
-        for open_query in queries_to_run[:2]:
+        # Budget-aware open query count: ≥2 when possible, ≤4, scales with budget.
+        max_open_queries = min(
+            len(queries_to_run),
+            max(1, min(4, max(2, open_budget // 2))),
+        )
+        queries_slice = queries_to_run[:max_open_queries]
+        per_query = max(1, open_budget // max(1, len(queries_slice)))
+        for open_query in queries_slice:
             if len(collected) >= budget_remaining:
                 break
             topics_searched.append(open_query)
@@ -188,7 +195,7 @@ async def execute_router_decision(
             with depth_ctx:
                 open_hits = await search_and_fetch(
                     open_query,
-                    min(open_budget, config.search_max_results),
+                    min(per_query, config.search_max_results),
                     event_callback=event_callback,
                     days=recency_days,
                 )

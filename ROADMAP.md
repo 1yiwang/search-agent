@@ -3,7 +3,7 @@
 > **Single source of truth** for implementation progress. Update this file at the end of each Step.
 
 **Current phase:** Wave 8 — search quality / useful source recall (Mode B)  
-**Next step:** Step 48 — open-web query quality (embed research_goal; rotate info_types)
+**Next step:** Step 49 — fail-over when curated site/fetch misses
 
 ## Product constraints (personal use)
 
@@ -154,8 +154,8 @@
 |------|------|--------|
 | 46 | Recall eval gate: `min_coverage_score` / `min_covered_dimensions` / `require_open_web_query` in `eval/validate.py`; tighten `european-pd-smoke` | Done |
 | 47 | Align diversity thresholds (`coverage` / `executor` / eval) + wire GapHint into next-hop routing | Done |
-| 48 | Open-web query quality: embed `research_goal`; rotate info_types; budget-aware open query count | **Next** |
-| 49 | Fail-over: empty site / failed fetch → alternate catalog sources; optional `TAVILY_DEEP_ON_GAP` | Pending |
+| 48 | Open-web query quality: embed `research_goal`; rotate info_types; budget-aware open query count | Done |
+| 49 | Fail-over: empty site / failed fetch → alternate catalog sources; optional `TAVILY_DEEP_ON_GAP` | **Next** |
 | 50 | Research-loop integration tests: gap → expand → pending → open/site hop-2 event chain | Pending |
 
 `job_brief` deferred — swiss-job-agent integration only.
