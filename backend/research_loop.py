@@ -66,11 +66,13 @@ def _brief_coverage_dims(
     out: list[tuple[str, str, list[str]]] = []
     for dim_id, dim in zip(ids, brief.dimensions):
         keywords = [dim.title.lower()]
-        keywords.extend(
-            w.lower() for w in dim.research_goal.replace(",", " ").split()
+        goal = dim.research_goal or ""
+        extra = [
+            w.lower() for w in goal.replace(",", " ").split()
             if len(w) > 3
-        )[:8]
-        out.append((dim_id, dim.research_goal or dim.title, keywords))
+        ][:8]
+        keywords.extend(extra)
+        out.append((dim_id, goal or dim.title, keywords))
     return out
 
 
@@ -121,8 +123,8 @@ async def _run_research_loop_body(
         await emit("brief_bound", {
             "framework_id": brief.framework_id,
             "dimension_count": len(brief.dimensions),
-            "deprioritize": brief.deprioritize[:8],
-            "problem_restatement": brief.problem_restatement[:300],
+            "deprioritize": (brief.deprioritize or [])[:8],
+            "problem_restatement": (brief.problem_restatement or "")[:300],
         })
 
     candidates = filter_candidates(request.topic)
