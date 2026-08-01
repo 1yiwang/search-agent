@@ -232,7 +232,6 @@ def _heuristic_draft(
 ) -> EvidenceDraft:
     """Deterministic draft when LLM unavailable: keyword overlap + GDP quarantine."""
     zh = _topic_language_hint(topic) == "zh"
-    dep_l = (deprioritize or "").lower()
     quarantine: list[EvidenceDraftQuarantine] = []
     on_topic_indices: list[int] = []
 
