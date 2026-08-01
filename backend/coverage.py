@@ -245,6 +245,91 @@ def _evaluate_general_coverage(
     )
 
 
+def _evaluate_brief_coverage(
+    facts: list[ExtractedFact],
+    brief_dimensions: list[tuple[str, str, list[str]]],
+    *,
+    hop: int,
+    max_hops: int,
+    sources_budget_remaining: int,
+    stagnant_hops: int,
+    domain_target: int,
+) -> CoverageResult:
+    """Coverage against an approved ResearchBrief's dimensions.
+
+    brief_dimensions: list of (dim_id, research_goal, keywords)
+    """
+    unique_domains = _unique_domains_from_facts(facts)
+    source_diversity_ok = unique_domains >= domain_target
+    can = _can_continue(
+        hop=hop,
+        max_hops=max_hops,
+        sources_budget_remaining=sources_budget_remaining,
+        stagnant_hops=stagnant_hops,
+    )
+    if not brief_dimensions:
+        return _evaluate_general_coverage(
+            facts,
+            hop=hop,
+            max_hops=max_hops,
+            sources_budget_remaining=sources_budget_remaining,
+            stagnant_hops=stagnant_hops,
+            domain_target=domain_target,
+        )
+
+    if not facts:
+        missing = [d[0] for d in brief_dimensions[:4]]
+        gap_hints = [
+            GapHint(dimension=d[0], research_goal=d[1] or RESEARCH_GOALS.get("_empty", ""))
+            for d in brief_dimensions[:4]
+        ]
+        return CoverageResult(
+            score=0.0,
+            missing_dimensions=missing,
+            covered_dimensions=[],
+            suggested_router_hints=[h.research_goal for h in gap_hints],
+            gap_hints=gap_hints,
+            should_continue=can,
+            unique_domains=unique_domains,
+            source_diversity_ok=False,
+        )
+
+    corpus = _fact_corpus(facts)
+    covered: list[str] = []
+    missing: list[str] = []
+    gap_hints: list[GapHint] = []
+    for dim_id, goal, keywords in brief_dimensions:
+        kws = keywords or [w for w in dim_id.replace("_", " ").split() if len(w) > 2]
+        if _dimension_covered(corpus, [k.lower() for k in kws]):
+            covered.append(dim_id)
+        else:
+            missing.append(dim_id)
+            gap_hints.append(GapHint(dimension=dim_id, research_goal=goal or dim_id))
+
+    score = len(covered) / len(brief_dimensions) if brief_dimensions else 1.0
+    if not source_diversity_ok:
+        if "_diversity" not in missing:
+            missing.insert(0, "_diversity")
+        gap_hints.insert(0, GapHint(
+            dimension="_diversity",
+            research_goal=RESEARCH_GOALS["_diversity"],
+        ))
+
+    content_ok = score >= 0.6 and len(facts) >= max(4, min(GENERAL_MIN_FACTS, len(brief_dimensions)))
+    should_continue = can and (not content_ok or not source_diversity_ok or bool(missing[:3]))
+
+    return CoverageResult(
+        score=round(score, 3),
+        missing_dimensions=missing,
+        covered_dimensions=covered,
+        suggested_router_hints=[h.research_goal for h in gap_hints],
+        gap_hints=gap_hints[:6],
+        should_continue=should_continue,
+        unique_domains=unique_domains,
+        source_diversity_ok=source_diversity_ok,
+    )
+
+
 def evaluate_coverage(
     topic: str,
     facts: list[ExtractedFact],
@@ -255,8 +340,9 @@ def evaluate_coverage(
     sources_budget_remaining: int,
     stagnant_hops: int,
     min_unique_domains: int | None = None,
+    brief_dimensions: list[tuple[str, str, list[str]]] | None = None,
 ) -> CoverageResult:
-    """Rule-based coverage: investor_brief dimensions or general deep-search."""
+    """Rule-based coverage: brief dims, investor_brief, or general deep-search."""
     report_type = detect_report_type(topic)
     unique_domains = _unique_domains_from_facts(facts)
     domain_target = (
@@ -265,6 +351,17 @@ def evaluate_coverage(
         else min_unique_domains
     )
     source_diversity_ok = unique_domains >= domain_target
+
+    if brief_dimensions:
+        return _evaluate_brief_coverage(
+            facts,
+            brief_dimensions,
+            hop=hop,
+            max_hops=max_hops,
+            sources_budget_remaining=sources_budget_remaining,
+            stagnant_hops=stagnant_hops,
+            domain_target=domain_target,
+        )
 
     if report_type != "investor_brief":
         return _evaluate_general_coverage(

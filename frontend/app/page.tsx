@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import {
   streamResearch,
-  streamDeepResearch,
   checkApiHealth,
   type SSEEvent,
 } from "@/lib/api";
@@ -30,6 +29,24 @@ export default function SearchPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!topic.trim() || loading) return;
+
+    // Standard / Deep → industry brief wizard (Wave 12a)
+    if (mode === "quick" && depth !== "fast") {
+      const q = new URLSearchParams({
+        topic: topic.trim(),
+        depth,
+      });
+      router.push(`/brief?${q.toString()}`);
+      return;
+    }
+    if (mode === "deep") {
+      const q = new URLSearchParams({
+        topic: topic.trim(),
+        depth: "deep",
+      });
+      router.push(`/brief?${q.toString()}`);
+      return;
+    }
 
     setLoading(true);
     setProgress([]);
@@ -56,10 +73,7 @@ export default function SearchPage() {
 
     const events: SSEEvent[] = [];
     try {
-      const stream =
-        mode === "deep"
-          ? streamDeepResearch({ topic: topic.trim(), max_sections: 4 })
-          : streamResearch({ topic: topic.trim(), depth });
+      const stream = streamResearch({ topic: topic.trim(), depth: "fast" });
 
       for await (const event of stream) {
         events.push(event);
@@ -206,15 +220,19 @@ export default function SearchPage() {
           >
             {loading
               ? "Researching…"
-              : mode === "deep"
-                ? "Start multi-section research"
-                : `Start ${depth} research`}
+              : mode === "deep" || (mode === "quick" && depth !== "fast")
+                ? "Continue to brief →"
+                : "Start fast research"}
           </button>
           <p className="text-sm text-[var(--muted)]">
-            <Link href="/plan" className="text-[var(--link)] hover:underline">
-              Deep planning wizard
+            <Link href="/brief" className="text-[var(--link)] hover:underline">
+              Industry brief wizard
             </Link>
-            {" "}— clarify scope before executing
+            {" "}— clarify → overview → cited research
+            {" · "}
+            <Link href="/plan" className="text-[var(--link)] hover:underline">
+              Legacy multi-section plan
+            </Link>
           </p>
         </div>
       </form>

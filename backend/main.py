@@ -5,7 +5,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 from config import config
-from models import ResearchRequest, ResearchReport, ResearchPlan
+from models import ResearchRequest, ResearchReport, ResearchPlan, ResearchBrief
 from agent import run_research, run_deep_research
 from report_store import load_report, list_reports
 from event_log import load_events
@@ -16,9 +16,14 @@ from middleware_auth import AuthAndKeysMiddleware
 from meta import (
     create_session,
     format_human_feedback,
-    generate_clarifying_questions,
     get_session,
 )
+from brief import (
+    generate_industry_clarifying_questions,
+    generate_research_brief,
+    revise_research_brief,
+)
+from frameworks import select_framework_id
 from watchlist.models import WatchCreate, WatchItem, WatchUpdate
 from watchlist.store import (
     create_watch,
@@ -142,6 +147,7 @@ class StreamRequest(BaseModel):
     topic: str = Field(..., min_length=3, max_length=500)
     max_sources: int = Field(default=10, ge=3, le=30)
     depth: str = Field(default="standard", pattern="^(fast|standard|deep)$")
+    brief_session_id: str | None = None
 
 
 @app.post("/api/research/stream")
@@ -154,6 +160,7 @@ async def research_stream(request: StreamRequest):
                 topic=request.topic,
                 max_sources=request.max_sources,
                 depth=request.depth,
+                brief_session_id=request.brief_session_id,
             ),
             event_callback=event_callback,
         )
@@ -205,7 +212,7 @@ class MetaClarifyResponse(BaseModel):
 @app.post("/api/meta/clarify", response_model=MetaClarifyResponse)
 async def meta_clarify(request: MetaClarifyRequest):
     """Step 1-2: generate clarifying questions and open a meta session."""
-    questions = await generate_clarifying_questions(request.topic)
+    questions = await generate_industry_clarifying_questions(request.topic)
     session = create_session(request.topic, questions)
     return MetaClarifyResponse(
         session_id=session.session_id,
@@ -274,6 +281,131 @@ async def meta_research_stream(request: MetaResearchRequest):
 
     return StreamingResponse(
         stream_research(session.topic, "meta", run_pipeline),
+        media_type="text/event-stream",
+        headers=SSE_HEADERS,
+    )
+
+
+# --- Brief-first industry research (Wave 12a) ---
+
+
+class BriefClarifyRequest(BaseModel):
+    topic: str = Field(..., min_length=3, max_length=500)
+
+
+class BriefClarifyResponse(BaseModel):
+    session_id: str
+    topic: str
+    questions: list[dict]
+    suggested_framework_id: str
+
+
+@app.post("/api/brief/clarify", response_model=BriefClarifyResponse)
+async def brief_clarify(request: BriefClarifyRequest):
+    """Industry clarifying questions + session (no web search)."""
+    questions = await generate_industry_clarifying_questions(request.topic)
+    session = create_session(request.topic, questions)
+    return BriefClarifyResponse(
+        session_id=session.session_id,
+        topic=session.topic,
+        questions=session.questions,
+        suggested_framework_id=select_framework_id(request.topic),
+    )
+
+
+class BriefGenerateRequest(BaseModel):
+    session_id: str
+    answers: dict[str, str] = Field(default_factory=dict)
+    framework_id: str | None = None
+
+
+@app.post("/api/brief/generate", response_model=ResearchBrief)
+async def brief_generate(request: BriefGenerateRequest):
+    """Generate ResearchBrief from framework skeleton + answers (no web search)."""
+    session = get_session(request.session_id)
+    if session is None:
+        raise HTTPException(status_code=404, detail="Session not found or expired")
+    session.answers = request.answers
+    brief = await generate_research_brief(
+        session.topic,
+        answers=request.answers,
+        questions=session.questions,
+        framework_id=request.framework_id,
+    )
+    session.brief = brief
+    return brief
+
+
+class BriefReviseRequest(BaseModel):
+    session_id: str
+    feedback: str = Field(..., min_length=1, max_length=4000)
+
+
+@app.post("/api/brief/revise", response_model=ResearchBrief)
+async def brief_revise(request: BriefReviseRequest):
+    """Revise ResearchBrief from human feedback."""
+    session = get_session(request.session_id)
+    if session is None:
+        raise HTTPException(status_code=404, detail="Session not found or expired")
+    if session.brief is None:
+        raise HTTPException(status_code=400, detail="No brief; call /api/brief/generate first")
+    brief = await revise_research_brief(session.brief, request.feedback)
+    session.brief = brief
+    return brief
+
+
+class BriefConfirmRequest(BaseModel):
+    session_id: str
+
+
+@app.post("/api/brief/confirm", response_model=ResearchBrief)
+async def brief_confirm(request: BriefConfirmRequest):
+    """Freeze ResearchBrief for execution."""
+    session = get_session(request.session_id)
+    if session is None:
+        raise HTTPException(status_code=404, detail="Session not found or expired")
+    if session.brief is None:
+        raise HTTPException(status_code=400, detail="No brief; call /api/brief/generate first")
+    session.brief.confirmed = True
+    return session.brief
+
+
+class BriefResearchRequest(BaseModel):
+    session_id: str
+    depth: str = Field(default="standard", pattern="^(fast|standard|deep)$")
+    max_sources: int | None = Field(default=None, ge=3, le=30)
+
+
+@app.post("/api/brief/research/stream")
+async def brief_research_stream(request: BriefResearchRequest):
+    """Execute confirmed brief via coverage-driven research loop (SSE)."""
+    session = get_session(request.session_id)
+    if session is None:
+        raise HTTPException(status_code=404, detail="Session not found or expired")
+    if session.brief is None or not session.brief.confirmed:
+        raise HTTPException(
+            status_code=400,
+            detail="Brief not confirmed; call /api/brief/confirm first",
+        )
+
+    async def run_pipeline(event_callback):
+        await event_callback("brief_ready", {
+            "framework_id": session.brief.framework_id,
+            "dimension_count": len(session.brief.dimensions),
+            "session_id": session.session_id,
+        })
+        return await run_research(
+            ResearchRequest(
+                topic=session.topic,
+                depth=request.depth,
+                max_sources=request.max_sources or 10,
+                brief_session_id=session.session_id,
+            ),
+            event_callback=event_callback,
+        )
+
+    return StreamingResponse(
+        stream_research(session.topic, "brief", run_pipeline),
         media_type="text/event-stream",
         headers=SSE_HEADERS,
     )

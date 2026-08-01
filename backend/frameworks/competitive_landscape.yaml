@@ -1,0 +1,22 @@
+# Competitive landscape skeleton (Wave 12a)
+id: competitive_landscape
+name: Competitive landscape
+description: Map players, shares, positioning, and competitive dynamics.
+phases:
+  - id: player_map
+    title: Player map
+    goal: Who competes — segments and positioning
+  - id: shares
+    title: Shares and ranking
+    goal: Market share, subscribers, revenue where public
+  - id: products
+    title: Product and offer comparison
+    goal: Feature, price, channel differences
+  - id: dynamics
+    title: Competitive dynamics
+    goal: M&A, regulation shocks, new entrants
+default_deprioritize:
+  - broad economy without competitive link
+prompt_rules: |
+  - Center on named competitors and the industry arena.
+  - Prefer hard metrics when available; flag soft claims.

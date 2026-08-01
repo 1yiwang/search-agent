@@ -1,15 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
 import {
-  metaClarify,
-  metaPlan,
-  streamMetaResearch,
+  briefClarify,
+  briefConfirm,
+  briefGenerate,
+  briefRevise,
+  streamBriefResearch,
   type ClarifyingQuestion,
-  type ResearchPlan,
-  type SSEEvent,
+  type ResearchBrief,
 } from "@/lib/api";
 import { formatProgressEvent } from "@/lib/formatProgress";
 import { researchReportPath, slugFromReportReady } from "@/lib/researchNav";
@@ -17,35 +18,42 @@ import { ApiStatus } from "@/components/ApiStatus";
 import { SettingsPanel } from "@/components/SettingsPanel";
 
 type WizardStep = 1 | 2 | 3 | 4 | 5;
+type Depth = "fast" | "standard" | "deep";
 
-const STEP_LABELS = ["Topic", "Clarify", "Plan", "Review", "Execute"];
+const STEP_LABELS = ["Topic", "Clarify", "Brief", "Confirm", "Execute"];
 
-export default function PlanWizardPage() {
+function BriefWizardInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [step, setStep] = useState<WizardStep>(1);
   const [topic, setTopic] = useState("");
+  const [depth, setDepth] = useState<Depth>("deep");
   const [sessionId, setSessionId] = useState("");
+  const [frameworkId, setFrameworkId] = useState("");
   const [questions, setQuestions] = useState<ClarifyingQuestion[]>([]);
   const [answers, setAnswers] = useState<Record<string, string>>({});
-  const [plan, setPlan] = useState<ResearchPlan | null>(null);
+  const [brief, setBrief] = useState<ResearchBrief | null>(null);
   const [feedback, setFeedback] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [progress, setProgress] = useState<string[]>([]);
-  const [result, setResult] = useState<{
-    slug: string;
-    markdown: string;
-    fact_count: number;
-  } | null>(null);
+
+  useEffect(() => {
+    const t = searchParams.get("topic");
+    const d = searchParams.get("depth");
+    if (t) setTopic(t);
+    if (d === "fast" || d === "standard" || d === "deep") setDepth(d);
+  }, [searchParams]);
 
   async function handleClarify() {
     if (!topic.trim()) return;
     setLoading(true);
     setError("");
     try {
-      const res = await metaClarify(topic.trim());
+      const res = await briefClarify(topic.trim());
       setSessionId(res.session_id);
       setQuestions(res.questions);
+      setFrameworkId(res.suggested_framework_id);
       setAnswers({});
       setStep(2);
     } catch (err) {
@@ -55,26 +63,48 @@ export default function PlanWizardPage() {
     }
   }
 
-  async function handleGeneratePlan() {
+  async function handleSkipClarify() {
+    if (!topic.trim()) return;
     setLoading(true);
     setError("");
     try {
-      const generated = await metaPlan({
-        session_id: sessionId,
-        answers,
-        max_sections: 4,
-        initial_sources: 5,
+      const res = await briefClarify(topic.trim());
+      setSessionId(res.session_id);
+      setQuestions(res.questions);
+      setFrameworkId(res.suggested_framework_id);
+      const generated = await briefGenerate({
+        session_id: res.session_id,
+        answers: {},
+        framework_id: res.suggested_framework_id,
       });
-      setPlan(generated);
+      setBrief(generated);
       setStep(3);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to generate plan");
+      setError(err instanceof Error ? err.message : "Failed to generate brief");
     } finally {
       setLoading(false);
     }
   }
 
-  async function handleRevisePlan() {
+  async function handleGenerateBrief() {
+    setLoading(true);
+    setError("");
+    try {
+      const generated = await briefGenerate({
+        session_id: sessionId,
+        answers,
+        framework_id: frameworkId || undefined,
+      });
+      setBrief(generated);
+      setStep(3);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to generate brief");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleRevise() {
     if (!feedback.trim()) {
       setStep(4);
       return;
@@ -82,17 +112,15 @@ export default function PlanWizardPage() {
     setLoading(true);
     setError("");
     try {
-      const revised = await metaPlan({
+      const revised = await briefRevise({
         session_id: sessionId,
-        answers,
         feedback: feedback.trim(),
-        max_sections: 4,
-        initial_sources: 5,
       });
-      setPlan(revised);
+      setBrief(revised);
+      setFeedback("");
       setStep(4);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to revise plan");
+      setError(err instanceof Error ? err.message : "Failed to revise brief");
     } finally {
       setLoading(false);
     }
@@ -102,15 +130,14 @@ export default function PlanWizardPage() {
     setLoading(true);
     setError("");
     setProgress([]);
-    setResult(null);
     setStep(5);
-
-    const events: SSEEvent[] = [];
     try {
-      for await (const event of streamMetaResearch({ session_id: sessionId })) {
-        events.push(event);
+      await briefConfirm(sessionId);
+      for await (const event of streamBriefResearch({
+        session_id: sessionId,
+        depth,
+      })) {
         setProgress((prev) => [...prev, formatProgressEvent(event)]);
-
         const slug = slugFromReportReady(event);
         if (slug) {
           router.push(researchReportPath(slug));
@@ -127,21 +154,13 @@ export default function PlanWizardPage() {
     <main className="mx-auto max-w-3xl px-4 py-12 md:py-20">
       <header className="mb-8">
         <Link href="/" className="text-sm text-[var(--link)] hover:underline">
-          ← Back to quick search
-        </Link>
-        {" · "}
-        <Link href="/brief" className="text-sm text-[var(--link)] hover:underline">
-          Industry brief (recommended)
+          ← Back to search
         </Link>
         <h1 className="font-display text-3xl md:text-4xl text-[var(--ink)] mt-4">
-          Deep planning wizard
+          Industry research brief
         </h1>
         <p className="mt-2 text-[var(--muted)] text-sm">
-          Legacy multi-section planner. Prefer{" "}
-          <Link href="/brief" className="text-[var(--link)] hover:underline">
-            /brief
-          </Link>{" "}
-          for industry market-entry research.
+          Clarify boundary → review search overview → execute cited research.
         </p>
         <div className="mt-3 flex flex-col gap-2">
           <ApiStatus />
@@ -186,28 +205,87 @@ export default function PlanWizardPage() {
             type="text"
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
-            placeholder="e.g. EU AI Act compliance for SaaS startups"
+            placeholder="e.g. 中国联通进入瑞士电信市场的机会"
             className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-4 py-3"
             disabled={loading}
           />
-          <button
-            type="button"
-            onClick={handleClarify}
-            disabled={loading || !topic.trim()}
-            className="rounded-lg bg-[var(--accent)] px-6 py-2.5 font-semibold text-[#1a1408] disabled:opacity-40"
-          >
-            {loading ? "Thinking…" : "Continue → clarify"}
-          </button>
+          <div className="flex flex-wrap gap-4 text-sm">
+            {(
+              [
+                ["standard", "Standard"],
+                ["deep", "Deep"],
+              ] as const
+            ).map(([value, label]) => (
+              <label key={value} className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="depth"
+                  checked={depth === value}
+                  onChange={() => setDepth(value)}
+                  className="accent-[var(--accent)]"
+                />
+                {label}
+              </label>
+            ))}
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={handleClarify}
+              disabled={loading || !topic.trim()}
+              className="rounded-lg bg-[var(--accent)] px-6 py-2.5 font-semibold text-[#1a1408] disabled:opacity-40"
+            >
+              {loading ? "Thinking…" : "Continue → clarify"}
+            </button>
+            <button
+              type="button"
+              onClick={handleSkipClarify}
+              disabled={loading || !topic.trim()}
+              className="rounded-lg border border-[var(--border)] px-4 py-2.5 text-sm disabled:opacity-40"
+            >
+              Skip clarify, generate brief
+            </button>
+          </div>
         </section>
       )}
 
       {step === 2 && (
         <section className="space-y-5">
+          {frameworkId && (
+            <p className="text-xs text-[var(--muted)]">
+              Suggested framework: <span className="text-[var(--ink)]">{frameworkId}</span>
+            </p>
+          )}
           {questions.map((q) => (
             <div key={q.id}>
               <label className="block text-sm font-medium text-[var(--ink)] mb-1">
+                {q.category ? (
+                  <span className="mr-2 text-xs uppercase tracking-wide text-[var(--muted)]">
+                    {q.category}
+                  </span>
+                ) : null}
                 {q.question}
               </label>
+              {q.options && q.options.length > 0 ? (
+                <div className="mb-2 flex flex-wrap gap-2">
+                  {q.options.map((opt) => (
+                    <button
+                      key={opt}
+                      type="button"
+                      onClick={() =>
+                        setAnswers((prev) => ({ ...prev, [q.id]: opt }))
+                      }
+                      className={`rounded border px-3 py-1 text-xs ${
+                        answers[q.id] === opt
+                          ? "border-[var(--accent)] text-[var(--ink)]"
+                          : "border-[var(--border)] text-[var(--muted)]"
+                      }`}
+                    >
+                      {opt}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
               <input
                 type="text"
                 value={answers[q.id] || ""}
@@ -230,30 +308,52 @@ export default function PlanWizardPage() {
             </button>
             <button
               type="button"
-              onClick={handleGeneratePlan}
+              onClick={handleGenerateBrief}
               disabled={loading}
               className="rounded-lg bg-[var(--accent)] px-6 py-2.5 font-semibold text-[#1a1408] disabled:opacity-40"
             >
-              {loading ? "Researching & planning…" : "Generate plan →"}
+              {loading ? "Building brief…" : "Generate brief →"}
             </button>
           </div>
         </section>
       )}
 
-      {step === 3 && plan && (
+      {step === 3 && brief && (
         <section className="space-y-4">
-          <h2 className="font-display text-xl text-[var(--ink)]">{plan.title}</h2>
-          <p className="text-sm text-[var(--muted)] line-clamp-4">
-            {plan.initial_research_summary.slice(0, 400)}
-            {plan.initial_research_summary.length > 400 && "…"}
+          <h2 className="font-display text-xl text-[var(--ink)]">
+            {brief.problem_restatement || brief.topic}
+          </h2>
+          <p className="text-xs text-[var(--muted)]">
+            Framework: {brief.framework_id}
           </p>
+          {brief.overview_markdown && (
+            <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-4 text-sm text-[var(--muted)] whitespace-pre-wrap max-h-48 overflow-y-auto">
+              {brief.overview_markdown.slice(0, 2000)}
+              {brief.overview_markdown.length > 2000 && "…"}
+            </div>
+          )}
+          {brief.deprioritize.length > 0 && (
+            <div>
+              <p className="text-xs uppercase tracking-wide text-[var(--muted)] mb-1">
+                Deprioritize
+              </p>
+              <ul className="text-sm text-[var(--muted)] list-disc pl-5">
+                {brief.deprioritize.slice(0, 6).map((d) => (
+                  <li key={d}>{d}</li>
+                ))}
+              </ul>
+            </div>
+          )}
           <ul className="space-y-3">
-            {plan.dimensions.map((dim, i) => (
+            {brief.dimensions.map((dim, i) => (
               <li
                 key={i}
                 className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-4"
               >
                 <p className="font-medium text-[var(--ink)]">{dim.title}</p>
+                {dim.research_goal && (
+                  <p className="mt-1 text-xs text-[var(--muted)]">{dim.research_goal}</p>
+                )}
                 <p className="mt-1 text-xs text-[var(--muted)]">
                   {dim.queries.join(" · ")}
                 </p>
@@ -273,21 +373,21 @@ export default function PlanWizardPage() {
               onClick={() => setStep(4)}
               className="rounded-lg bg-[var(--accent)] px-6 py-2.5 font-semibold text-[#1a1408]"
             >
-              Review plan →
+              Review & confirm →
             </button>
           </div>
         </section>
       )}
 
-      {step === 4 && plan && (
+      {step === 4 && brief && (
         <section className="space-y-4">
           <p className="text-sm text-[var(--muted)]">
-            Approve the plan or describe changes. Leave blank to proceed as-is.
+            Approve the brief or describe changes. Leave blank to execute as-is.
           </p>
           <textarea
             value={feedback}
             onChange={(e) => setFeedback(e.target.value)}
-            placeholder="e.g. Add a dimension on enforcement penalties; focus on 2025–2026"
+            placeholder="e.g. Drop GDP entirely; add MVNO / wholesale angle; focus on B2B"
             rows={4}
             className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-4 py-3 text-sm"
             disabled={loading}
@@ -303,11 +403,11 @@ export default function PlanWizardPage() {
             {feedback.trim() ? (
               <button
                 type="button"
-                onClick={handleRevisePlan}
+                onClick={handleRevise}
                 disabled={loading}
                 className="rounded-lg bg-[var(--accent)] px-6 py-2.5 font-semibold text-[#1a1408] disabled:opacity-40"
               >
-                {loading ? "Revising…" : "Revise plan"}
+                {loading ? "Revising…" : "Revise brief"}
               </button>
             ) : null}
             <button
@@ -316,7 +416,7 @@ export default function PlanWizardPage() {
               disabled={loading}
               className="rounded-lg bg-[var(--ink)] px-6 py-2.5 font-semibold text-[var(--surface)] disabled:opacity-40"
             >
-              Approve & execute →
+              Confirm & research →
             </button>
           </div>
         </section>
@@ -340,25 +440,16 @@ export default function PlanWizardPage() {
               ))}
             </ol>
           )}
-          {result && (
-            <div className="rounded-lg border border-[var(--border)] bg-[var(--surface-raised)] p-6">
-              <p className="text-sm text-[var(--muted)] mb-2">
-                {result.fact_count} facts ·{" "}
-                <Link
-                  href={`/research/${result.slug}`}
-                  className="text-[var(--link)] hover:underline"
-                >
-                  Open report →
-                </Link>
-              </p>
-              <pre className="whitespace-pre-wrap text-sm text-[var(--muted)] font-mono max-h-48 overflow-y-auto">
-                {result.markdown.slice(0, 1500)}
-                {result.markdown.length > 1500 && "\n\n…"}
-              </pre>
-            </div>
-          )}
         </section>
       )}
     </main>
+  );
+}
+
+export default function BriefWizardPage() {
+  return (
+    <Suspense fallback={<main className="p-8 text-[var(--muted)]">Loading…</main>}>
+      <BriefWizardInner />
+    </Suspense>
   );
 }

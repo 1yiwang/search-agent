@@ -68,6 +68,10 @@ export function formatProgressEvent(event: SSEEvent): string {
       return `Planning deep research: ${d.dimension_count} dimensions`;
     case "plan_ready":
       return `Plan ready: ${d.title || "sections defined"}`;
+    case "brief_ready":
+      return `Brief ready: ${d.framework_id || "industry"} (${d.dimension_count || "?"} dims)`;
+    case "brief_bound":
+      return `Bound to brief: ${d.framework_id || ""}`;
     case "dimension_start":
       return `Dimension “${d.title}”: ${(d.queries as string[])?.length || 0} queries`;
     case "dimension_complete":

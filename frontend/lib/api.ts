@@ -34,6 +34,7 @@ export interface ResearchRequest {
   max_sources?: number;
   /** fast | standard | deep — Wave 10 Step 62 */
   depth?: "fast" | "standard" | "deep";
+  brief_session_id?: string;
 }
 
 export interface DeepResearchRequest {
@@ -47,12 +48,45 @@ export interface ClarifyingQuestion {
   id: string;
   question: string;
   hint?: string;
+  category?: string;
+  options?: string[];
 }
 
 export interface MetaClarifyResponse {
   session_id: string;
   topic: string;
   questions: ClarifyingQuestion[];
+}
+
+export interface BriefClarifyResponse {
+  session_id: string;
+  topic: string;
+  questions: ClarifyingQuestion[];
+  suggested_framework_id: string;
+}
+
+export interface BriefDimension {
+  title: string;
+  research_goal: string;
+  queries: string[];
+  priority: number;
+  info_type: string;
+  phase_id?: string;
+}
+
+export interface ResearchBrief {
+  topic: string;
+  problem_restatement: string;
+  framework_id: string;
+  clarify_answers: Record<string, string>;
+  phases: Array<{ id?: string; title?: string; goal?: string }>;
+  dimensions: BriefDimension[];
+  deprioritize: string[];
+  source_prefs: string[];
+  success_criteria: string[];
+  assumed_defaults: string[];
+  overview_markdown: string;
+  confirmed: boolean;
 }
 
 export interface ResearchDimension {
@@ -249,6 +283,77 @@ export async function* streamMetaResearch(params: {
     headers: getRequestHeaders(),
     body: JSON.stringify({
       sources_per_query: 3,
+      ...params,
+    }),
+  });
+  yield* parseSSEStream(response);
+}
+
+export async function briefClarify(topic: string): Promise<BriefClarifyResponse> {
+  const response = await apiFetch("/api/brief/clarify", {
+    method: "POST",
+    headers: getRequestHeaders(),
+    body: JSON.stringify({ topic }),
+  });
+  if (!response.ok) {
+    throw new Error(`Brief clarify failed: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+export async function briefGenerate(params: {
+  session_id: string;
+  answers?: Record<string, string>;
+  framework_id?: string;
+}): Promise<ResearchBrief> {
+  const response = await apiFetch("/api/brief/generate", {
+    method: "POST",
+    headers: getRequestHeaders(),
+    body: JSON.stringify(params),
+  });
+  if (!response.ok) {
+    throw new Error(`Brief generate failed: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+export async function briefRevise(params: {
+  session_id: string;
+  feedback: string;
+}): Promise<ResearchBrief> {
+  const response = await apiFetch("/api/brief/revise", {
+    method: "POST",
+    headers: getRequestHeaders(),
+    body: JSON.stringify(params),
+  });
+  if (!response.ok) {
+    throw new Error(`Brief revise failed: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+export async function briefConfirm(session_id: string): Promise<ResearchBrief> {
+  const response = await apiFetch("/api/brief/confirm", {
+    method: "POST",
+    headers: getRequestHeaders(),
+    body: JSON.stringify({ session_id }),
+  });
+  if (!response.ok) {
+    throw new Error(`Brief confirm failed: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+export async function* streamBriefResearch(params: {
+  session_id: string;
+  depth?: "fast" | "standard" | "deep";
+  max_sources?: number;
+}): AsyncGenerator<SSEEvent> {
+  const response = await apiFetch("/api/brief/research/stream", {
+    method: "POST",
+    headers: getRequestHeaders(),
+    body: JSON.stringify({
+      depth: "standard",
       ...params,
     }),
   });

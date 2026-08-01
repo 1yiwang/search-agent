@@ -1,0 +1,26 @@
+# Generic industry research skeleton (Wave 12a)
+id: general_industry
+name: General industry research
+description: Fallback when no specialized framework matches.
+phases:
+  - id: overview
+    title: Industry overview
+    goal: Definition, scope, and current state of the industry
+  - id: size_drivers
+    title: Market size and drivers
+    goal: Scale, growth rates, key demand/supply drivers
+  - id: players
+    title: Key players
+    goal: Leaders, challengers, niches
+  - id: trends
+    title: Trends and outlook
+    goal: Technology, regulation, customer shifts
+  - id: risks
+    title: Risks and open questions
+    goal: Uncertainties, data gaps, controversies
+default_deprioritize:
+  - unrelated national macro topics unless the question is macro
+prompt_rules: |
+  - Stay inside the named industry or topic.
+  - Prefer primary/industry sources over generic news roundups.
+  - Adapt phases to the question; note changes in overview_markdown.

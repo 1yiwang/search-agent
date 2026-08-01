@@ -38,6 +38,42 @@ class ResearchRequest(BaseModel):
         description="Research depth tier: fast | standard | deep",
         pattern="^(fast|standard|deep)$",
     )
+    brief_session_id: str | None = Field(
+        default=None,
+        description="Optional Wave 12a brief session; when set, loop binds to confirmed brief",
+    )
+
+
+class BriefDimension(BaseModel):
+    """One searchable dimension inside an industry ResearchBrief."""
+    title: str = Field(..., min_length=2, max_length=200)
+    research_goal: str = Field(default="", max_length=500)
+    queries: list[str] = Field(default_factory=list, max_length=8)
+    priority: int = Field(default=1, ge=1, le=10)
+    info_type: str = Field(
+        default="facts",
+        description="facts | cases | criticism | trends",
+    )
+    phase_id: str = Field(default="", description="Optional framework phase id")
+
+
+class ResearchBrief(BaseModel):
+    """Industry research brief — human-approved search overview (Wave 12a)."""
+    topic: str
+    problem_restatement: str = ""
+    framework_id: str = "general_industry"
+    clarify_answers: dict[str, str] = Field(default_factory=dict)
+    phases: list[dict] = Field(
+        default_factory=list,
+        description="Ordered phases [{id, title, goal}]",
+    )
+    dimensions: list[BriefDimension] = Field(default_factory=list)
+    deprioritize: list[str] = Field(default_factory=list)
+    source_prefs: list[str] = Field(default_factory=list)
+    success_criteria: list[str] = Field(default_factory=list)
+    assumed_defaults: list[str] = Field(default_factory=list)
+    overview_markdown: str = ""
+    confirmed: bool = False
 
 
 class ResearchDimension(BaseModel):

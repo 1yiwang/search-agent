@@ -11,7 +11,12 @@ from coverage import evaluate_coverage
 from dedup import deduplicate_facts, deduplicate_search_results, normalize_url
 from depth_profile import depth_overrides, resolve_request
 from extraction import extract_facts
-from models import ExtractedFact, ResearchRequest, ResearchReport
+from brief import (
+    brief_gap_dimension_ids,
+    brief_seed_queries,
+    filter_queries_by_deprioritize,
+)
+from models import ExtractedFact, ResearchBrief, ResearchRequest, ResearchReport
 from multilang import initial_open_queries
 from query_expand import (
     expand_queries,
@@ -54,9 +59,25 @@ async def _verify_facts(
     return verified
 
 
+def _brief_coverage_dims(
+    brief: ResearchBrief,
+) -> list[tuple[str, str, list[str]]]:
+    ids = brief_gap_dimension_ids(brief)
+    out: list[tuple[str, str, list[str]]] = []
+    for dim_id, dim in zip(ids, brief.dimensions):
+        keywords = [dim.title.lower()]
+        keywords.extend(
+            w.lower() for w in dim.research_goal.replace(",", " ").split()
+            if len(w) > 3
+        )[:8]
+        out.append((dim_id, dim.research_goal or dim.title, keywords))
+    return out
+
+
 async def run_research_loop(
     request: ResearchRequest,
     event_callback: EmitCallback | None = None,
+    brief: ResearchBrief | None = None,
 ) -> ResearchReport:
     """Execute coverage-driven search → extract → verify → report."""
     started_at = datetime.now(timezone.utc)
@@ -68,7 +89,7 @@ async def run_research_loop(
 
     with depth_overrides(profile):
         return await _run_research_loop_body(
-            request, profile.name, started_at, emit,
+            request, profile.name, started_at, emit, brief=brief,
         )
 
 
@@ -77,6 +98,7 @@ async def _run_research_loop_body(
     depth_name: str,
     started_at: datetime,
     emit: EmitCallback,
+    brief: ResearchBrief | None = None,
 ) -> ResearchReport:
     state = ResearchState(
         topic=request.topic,
@@ -84,19 +106,34 @@ async def _run_research_loop_body(
         topics_searched=[request.topic],
     )
     seen_urls: set[str] = set()
+    brief_dims = _brief_coverage_dims(brief) if brief else None
+    deprioritize = list(brief.deprioritize) if brief else []
 
     await emit("search_start", {
         "topic": request.topic,
         "max_sources": request.max_sources,
         "depth": depth_name,
         "router_enabled": config.router_enabled,
+        "brief_bound": brief is not None,
+        "framework_id": brief.framework_id if brief else None,
     })
+    if brief:
+        await emit("brief_bound", {
+            "framework_id": brief.framework_id,
+            "dimension_count": len(brief.dimensions),
+            "deprioritize": brief.deprioritize[:8],
+            "problem_restatement": brief.problem_restatement[:300],
+        })
 
     candidates = filter_candidates(request.topic)
     await emit("catalog_filtered", {
         "candidate_count": len(candidates),
         "intent": intent_labels(request.topic),
     })
+
+    # Seed pending open queries from brief on hop 0
+    if brief:
+        state.pending_open_queries = brief_seed_queries(brief)
 
     prev_fact_count = 0
     while True:
@@ -166,10 +203,19 @@ async def _run_research_loop_body(
 
         force_open = (
             is_general
+            or brief is not None
             or (state.hop == 0 and not decision.defer_open_web)
             or bool(state.pending_open_queries)
             or (not state.facts and state.hop > 0)
         )
+        open_q = state.pending_open_queries or (
+            initial_open_queries(request.topic, hop=state.hop)
+            if (is_general or force_open) and not brief
+            else None
+        )
+        if open_q and deprioritize:
+            open_q = filter_queries_by_deprioritize(open_q, deprioritize)
+
         new_results, searched = await execute_router_decision(
             request.topic,
             decision,
@@ -177,11 +223,7 @@ async def _run_research_loop_body(
             budget_remaining=budget_remaining,
             event_callback=emit,
             force_open_web=force_open,
-            open_queries=state.pending_open_queries or (
-                initial_open_queries(request.topic, hop=state.hop)
-                if (is_general or force_open)
-                else None
-            ),
+            open_queries=open_q,
             missing_dimensions=state.last_missing_dimensions or None,
             gap_hop=state.hop > 0 and (
                 bool(state.last_missing_dimensions) or not state.facts
@@ -221,6 +263,7 @@ async def _run_research_loop_body(
             coverage_threshold=config.research_coverage_threshold,
             sources_budget_remaining=request.max_sources - state.sources_fetched_count(),
             stagnant_hops=state.stagnant_hops,
+            brief_dimensions=brief_dims,
         )
         state.last_coverage_score = coverage.score
         state.last_missing_dimensions = coverage.missing_dimensions
@@ -240,19 +283,39 @@ async def _run_research_loop_body(
                     for eq in expand_result.queries
                     if eq.dimension == hint.dimension
                 ]
-            state.pending_site_queries = [
+            site_q = [
                 eq.query for eq in expand_result.queries if eq.channel == "site"
             ]
-            state.pending_open_queries = [
+            open_pending = [
                 eq.query for eq in expand_result.queries if eq.channel == "open"
             ]
+            if deprioritize:
+                site_q = filter_queries_by_deprioritize(site_q, deprioritize)
+                open_pending = filter_queries_by_deprioritize(open_pending, deprioritize)
+            state.pending_site_queries = site_q
+            state.pending_open_queries = open_pending
             # General topics: open-only expand (ignore site channel).
             if not candidates:
                 state.pending_site_queries = []
                 if not state.pending_open_queries:
-                    state.pending_open_queries = [
-                        eq.query for eq in expand_result.queries
-                    ]
+                    state.pending_open_queries = filter_queries_by_deprioritize(
+                        [eq.query for eq in expand_result.queries],
+                        deprioritize,
+                    ) if deprioritize else [eq.query for eq in expand_result.queries]
+            # Brief: also inject missing dimension seed queries
+            if brief and coverage.missing_dimensions:
+                missing_set = set(coverage.missing_dimensions)
+                ids = brief_gap_dimension_ids(brief)
+                for dim_id, dim in zip(ids, brief.dimensions):
+                    if dim_id not in missing_set:
+                        continue
+                    for q in dim.queries:
+                        if q and q not in state.pending_open_queries:
+                            if not deprioritize or q in filter_queries_by_deprioritize(
+                                [q], deprioritize
+                            ):
+                                state.pending_open_queries.append(q)
+                state.pending_open_queries = state.pending_open_queries[:12]
             state.pending_preferred_source_ids = preferred_source_ids_for_gaps(
                 coverage.gap_hints
             ) if candidates else []

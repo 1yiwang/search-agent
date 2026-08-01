@@ -19,8 +19,17 @@ async def run_research(
     event_callback=None,
 ) -> ResearchReport:
     """Execute the complete research pipeline via coverage-driven loop."""
+    brief = None
+    if request.brief_session_id:
+        from meta import get_session
+        session = get_session(request.brief_session_id)
+        if session and session.brief and session.brief.confirmed:
+            brief = session.brief
+
     if config.router_enabled:
-        return await run_research_loop(request, event_callback=event_callback)
+        return await run_research_loop(
+            request, event_callback=event_callback, brief=brief,
+        )
 
     started_at = datetime.now(timezone.utc)
 

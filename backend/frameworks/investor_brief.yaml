@@ -1,0 +1,28 @@
+# Investor brief skeleton — maps to existing PD coverage dimensions (Wave 12a)
+id: investor_brief
+name: Private markets investor brief
+description: Fundraising, deals, spreads, credit risk, products, relative value.
+phases:
+  - id: fundraising
+    title: Fundraising
+    goal: European vs US private debt fundraising trends
+  - id: volume_deals
+    title: Deal volume
+    goal: Direct lending volume LBO refinancings dividend recaps
+  - id: returns_spreads
+    title: Returns and spreads
+    goal: Direct lending yields spreads returns
+  - id: credit_risk
+    title: Credit risk
+    goal: Defaults leverage credit risk watch
+  - id: product_evergreen
+    title: Products and evergreen
+    goal: ELTIF evergreen BDC private credit fund launches
+  - id: relative_value
+    title: Relative value
+    goal: Premium vs leveraged loans and high yield
+default_deprioritize:
+  - unrelated equity or crypto markets unless asked
+prompt_rules: |
+  - Keep the six PD dimensions unless the user narrows scope.
+  - Prefer European primary sources when the topic is European PD.

@@ -39,6 +39,8 @@ D:/Projects/search-agent/
 │   ├── coverage.py            ← 覆盖度评估 + GapHint（research_goal）
 │   ├── query_expand.py        ← 确定性查询扩维（维度×信息类型×日期）
 │   ├── research_loop.py       ← coverage 驱动多跳 + Source Router
+│   ├── brief.py               ← Wave 12a ResearchBrief（澄清→概览）
+│   ├── frameworks/            ← 行业研究骨架 YAML
 │   ├── agent.py               ← 研究管线编排（6 步 pipeline）
 │   ├── deploy.py              ← 静态 HTML 部署到 reports/
 │   ├── .env                   ← 本地环境变量（gitignored）
@@ -47,6 +49,8 @@ D:/Projects/search-agent/
 └── frontend/
     └── app/
         ├── page.tsx               ← 搜索主页（SSE 实时进度）
+        ├── brief/page.tsx         ← Brief-first 向导（Clarify→Confirm）
+        ├── plan/page.tsx          ← 旧版 multi-section 规划向导
         ├── layout.tsx             ← 根布局
         ├── globals.css            ← Tailwind v4 全局样式
         └── research/[slug]/
@@ -66,6 +70,11 @@ D:/Projects/search-agent/
 | POST | `/api/meta/clarify` | 生成澄清问题 + 创建 meta session |
 | POST | `/api/meta/plan` | 带人工答案/反馈生成研究方案 |
 | POST | `/api/meta/research/stream` | 执行已批准方案（SSE） |
+| POST | `/api/brief/clarify` | 行业研究澄清问题 + session（Wave 12a） |
+| POST | `/api/brief/generate` | 骨架 + 答案 → ResearchBrief（无联网） |
+| POST | `/api/brief/revise` | 按反馈修订 Brief |
+| POST | `/api/brief/confirm` | 冻结 Brief |
+| POST | `/api/brief/research/stream` | 按已确认 Brief 执行研究（SSE） |
 | GET | `/api/research/{slug}/events` | 获取研究过程 JSONL 事件日志 |
 | GET/POST | `/api/watchlist` | 列出 / 创建主题订阅 |
 | GET/PATCH/DELETE | `/api/watchlist/{id}` | 读写删订阅 |
@@ -202,7 +211,8 @@ agent.run_research()
 - [x] **Wave 10 Step 58–60**：并行 open 扇出 + snippet 排序 top-K 深读 + 通用合成门禁（examples/challenges/experts）
 - [x] **Wave 10 Step 61 + Wave 11**：权威 query 模板；瑞士电信 catalog（BAKOM/运营商）+ 联通意图
 - [x] **Wave 10 Step 62**：快 / 标准 / 深档位（`depth` → sources/hops/open/fetch）
-- [ ] Wave 12：第二搜索源 failover + 早停 eval
+- [x] **Wave 12a Brief-first**：行业澄清 → `ResearchBrief` 骨架 → 确认后绑定 `research_loop`（`/brief`；Fast 可跳过）
+- [ ] Wave 12b：第二搜索源 failover + 早停 eval
 - [ ] Phase 3 41f：本机周更脚本（Task Scheduler）
 - [ ] Always-on Fly API（**延后**；个人自用默认本机 Mode B，省钱更安全）
 - [ ] `job_brief`（swiss-job-agent 集成）

@@ -1,0 +1,35 @@
+# Industry market-entry research skeleton (Wave 12a)
+id: market_entry
+name: Market entry / opportunity
+description: Enter a country or sector — industry structure first, then product/commercial opportunity.
+phases:
+  - id: industry_structure
+    title: Industry structure and competitive landscape
+    goal: Market size, growth, player map, shares — stay inside the industry, not macro GDP
+  - id: regulation
+    title: Regulation and market access
+    goal: Licenses, regulators, foreign-entry rules, compliance barriers
+  - id: demand_segments
+    title: Demand segments and use cases
+    goal: Who buys what — B2B, consumer, diaspora, wholesale, MVNO, etc.
+  - id: own_capabilities
+    title: Entrant capabilities and comparable products
+    goal: What the entrant can offer vs incumbents / local partners
+  - id: opportunities
+    title: Commercial opportunities and business models
+    goal: Concrete entry paths, partnerships, niches, pricing angles
+  - id: risks
+    title: Risks and barriers
+    goal: Competition, regulation, channel, brand, capital intensity
+  - id: sizing
+    title: Rough opportunity sizing
+    goal: Order-of-magnitude revenue/TAM only if data exists — label uncertainty
+default_deprioritize:
+  - country GDP and general macroeconomy unless explicitly requested
+  - generic tourism or unrelated national news
+  - encyclopedic country profiles
+prompt_rules: |
+  - Lead with the TARGET INDUSTRY in the destination market, not national economy.
+  - Put macro/GDP only in deprioritize unless the user asked for it.
+  - Adapt phases: merge, drop, or reorder; note changes in overview_markdown.
+  - Queries must be searchable and industry-specific (operators, regulators, products).

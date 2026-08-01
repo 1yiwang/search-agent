@@ -2,8 +2,8 @@
 
 > **Single source of truth** for implementation progress. Update this file at the end of each Step.
 
-**Current phase:** Wave 10–11 done (through Step 62)  
-**Next step:** Live Unicom/CH brief; Wave 12 second search provider / early-stop eval
+**Current phase:** Wave 12a Brief-first (industry research)  
+**Next step:** Live Unicom/CH brief via `/brief`; Wave 12b second search provider / early-stop eval
 
 ## Product constraints (personal use)
 
@@ -201,6 +201,15 @@
 | 65 | Force multilang open seeds even when catalog matched | Done |
 
 `job_brief` deferred — swiss-job-agent integration only.
+
+## Wave 12a — Brief-first industry research
+
+| Step | Task | Status |
+|------|------|--------|
+| 66 | `ResearchBrief` + `frameworks/*.yaml` + deterministic picker | Done |
+| 67 | Industry clarify → generate/revise/confirm APIs (no web during brief) | Done |
+| 68 | `research_loop` binds confirmed brief + deprioritize filter | Done |
+| 69 | Frontend `/brief` wizard; Standard/Deep from homepage → brief | Done |
 
 ## Phase 3 — Watchlist + weekly delta (Mode B)
 

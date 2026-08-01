@@ -6,28 +6,35 @@ from datetime import datetime, timezone, timedelta
 from uuid import uuid4
 
 from llm_context import get_openai_client, get_request_keys
-from models import ResearchPlan
+from models import ResearchBrief, ResearchPlan
 
-CLARIFY_PROMPT = """You help scope a deep research project before searching the web.
+# Legacy meta clarify — prefer brief.generate_industry_clarifying_questions for Wave 12a.
+CLARIFY_PROMPT = """You help scope an INDUSTRY RESEARCH project before searching the web.
 
 Research topic: {topic}
 
-Generate 2-3 short clarifying questions to narrow scope. Consider:
-- target audience and depth (overview vs technical)
-- geography or jurisdiction if relevant
-- time frame (current state vs history)
-- specific angles to include or exclude
+Generate 2-4 short clarifying questions covering when relevant:
+- boundary (include/exclude — e.g. avoid GDP/macro unless asked)
+- breadth (sub-sectors / product lines)
+- depth (overview vs commercial opportunities)
+- audience, geo/time, must-include questions
 
 Return ONLY valid JSON:
 ```json
 {{
   "questions": [
-    {{"id": "q1", "question": "...", "hint": "optional answer hint"}}
+    {{
+      "id": "q1",
+      "category": "boundary",
+      "question": "...",
+      "hint": "optional answer hint",
+      "options": []
+    }}
   ]
 }}
 ```
 
-Maximum 3 questions. Plain language. No markdown."""
+Maximum 4 questions. Plain language. No markdown."""
 
 
 def _parse_json_object(content: str) -> dict:
@@ -72,26 +79,42 @@ async def generate_clarifying_questions(topic: str) -> list[dict]:
         qid = str(item.get("id") or f"q{i + 1}")
         question = str(item.get("question") or "").strip()
         if question:
+            opts = item.get("options") or []
+            if not isinstance(opts, list):
+                opts = []
             questions.append({
                 "id": qid,
+                "category": str(item.get("category") or "boundary"),
                 "question": question,
                 "hint": str(item.get("hint") or ""),
+                "options": [str(o) for o in opts if str(o).strip()][:6],
             })
 
     if not questions:
         questions = [
             {
                 "id": "q1",
+                "category": "audience",
                 "question": "Who is the primary audience for this report?",
                 "hint": "e.g. executives, engineers, students",
+                "options": [],
             },
             {
                 "id": "q2",
+                "category": "depth",
                 "question": "What depth do you need?",
                 "hint": "e.g. executive summary vs detailed analysis",
+                "options": [],
+            },
+            {
+                "id": "q3",
+                "category": "boundary",
+                "question": "Should we stay inside the industry and deprioritize general macro/GDP?",
+                "hint": "Usually yes for market-entry topics",
+                "options": [],
             },
         ]
-    return questions[:3]
+    return questions[:4]
 
 
 def format_human_feedback(answers: dict[str, str], questions: list[dict]) -> str:
@@ -112,6 +135,7 @@ class MetaSession:
     questions: list[dict] = field(default_factory=list)
     answers: dict[str, str] = field(default_factory=dict)
     plan: ResearchPlan | None = None
+    brief: ResearchBrief | None = None
     created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 
 
