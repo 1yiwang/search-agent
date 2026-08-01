@@ -174,9 +174,22 @@ class StructuredFinding(BaseModel):
     entity_type: str = Field(default="", description="EntityType value when classified")
 
 
+class ReportArgument(BaseModel):
+    """One supporting argument under the report thesis (Wave 12b)."""
+    claim: str = Field(..., min_length=1, description="Single-sentence supporting claim")
+    detail: str = Field(default="", description="Optional one-sentence elaboration")
+    citation_indices: list[int] = Field(default_factory=list)
+    confidence: str = Field(default="medium", pattern="^(high|medium|low)$")
+
+
 class ReportSynthesis(BaseModel):
     """LLM-generated report narrative (expression only, facts are fixed)."""
-    executive_summary: str = ""
+    thesis: str = Field(default="", description="Single-sentence conclusion")
+    arguments: list[ReportArgument] = Field(default_factory=list)
+    executive_summary: str = Field(
+        default="",
+        description="Compat: mirrors thesis (or legacy multi-sentence summary)",
+    )
     structured_findings: list[StructuredFinding] = Field(default_factory=list)
     coverage: str = ""
     gaps: str = ""
@@ -197,6 +210,8 @@ class ResearchReport(BaseModel):
     markdown: str = ""
     html_url: str = ""
     metadata: Optional[ReportMetadata] = None
+    thesis: str = ""
+    arguments: list[ReportArgument] = Field(default_factory=list)
     summary: str = ""
     structured_findings: list[StructuredFinding] = Field(default_factory=list)
     coverage: str = ""

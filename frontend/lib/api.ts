@@ -134,6 +134,13 @@ export interface StructuredFinding {
   entity_type?: string;
 }
 
+export interface ReportArgument {
+  claim: string;
+  detail?: string;
+  citation_indices: number[];
+  confidence?: "high" | "medium" | "low";
+}
+
 export interface SourceSnapshot {
   url: string;
   title: string;
@@ -150,6 +157,8 @@ export interface ResearchReport {
   citations: Citation[];
   markdown: string;
   html_url: string;
+  thesis?: string;
+  arguments?: ReportArgument[];
   summary?: string;
   structured_findings?: StructuredFinding[];
   coverage?: string;

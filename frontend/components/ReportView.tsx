@@ -2,7 +2,12 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import type { Citation, ResearchReport, StructuredFinding } from "@/lib/api";
+import type {
+  Citation,
+  ReportArgument,
+  ResearchReport,
+  StructuredFinding,
+} from "@/lib/api";
 import { createWatch } from "@/lib/api";
 import { CitationModal } from "@/components/CitationModal";
 import { countUniqueDomains, normalizeUrl } from "@/lib/normalizeUrl";
@@ -15,6 +20,20 @@ const CONF_RANK: Record<string, number> = { high: 3, medium: 2, low: 1 };
 
 /** Editorial column: wide enough for tables, with side gutters. */
 const PAGE_GUTTER = "mx-auto w-full max-w-5xl px-5 sm:px-8 lg:px-10";
+
+function hasCjk(text: string): boolean {
+  return /[\u4e00-\u9fff]/.test(text);
+}
+
+function firstSentence(text: string): string {
+  const t = text.trim();
+  if (!t) return "";
+  const cjk = t.match(/^[\s\S]*?[。！？]/);
+  if (cjk) return cjk[0].trim();
+  const en = t.match(/^[\s\S]*?[.!?](?=\s|$)/);
+  if (en) return en[0].trim();
+  return t;
+}
 
 function confidenceBadge(conf: string) {
   const styles: Record<string, string> = {
@@ -145,56 +164,44 @@ function FindingsTable({
   );
 }
 
-function KeyFindingsList({
-  facts,
+function ArgumentsList({
+  arguments: args,
   onCitationClick,
 }: {
-  facts: ResearchReport["facts"];
+  arguments: ReportArgument[];
   onCitationClick: (index: number) => void;
 }) {
-  const groups = [
-    { label: "High confidence", items: facts.filter((f) => f.confidence === "high") },
-    { label: "Medium confidence", items: facts.filter((f) => f.confidence === "medium") },
-    { label: "Low confidence", items: facts.filter((f) => f.confidence === "low") },
-  ];
-
   return (
-    <div className="space-y-8">
-      {groups.map(
-        (g) =>
-          g.items.length > 0 && (
-            <div key={g.label}>
-              <h3 className="text-xs uppercase tracking-widest text-[var(--muted)] mb-3">
-                {g.label}
-              </h3>
-              <ul className="space-y-4">
-                {g.items.map((fact, i) => {
-                  const idx =
-                    facts.findIndex(
-                      (f) =>
-                        f.fact === fact.fact && f.source_url === fact.source_url
-                    ) + 1;
-                  return (
-                    <li
-                      key={`${fact.source_url}-${i}`}
-                      className="border-l-2 border-[var(--border)] pl-4 text-[var(--ink)]/90 leading-relaxed"
-                    >
-                      {fact.fact}{" "}
-                      <button
-                        type="button"
-                        onClick={() => onCitationClick(idx)}
-                        className="citation-mark hover:underline"
-                      >
-                        [{idx}]
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          )
-      )}
-    </div>
+    <ol className="space-y-7 list-none counter-reset">
+      {args.map((arg, i) => (
+        <li key={`${i}-${arg.claim.slice(0, 24)}`} className="flex gap-4">
+          <span className="font-display text-2xl text-[var(--accent-dim)] shrink-0 w-8 text-right tabular-nums leading-none pt-1">
+            {i + 1}
+          </span>
+          <div className="min-w-0 border-l-2 border-[var(--border)] pl-4">
+            <p className="text-[var(--ink)] text-lg leading-relaxed">
+              {arg.claim}{" "}
+              {(arg.citation_indices || []).map((idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => onCitationClick(idx)}
+                  className="citation-mark hover:underline ml-0.5"
+                >
+                  [{idx}]
+                </button>
+              ))}
+            </p>
+            {arg.detail ? (
+              <p className="mt-2 text-sm text-[var(--muted)] leading-relaxed">{arg.detail}</p>
+            ) : null}
+            {arg.confidence ? (
+              <div className="mt-2">{confidenceBadge(arg.confidence)}</div>
+            ) : null}
+          </div>
+        </li>
+      ))}
+    </ol>
   );
 }
 
@@ -229,14 +236,55 @@ export function ReportView({
   onCitationSelect: (c: Citation) => void;
   onCitationClose: () => void;
 }) {
-  const summary =
-    report.summary ||
-    report.facts.slice(0, 2).map((f) => f.fact).join(" ") ||
-    "No summary available for this report.";
+  const zh = hasCjk(report.topic) || hasCjk(report.thesis || report.summary || "");
+  const labels = zh
+    ? {
+        conclusion: "结论",
+        arguments: "分论点",
+        limits: "局限",
+        sources: "信源",
+        ledger: "信号台账",
+        coverage: "检索范围",
+        overview: "结论",
+        evidence: "分论点",
+      }
+    : {
+        conclusion: "Conclusion",
+        arguments: "Arguments",
+        limits: "Limits",
+        sources: "Sources",
+        ledger: "Signal ledger",
+        coverage: "Coverage",
+        overview: "Conclusion",
+        evidence: "Arguments",
+      };
+
+  const thesis =
+    (report.thesis || "").trim() ||
+    firstSentence(report.summary || "") ||
+    report.facts[0]?.fact ||
+    (zh ? "暂无可用结论。" : "No conclusion available.");
+
+  const argumentsList: ReportArgument[] =
+    report.arguments && report.arguments.length > 0
+      ? report.arguments
+      : [];
+
+  const hasStructuredArgs = argumentsList.length > 0;
+  // Legacy fallback: show summary body under thesis when no arguments
+  const legacySummary =
+    !hasStructuredArgs && report.summary && report.summary.trim() !== thesis
+      ? report.summary.trim()
+      : "";
 
   const isInvestorBrief = report.report_type === "investor_brief";
-  const briefLabel = isInvestorBrief ? "Investor Brief" : "Intelligence Brief";
-  const tableHeading = isInvestorBrief ? "Market Signals" : "Structured Findings";
+  const briefLabel = isInvestorBrief
+    ? zh
+      ? "投资简报"
+      : "Investor Brief"
+    : zh
+      ? "情报简报"
+      : "Intelligence Brief";
 
   const uniqueSourceCount = useMemo(
     () => countUniqueDomains(report.facts.map((f) => f.source_url)),
@@ -271,13 +319,9 @@ export function ReportView({
   const tableRows: StructuredFinding[] =
     report.structured_findings && report.structured_findings.length > 0
       ? report.structured_findings
-      : report.facts.map((f, i) => ({
-          entity: "",
-          signal: f.fact,
-          date: "",
-          confidence: f.confidence,
-          citation_index: i + 1,
-        }));
+      : [];
+
+  const showLedger = tableRows.length > 0;
 
   function openCitation(index: number) {
     const c = report.citations.find((x) => x.index === index);
@@ -358,7 +402,6 @@ export function ReportView({
       </header>
 
       <div className={`${PAGE_GUTTER} py-12 sm:py-14`}>
-        {/* Document masthead */}
         <header className="mb-2">
           <p className="text-xs uppercase tracking-[0.22em] text-[var(--accent-dim)] mb-3">
             {briefLabel}
@@ -384,23 +427,58 @@ export function ReportView({
 
         <article className="mt-10">
           <section className="report-section">
-            <span className="report-section-label">Overview</span>
+            <span className="report-section-label">{labels.overview}</span>
             <h2 className="font-display brief-section-title text-[var(--ink)] mb-5">
-              Executive Summary
+              {labels.conclusion}
             </h2>
             <div className="report-lead">
-              <p className="brief-summary text-[var(--ink)]">{summary}</p>
+              <p className="font-display text-2xl md:text-3xl leading-snug text-[var(--ink)]">
+                {thesis}
+              </p>
+              {legacySummary ? (
+                <p className="brief-summary text-[var(--muted)] mt-5">{legacySummary}</p>
+              ) : null}
             </div>
           </section>
 
-          {tableRows.length > 0 && (
-            <Section label="Signals" title={tableHeading}>
-              <FindingsTable rows={tableRows} onCitationClick={openCitation} />
+          {hasStructuredArgs ? (
+            <Section label={labels.evidence} title={labels.arguments}>
+              <ArgumentsList arguments={argumentsList} onCitationClick={openCitation} />
             </Section>
-          )}
+          ) : report.facts.length > 0 ? (
+            <Section label={labels.evidence} title={labels.arguments}>
+              <ArgumentsList
+                arguments={report.facts.slice(0, 6).map((f, i) => ({
+                  claim: f.fact,
+                  detail: "",
+                  citation_indices: [i + 1],
+                  confidence: f.confidence,
+                }))}
+                onCitationClick={openCitation}
+              />
+            </Section>
+          ) : null}
+
+          {report.gaps ? (
+            <Section label={zh ? "范围" : "Scope"} title={labels.limits}>
+              <p className="brief-body text-[var(--ink)]/85">{report.gaps}</p>
+              {report.coverage ? (
+                <p className="mt-4 text-sm text-[var(--muted)] leading-relaxed">
+                  <span className="uppercase tracking-wider text-xs mr-2">
+                    {labels.coverage}
+                  </span>
+                  {report.coverage}
+                </p>
+              ) : null}
+            </Section>
+          ) : report.coverage ? (
+            <Section label={zh ? "范围" : "Scope"} title={labels.coverage}>
+              <p className="brief-body text-[var(--ink)]/85">{report.coverage}</p>
+            </Section>
+          ) : null}
 
           {isInvestorBrief && report.fund_activity && (
-            <Section label="Products" title="Fund & Product Activity">
+            <Section label={zh ? "产品" : "Products"} title="Fund & Product Activity">
               <p className="brief-body text-[var(--ink)]/90 whitespace-pre-wrap">
                 {report.fund_activity}
               </p>
@@ -408,41 +486,14 @@ export function ReportView({
           )}
 
           {isInvestorBrief && report.credit_risk_watch && (
-            <Section label="Risk" title="Credit Risk Watch">
+            <Section label={zh ? "风险" : "Risk"} title="Credit Risk Watch">
               <p className="brief-body text-[var(--ink)]/90 whitespace-pre-wrap">
                 {report.credit_risk_watch}
               </p>
             </Section>
           )}
 
-          <Section label="Evidence" title="Key Findings">
-            <KeyFindingsList facts={report.facts} onCitationClick={openCitation} />
-          </Section>
-
-          {(report.coverage || report.gaps) && (
-            <Section label="Scope" title="Coverage & Gaps">
-              <div className="grid sm:grid-cols-2 gap-8">
-                {report.coverage && (
-                  <div>
-                    <h3 className="text-xs uppercase tracking-widest text-[var(--muted)] mb-3">
-                      Coverage
-                    </h3>
-                    <p className="brief-body text-[var(--ink)]/85">{report.coverage}</p>
-                  </div>
-                )}
-                {report.gaps && (
-                  <div>
-                    <h3 className="text-xs uppercase tracking-widest text-[var(--muted)] mb-3">
-                      Gaps
-                    </h3>
-                    <p className="brief-body text-[var(--ink)]/85">{report.gaps}</p>
-                  </div>
-                )}
-              </div>
-            </Section>
-          )}
-
-          <Section label="Sources" title="Sources" className="pb-8">
+          <Section label={labels.sources} title={labels.sources} className="pb-4">
             <ol className="space-y-5 brief-body">
               {groupedSources.map((src) => (
                 <li key={normalizeUrl(src.url)} className="flex gap-3">
@@ -470,6 +521,23 @@ export function ReportView({
               ))}
             </ol>
           </Section>
+
+          {showLedger ? (
+            <details className="report-section group pb-8">
+              <summary className="cursor-pointer list-none">
+                <span className="report-section-label">{zh ? "附录" : "Appendix"}</span>
+                <h2 className="font-display brief-section-title text-[var(--ink)] mb-2 inline-block">
+                  {labels.ledger}
+                </h2>
+                <span className="ml-3 text-xs text-[var(--muted)] group-open:hidden">
+                  {zh ? "展开" : "Expand"}
+                </span>
+              </summary>
+              <div className="mt-4">
+                <FindingsTable rows={tableRows} onCitationClick={openCitation} />
+              </div>
+            </details>
+          ) : null}
         </article>
       </div>
 

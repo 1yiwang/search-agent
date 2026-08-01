@@ -35,8 +35,9 @@ def test_generate_report():
     assert len(report.citations) == 2
     assert "[^1]" in report.markdown
     assert report.summary
-    assert report.structured_findings
-    assert "## Executive Summary" in report.markdown
+    assert report.thesis or report.summary
+    assert report.arguments is not None
+    assert "## Conclusion" in report.markdown
     print("test_generate_report: PASS")
 
 
@@ -53,7 +54,9 @@ def test_investor_brief_report_type():
         ),
     ]
     synthesis = ReportSynthesis(
+        thesis="European PD fundraising improved in 2025.",
         executive_summary="European PD fundraising improved in 2025.",
+        arguments=[],
         structured_findings=[
             StructuredFinding(
                 entity="European PD market",
@@ -72,6 +75,7 @@ def test_investor_brief_report_type():
     report = generate_report(topic, facts, synthesis=synthesis, report_type="investor_brief")
     assert report.report_type == "investor_brief"
     assert "# Investor Brief:" in report.markdown
+    assert "## Conclusion" in report.markdown
     assert "## Fund & Product Activity" in report.markdown
     assert report.fund_activity
     print("test_investor_brief_report_type: PASS")

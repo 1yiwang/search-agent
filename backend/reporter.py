@@ -96,13 +96,9 @@ def _generate_markdown(
     completed_at: datetime,
     report_type: str = "intelligence_brief",
 ) -> str:
-    """Generate structured Markdown report with synthesis, table, and citations."""
-    high = [f for f in facts if f.confidence == "high"]
-    medium = [f for f in facts if f.confidence == "medium"]
-    low = [f for f in facts if f.confidence == "low"]
-    fact_index_map = {id(f): i + 1 for i, f in enumerate(facts)}
-
+    """Generate structured Markdown: thesis → arguments → appendix ledger."""
     title = "Investor Brief" if report_type == "investor_brief" else "Intelligence Brief"
+    thesis = (synthesis.thesis or synthesis.executive_summary or "").strip()
     lines = [
         f"# {title}: {topic}",
         "",
@@ -111,18 +107,38 @@ def _generate_markdown(
         "",
         "---",
         "",
-        "## Executive Summary",
+        "## Conclusion",
         "",
-        synthesis.executive_summary,
+        thesis or "_No conclusion._",
         "",
         "---",
         "",
+        "## Arguments",
+        "",
     ]
 
-    if synthesis.structured_findings:
-        table_heading = "Market Signals" if report_type == "investor_brief" else "Structured Findings"
-        lines.extend(_findings_table_markdown(synthesis, heading=table_heading))
-        lines.extend(["---", ""])
+    if synthesis.arguments:
+        for i, arg in enumerate(synthesis.arguments, 1):
+            refs = " ".join(f"[^{n}]" for n in arg.citation_indices) or ""
+            lines.append(f"{i}. **{arg.claim}** {refs}".rstrip())
+            if arg.detail:
+                lines.append(f"   {arg.detail}")
+            lines.append("")
+    else:
+        lines.append("_No structured arguments._")
+        lines.append("")
+
+    lines.extend(["---", ""])
+
+    if synthesis.gaps:
+        lines.extend([
+            "## Limits",
+            "",
+            synthesis.gaps,
+            "",
+            "---",
+            "",
+        ])
 
     if report_type == "investor_brief":
         if synthesis.fund_activity:
@@ -144,47 +160,24 @@ def _generate_markdown(
                 "",
             ])
 
-    lines.extend(["## Key Findings", ""])
+    if synthesis.structured_findings:
+        table_heading = (
+            "Signal ledger" if report_type == "investor_brief" else "Signal ledger"
+        )
+        lines.extend(_findings_table_markdown(synthesis, heading=table_heading))
+        lines.extend(["---", ""])
 
-    if high:
-        lines.append("### High Confidence")
-        lines.append("")
-        for fact in high:
-            idx = fact_index_map[id(fact)]
-            lines.append(f"- {fact.fact} [^{idx}]")
-        lines.append("")
-
-    if medium:
-        lines.append("### Medium Confidence")
-        lines.append("")
-        for fact in medium:
-            idx = fact_index_map[id(fact)]
-            lines.append(f"- {fact.fact} [^{idx}]")
-        lines.append("")
-
-    if low:
-        lines.append("### Low Confidence")
-        lines.append("")
-        for fact in low:
-            idx = fact_index_map[id(fact)]
-            lines.append(f"- {fact.fact} [^{idx}]")
-        lines.append("")
+    if synthesis.coverage:
+        lines.extend([
+            "## Coverage",
+            "",
+            synthesis.coverage,
+            "",
+            "---",
+            "",
+        ])
 
     lines.extend([
-        "---",
-        "",
-        "## Coverage & Gaps",
-        "",
-        "### Coverage",
-        "",
-        synthesis.coverage or "_No coverage notes._",
-        "",
-        "### Gaps",
-        "",
-        synthesis.gaps or "_No gap analysis._",
-        "",
-        "---",
-        "",
         "## Sources",
         "",
     ])
@@ -240,7 +233,9 @@ def generate_report(
         facts=facts,
         citations=citations,
         markdown=markdown,
-        summary=synthesis.executive_summary,
+        thesis=synthesis.thesis or synthesis.executive_summary,
+        arguments=list(synthesis.arguments),
+        summary=synthesis.thesis or synthesis.executive_summary,
         structured_findings=synthesis.structured_findings,
         coverage=synthesis.coverage,
         gaps=synthesis.gaps,

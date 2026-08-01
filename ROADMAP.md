@@ -2,8 +2,8 @@
 
 > **Single source of truth** for implementation progress. Update this file at the end of each Step.
 
-**Current phase:** Wave 12a Brief-first (industry research)  
-**Next step:** Live Unicom/CH brief via `/brief`; Wave 12b second search provider / early-stop eval
+**Current phase:** Wave 12b report hierarchy UX (thesis + arguments)  
+**Next step:** Redeploy + live Unicom brief; Wave 12c second search provider / early-stop eval
 
 ## Product constraints (personal use)
 
@@ -210,6 +210,13 @@
 | 67 | Industry clarify → generate/revise/confirm APIs (no web during brief) | Done |
 | 68 | `research_loop` binds confirmed brief + deprioritize filter | Done |
 | 69 | Frontend `/brief` wizard; Standard/Deep from homepage → brief | Done |
+
+## Wave 12b — Report hierarchy UX
+
+| Step | Task | Status |
+|------|------|--------|
+| 70 | `thesis` + `arguments[]` in synthesis + ResearchReport | Done |
+| 71 | ReportView: 结论 → 分论点 → 局限 → 信源；Signals 折叠附录 | Done |
 
 ## Phase 3 — Watchlist + weekly delta (Mode B)
 
