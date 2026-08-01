@@ -171,36 +171,65 @@ function ArgumentsList({
   arguments: ReportArgument[];
   onCitationClick: (index: number) => void;
 }) {
+  function renderBodyWithCites(text: string) {
+    const parts = text.split(/(\[\d+\])/g);
+    return parts.map((part, i) => {
+      const m = part.match(/^\[(\d+)\]$/);
+      if (m) {
+        const idx = Number(m[1]);
+        return (
+          <button
+            key={`c-${i}-${idx}`}
+            type="button"
+            onClick={() => onCitationClick(idx)}
+            className="citation-mark hover:underline mx-0.5"
+          >
+            [{idx}]
+          </button>
+        );
+      }
+      return <span key={`t-${i}`}>{part}</span>;
+    });
+  }
+
   return (
-    <ol className="space-y-7 list-none counter-reset">
-      {args.map((arg, i) => (
-        <li key={`${i}-${arg.claim.slice(0, 24)}`} className="flex gap-4">
-          <span className="font-display text-2xl text-[var(--accent-dim)] shrink-0 w-8 text-right tabular-nums leading-none pt-1">
-            {i + 1}
-          </span>
-          <div className="min-w-0 border-l-2 border-[var(--border)] pl-4">
-            <p className="text-[var(--ink)] text-lg leading-relaxed">
-              {arg.claim}{" "}
-              {(arg.citation_indices || []).map((idx) => (
-                <button
-                  key={idx}
-                  type="button"
-                  onClick={() => onCitationClick(idx)}
-                  className="citation-mark hover:underline ml-0.5"
-                >
-                  [{idx}]
-                </button>
-              ))}
-            </p>
-            {arg.detail ? (
-              <p className="mt-2 text-sm text-[var(--muted)] leading-relaxed">{arg.detail}</p>
-            ) : null}
-            {arg.confidence ? (
-              <div className="mt-2">{confidenceBadge(arg.confidence)}</div>
-            ) : null}
-          </div>
-        </li>
-      ))}
+    <ol className="space-y-10 list-none">
+      {args.map((arg, i) => {
+        const body = (arg.body || arg.detail || "").trim();
+        return (
+          <li key={`${i}-${arg.claim.slice(0, 24)}`} className="flex gap-4">
+            <span className="font-display text-2xl text-[var(--accent-dim)] shrink-0 w-8 text-right tabular-nums leading-none pt-1">
+              {i + 1}
+            </span>
+            <div className="min-w-0 border-l-2 border-[var(--border)] pl-4 flex-1">
+              {arg.heading ? (
+                <h3 className="font-display text-xl text-[var(--ink)] mb-2">{arg.heading}</h3>
+              ) : null}
+              <p className="text-[var(--ink)] text-lg leading-relaxed font-medium">
+                {arg.claim}{" "}
+                {(arg.citation_indices || []).map((idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => onCitationClick(idx)}
+                    className="citation-mark hover:underline ml-0.5"
+                  >
+                    [{idx}]
+                  </button>
+                ))}
+              </p>
+              {body ? (
+                <div className="mt-3 text-[var(--ink)]/88 leading-relaxed whitespace-pre-wrap text-[15px] md:text-base">
+                  {renderBodyWithCites(body)}
+                </div>
+              ) : null}
+              {arg.confidence ? (
+                <div className="mt-3">{confidenceBadge(arg.confidence)}</div>
+              ) : null}
+            </div>
+          </li>
+        );
+      })}
     </ol>
   );
 }

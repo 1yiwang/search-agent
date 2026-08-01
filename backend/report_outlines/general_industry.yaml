@@ -1,0 +1,30 @@
+# Fixed report writing outline — general industry (Wave 12c)
+id: general_industry
+name: General industry report
+slots:
+  - id: overview
+    title: Industry overview
+    title_zh: 行业概况
+    writing_goal: Definition, scope, and current state of the industry
+    required: true
+  - id: size_drivers
+    title: Market size and drivers
+    title_zh: 规模与驱动因素
+    writing_goal: Scale, growth rates, key demand and supply drivers
+    required: true
+  - id: players
+    title: Key players
+    title_zh: 主要玩家
+    writing_goal: Leaders, challengers, niches
+    required: true
+  - id: trends
+    title: Trends and outlook
+    title_zh: 趋势与展望
+    writing_goal: Technology, regulation, customer shifts
+    required: false
+  - id: risks
+    title: Risks and open questions
+    title_zh: 风险与开放问题
+    writing_goal: Uncertainties, data gaps, controversies
+    required: true
+deprioritize_hint: unrelated national macro topics unless the question is macro

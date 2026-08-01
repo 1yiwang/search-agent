@@ -1,0 +1,35 @@
+# Fixed report writing outline — market entry (Wave 12c)
+id: market_entry
+name: Market entry report
+slots:
+  - id: industry_structure
+    title: Industry structure and competitive landscape
+    title_zh: 行业结构与竞争格局
+    writing_goal: Market size, growth, player map and shares inside the industry — not national GDP
+    required: true
+  - id: regulation
+    title: Regulation and market access
+    title_zh: 监管与市场准入
+    writing_goal: Licenses, regulators, foreign-entry rules, compliance barriers
+    required: true
+  - id: demand_segments
+    title: Demand segments and use cases
+    title_zh: 需求细分与场景
+    writing_goal: Who buys what — B2B, consumer, wholesale, MVNO, diaspora, ICT
+    required: false
+  - id: opportunities
+    title: Commercial opportunities and entry paths
+    title_zh: 商业机会与进入路径
+    writing_goal: Concrete niches, partnerships, business models for the entrant
+    required: true
+  - id: risks
+    title: Risks and barriers
+    title_zh: 风险与障碍
+    writing_goal: Competition, regulation, channel, brand, capital intensity
+    required: true
+  - id: sizing
+    title: Rough opportunity sizing
+    title_zh: 机会规模粗估
+    writing_goal: Order-of-magnitude only if data exists; label uncertainty
+    required: false
+deprioritize_hint: country GDP and general macroeconomy unless the question is macro

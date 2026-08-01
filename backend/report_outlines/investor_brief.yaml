@@ -1,0 +1,35 @@
+# Fixed report writing outline — private markets investor brief (Wave 12c)
+id: investor_brief
+name: Investor brief report
+slots:
+  - id: fundraising
+    title: Fundraising
+    title_zh: 募资
+    writing_goal: Fundraising trends and capital formation
+    required: true
+  - id: volume_deals
+    title: Deal volume and deployment
+    title_zh: 交易量与投放
+    writing_goal: Direct lending volume, LBO, refinancings, dividend recaps
+    required: true
+  - id: returns_spreads
+    title: Returns and spreads
+    title_zh: 收益与利差
+    writing_goal: Yields, spreads, return levels
+    required: true
+  - id: credit_risk
+    title: Credit risk
+    title_zh: 信用风险
+    writing_goal: Defaults, leverage, borrower fundamentals
+    required: true
+  - id: product_evergreen
+    title: Products and evergreen structures
+    title_zh: 产品与常青结构
+    writing_goal: ELTIF, evergreen, BDC, fund launches
+    required: false
+  - id: relative_value
+    title: Relative value
+    title_zh: 相对价值
+    writing_goal: Premium vs leveraged loans and high yield
+    required: false
+deprioritize_hint: unrelated equity or crypto markets unless asked

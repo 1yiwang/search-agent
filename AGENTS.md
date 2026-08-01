@@ -41,6 +41,8 @@ D:/Projects/search-agent/
 │   ├── research_loop.py       ← coverage 驱动多跳 + Source Router
 │   ├── brief.py               ← Wave 12a ResearchBrief（澄清→概览）
 │   ├── frameworks/            ← 行业研究骨架 YAML
+│   ├── report_outlines/       ← Wave 12c 成文固定槽位
+│   ├── report_synthesis.py    ← 两阶段：draft → 长论述
 │   ├── agent.py               ← 研究管线编排（6 步 pipeline）
 │   ├── deploy.py              ← 静态 HTML 部署到 reports/
 │   ├── .env                   ← 本地环境变量（gitignored）
@@ -213,7 +215,8 @@ agent.run_research()
 - [x] **Wave 10 Step 62**：快 / 标准 / 深档位（`depth` → sources/hops/open/fetch）
 - [x] **Wave 12a Brief-first**：行业澄清 → `ResearchBrief` 骨架 → 确认后绑定 `research_loop`（`/brief`；Fast 可跳过）
 - [x] **Wave 12b 报告层次**：`thesis` + `arguments`；ReportView 结论→分论点；Signals 降为折叠附录
-- [ ] Wave 12c：第二搜索源 failover + 早停 eval
+- [x] **Wave 12c 两阶段成文**：EvidenceDraft → 固定骨架长论述（Gemini 式 150–300 字/节）；偏题 quarantine
+- [ ] Wave 12d：第二搜索源 failover + 早停 eval
 - [ ] Phase 3 41f：本机周更脚本（Task Scheduler）
 - [ ] Always-on Fly API（**延后**；个人自用默认本机 Mode B，省钱更安全）
 - [ ] `job_brief`（swiss-job-agent 集成）

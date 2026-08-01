@@ -387,6 +387,8 @@ async def _run_research_loop_body(
         state.facts,
         state.topics_searched,
         report_type=report_type,
+        brief=brief,
+        event_callback=emit,
     )
     report = generate_report(
         request.topic,

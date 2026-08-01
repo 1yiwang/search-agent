@@ -1,0 +1,25 @@
+# Competitive landscape report outline (Wave 12c)
+id: competitive_landscape
+name: Competitive landscape report
+slots:
+  - id: player_map
+    title: Player map
+    title_zh: 玩家地图
+    writing_goal: Who competes — segments and positioning
+    required: true
+  - id: shares
+    title: Shares and ranking
+    title_zh: 份额与排名
+    writing_goal: Market share, subscribers, revenue where public
+    required: true
+  - id: products
+    title: Product and offer comparison
+    title_zh: 产品与报价对比
+    writing_goal: Feature, price, channel differences
+    required: true
+  - id: dynamics
+    title: Competitive dynamics
+    title_zh: 竞争动态
+    writing_goal: M&A, regulation shocks, new entrants
+    required: false
+deprioritize_hint: broad economy without competitive link

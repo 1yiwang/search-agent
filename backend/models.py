@@ -175,11 +175,41 @@ class StructuredFinding(BaseModel):
 
 
 class ReportArgument(BaseModel):
-    """One supporting argument under the report thesis (Wave 12b)."""
+    """One supporting section under the report thesis (Wave 12b/12c)."""
     claim: str = Field(..., min_length=1, description="Single-sentence supporting claim")
-    detail: str = Field(default="", description="Optional one-sentence elaboration")
+    detail: str = Field(default="", description="Legacy short elaboration")
+    body: str = Field(
+        default="",
+        description="Gemini-style section prose (~150–300 chars/words), may include [n] cites",
+    )
+    heading: str = Field(default="", description="Section heading from fixed outline")
+    slot_id: str = Field(default="", description="Outline slot id")
     citation_indices: list[int] = Field(default_factory=list)
     confidence: str = Field(default="medium", pattern="^(high|medium|low)$")
+
+
+class EvidenceDraftSlot(BaseModel):
+    """One outline slot filled with fact indices (Pass A)."""
+    slot_id: str
+    title: str = ""
+    writing_goal: str = ""
+    fact_indices: list[int] = Field(default_factory=list)
+    notes: str = ""
+    required: bool = False
+
+
+class EvidenceDraftQuarantine(BaseModel):
+    fact_index: int
+    reason: str = ""
+
+
+class EvidenceDraft(BaseModel):
+    """Intermediate draft after search — facts assigned to fixed slots (Wave 12c)."""
+    topic_restatement: str = ""
+    outline_id: str = "general_industry"
+    slots: list[EvidenceDraftSlot] = Field(default_factory=list)
+    quarantine: list[EvidenceDraftQuarantine] = Field(default_factory=list)
+    sufficiency: str = Field(default="ok", pattern="^(thin|ok)$")
 
 
 class ReportSynthesis(BaseModel):
@@ -195,6 +225,8 @@ class ReportSynthesis(BaseModel):
     gaps: str = ""
     fund_activity: str = Field(default="", description="Investor brief: fund/product section")
     credit_risk_watch: str = Field(default="", description="Investor brief: credit risk section")
+    outline_id: str = ""
+    draft_sufficiency: str = ""
 
 
 class ResearchReport(BaseModel):

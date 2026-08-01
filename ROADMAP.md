@@ -2,8 +2,8 @@
 
 > **Single source of truth** for implementation progress. Update this file at the end of each Step.
 
-**Current phase:** Wave 12b report hierarchy UX (thesis + arguments)  
-**Next step:** Redeploy + live Unicom brief; Wave 12c second search provider / early-stop eval
+**Current phase:** Wave 12c two-pass report writing (draft → Gemini-style sections)  
+**Next step:** Live Unicom brief quality check; Wave 12d second search provider / early-stop eval
 
 ## Product constraints (personal use)
 
@@ -217,6 +217,14 @@
 |------|------|--------|
 | 70 | `thesis` + `arguments[]` in synthesis + ResearchReport | Done |
 | 71 | ReportView: 结论 → 分论点 → 局限 → 信源；Signals 折叠附录 | Done |
+
+## Wave 12c — Two-pass Gemini-style writing
+
+| Step | Task | Status |
+|------|------|--------|
+| 72 | Fixed `report_outlines/` + brief→slots mapping | Done |
+| 73 | Pass A EvidenceDraft (assign/quarantine) + `draft_ready` SSE | Done |
+| 74 | Pass B long section prose (~150–300 字) + ReportView body | Done |
 
 ## Phase 3 — Watchlist + weekly delta (Mode B)
 

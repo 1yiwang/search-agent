@@ -120,10 +120,16 @@ def _generate_markdown(
     if synthesis.arguments:
         for i, arg in enumerate(synthesis.arguments, 1):
             refs = " ".join(f"[^{n}]" for n in arg.citation_indices) or ""
-            lines.append(f"{i}. **{arg.claim}** {refs}".rstrip())
-            if arg.detail:
-                lines.append(f"   {arg.detail}")
+            heading = (arg.heading or "").strip()
+            if heading:
+                lines.append(f"### {i}. {heading}")
+                lines.append("")
+            lines.append(f"**{arg.claim}** {refs}".rstrip())
             lines.append("")
+            body = (arg.body or arg.detail or "").strip()
+            if body:
+                lines.append(body)
+                lines.append("")
     else:
         lines.append("_No structured arguments._")
         lines.append("")

@@ -137,6 +137,9 @@ export interface StructuredFinding {
 export interface ReportArgument {
   claim: string;
   detail?: string;
+  body?: string;
+  heading?: string;
+  slot_id?: string;
   citation_indices: number[];
   confidence?: "high" | "medium" | "low";
 }

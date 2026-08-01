@@ -75,7 +75,12 @@ async def run_research(
     await emit("report_start", {"fact_count": len(verified_facts)})
     report_type = detect_report_type(request.topic)
     synthesis = await synthesize_report(
-        request.topic, verified_facts, topics_searched, report_type=report_type,
+        request.topic,
+        verified_facts,
+        topics_searched,
+        report_type=report_type,
+        brief=brief,
+        event_callback=emit,
     )
     report = generate_report(
         request.topic,
