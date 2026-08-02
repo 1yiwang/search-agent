@@ -58,17 +58,16 @@ def select_framework_id(topic: str) -> str:
 
 
 def framework_prompt_block(framework_id: str) -> str:
-    """Serialize skeleton for LLM brief generation."""
+    """Serialize skeleton as a coverage checklist (not titles to copy)."""
     fw = get_framework(framework_id)
     lines = [
-        f"Framework id: {fw.get('id')}",
-        f"Name: {fw.get('name')}",
-        f"Description: {fw.get('description', '')}",
-        "Phases (adapt freely — merge/drop/reorder; note changes):",
+        f"Checklist id: {fw.get('id')}",
+        f"Purpose: {fw.get('description', '')}",
+        "Angles to COVER (rewrite each as a topic-specific instruction — do not copy titles):",
     ]
     for i, phase in enumerate(fw.get("phases") or [], 1):
         lines.append(
-            f"  {i}. [{phase.get('id')}] {phase.get('title')}: {phase.get('goal')}"
+            f"  {i}. angle_id={phase.get('id')} — cover: {phase.get('goal')}"
         )
     deps = fw.get("default_deprioritize") or []
     if deps:

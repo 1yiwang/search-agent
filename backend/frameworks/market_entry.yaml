@@ -29,7 +29,8 @@ default_deprioritize:
   - generic tourism or unrelated national news
   - encyclopedic country profiles
 prompt_rules: |
+  - This YAML is a COVERAGE CHECKLIST only — do NOT copy English titles into the user-facing plan.
+  - Rewrite every angle as a topic-specific verb-led instruction (调研/梳理/评估/…) with named entities.
   - Lead with the TARGET INDUSTRY in the destination market, not national economy.
   - Put macro/GDP only in deprioritize unless the user asked for it.
-  - Adapt phases: merge, drop, or reorder; note changes in overview_markdown.
   - Queries must be searchable and industry-specific (operators, regulators, products).

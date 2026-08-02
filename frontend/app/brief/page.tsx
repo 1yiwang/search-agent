@@ -324,14 +324,8 @@ function BriefWizardInner() {
             {brief.problem_restatement || brief.topic}
           </h2>
           <p className="text-xs text-[var(--muted)]">
-            Framework: {brief.framework_id} · {brief.dimensions.length} retrieval directions
+            Framework: {brief.framework_id} · {brief.dimensions.length} 条研究指令
           </p>
-          {brief.overview_markdown && (
-            <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-4 text-sm text-[var(--muted)] whitespace-pre-wrap max-h-40 overflow-y-auto">
-              {brief.overview_markdown.slice(0, 2000)}
-              {brief.overview_markdown.length > 2000 && "…"}
-            </div>
-          )}
           {brief.success_criteria?.length ? (
             <div>
               <p className="text-xs uppercase tracking-wide text-[var(--muted)] mb-1">
@@ -356,29 +350,42 @@ function BriefWizardInner() {
               </ul>
             </div>
           )}
+          <p className="text-xs uppercase tracking-wide text-[var(--muted)] mb-2">
+            研究计划 / Research plan
+          </p>
           <ol className="space-y-4 list-none">
-            {brief.dimensions.map((dim, i) => (
+            {brief.dimensions.map((dim, i) => {
+              const instruction =
+                (dim.direction_detail || "").trim() ||
+                (dim.research_goal || "").trim() ||
+                dim.title;
+              return (
               <li
                 key={i}
                 className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-4"
               >
-                <p className="font-medium text-[var(--ink)]">
-                  <span className="text-[var(--accent-dim)] mr-2">{i + 1}.</span>
-                  {dim.title}
+                <p className="text-[var(--ink)] leading-relaxed">
+                  <span className="text-[var(--accent-dim)] font-medium mr-1">
+                    ({i + 1})
+                  </span>
+                  {instruction}
                 </p>
-                {dim.research_goal && (
-                  <p className="mt-1 text-sm text-[var(--ink)]/80">{dim.research_goal}</p>
-                )}
-                {(dim.direction_detail || "").trim() ? (
-                  <p className="mt-2 text-sm text-[var(--muted)] leading-relaxed whitespace-pre-wrap">
-                    {dim.direction_detail}
-                  </p>
+                {dim.title &&
+                dim.title !== instruction &&
+                !(dim.direction_detail || "").startsWith(dim.title) ? (
+                  <p className="mt-1 text-xs text-[var(--muted)]">{dim.title}</p>
                 ) : null}
-                <p className="mt-2 text-xs text-[var(--muted)]">
-                  Queries: {dim.queries.join(" · ") || "—"}
-                </p>
+                {dim.queries.length > 0 ? (
+                  <details className="mt-2 text-xs text-[var(--muted)]">
+                    <summary className="cursor-pointer select-none">
+                      检索词（{dim.queries.length}）
+                    </summary>
+                    <p className="mt-1 leading-relaxed">{dim.queries.join(" · ")}</p>
+                  </details>
+                ) : null}
               </li>
-            ))}
+              );
+            })}
           </ol>
           <div className="flex gap-3">
             <button

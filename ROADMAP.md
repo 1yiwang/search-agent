@@ -2,8 +2,8 @@
 
 > **Single source of truth** for implementation progress. Update this file at the end of each Step.
 
-**Current phase:** Wave 12d code-led directions + substantive thesis (cost-controlled A′)  
-**Next step:** Live Swiss telecom brief quality check
+**Current phase:** Wave 12e Gemini-style research-plan directions  
+**Next step:** Live retest Chinese market-entry briefs (Unicom / cross-border ecom)
 
 ## Product constraints (personal use)
 
@@ -234,6 +234,14 @@
 | 76 | Round-robin direction queries + missing-slot expand (code) | Done |
 | 77 | Ban meta thesis; sanitize/fallback to findings | Done |
 | 78 | Sources UI: one row per URL, no citation pile | Done |
+
+## Wave 12e — Gemini-style 研究计划 instructions
+
+| Step | Task | Status |
+|------|------|--------|
+| 79 | Prompt + post-parse: ban English skeleton titles; verb-led `direction_detail` | Done |
+| 80 | Domain templates (CH telecom / CH ecom) + entity-rich query repair | Done |
+| 81 | Brief UI: numbered plan primary; queries collapsed | Done |
 
 ## Phase 3 — Watchlist + weekly delta (Mode B)
 
