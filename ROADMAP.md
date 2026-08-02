@@ -257,6 +257,17 @@
 |------|------|--------|
 | 85 | Restyle app to paper / signal-red / flag-yellow + Fraunces | Done |
 
+## Wave 12h — Direction Contract + Report Contract (planned)
+
+> 输入文档：[docs/2026-08-02-architecture-review-brief-and-report.md](docs/2026-08-02-architecture-review-brief-and-report.md)
+
+| Step | Task | Status |
+|------|------|--------|
+| 86 | Direction budget + leftover queries + Chinese coverage tokens | Planned |
+| 87 | Brief rubric + targeted regenerate; examples YAML (no hardcode) | Planned |
+| 88 | Report bilingual skeleton + thesis gate + args==directions | Planned |
+| 89 | Citation integrity gate + synthesis strong model + L1/L2 eval | Planned |
+
 ## Phase 3 — Watchlist + weekly delta (Mode B)
 
 > File-based topic monitoring. Manual Run (no cloud cron). Diff vs last report.
