@@ -10,7 +10,7 @@ const STORAGE_KEY = "search-agent-settings";
 const DEFAULTS: LLMSettings = {
   llmApiKey: "",
   llmBaseUrl: "https://api.deepseek.com",
-  llmModel: "deepseek-chat",
+  llmModel: "deepseek-v4-pro",
   tavilyApiKey: "",
 };
 

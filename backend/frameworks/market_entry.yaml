@@ -6,31 +6,37 @@ phases:
   - id: industry_structure
     title: Industry structure and competitive landscape
     goal: Market size, growth, player map, shares — stay inside the industry, not macro GDP
+    cover_zh: 目标市场的行业规模、增速、主要玩家与竞争格局（不要写成宏观经济）
   - id: regulation
     title: Regulation and market access
     goal: Licenses, regulators, foreign-entry rules, compliance barriers
+    cover_zh: 监管机构、牌照/准入、关税或合规、外资限制
   - id: demand_segments
     title: Demand segments and use cases
     goal: Who buys what — B2B, consumer, diaspora, wholesale, MVNO, etc.
+    cover_zh: 需求细分、买家类型、高潜力品类或使用场景
   - id: own_capabilities
     title: Entrant capabilities and comparable products
     goal: What the entrant can offer vs incumbents / local partners
+    cover_zh: 进入方能力、可比产品/渠道、物流支付或本地化能力
   - id: opportunities
     title: Commercial opportunities and business models
     goal: Concrete entry paths, partnerships, niches, pricing angles
+    cover_zh: 具体进入路径、平台/合作模式、niche 与商业模式
   - id: risks
     title: Risks and barriers
     goal: Competition, regulation, channel, brand, capital intensity
+    cover_zh: 竞争、合规、服务标准、多语言运营等风险与落地建议
   - id: sizing
     title: Rough opportunity sizing
     goal: Order-of-magnitude revenue/TAM only if data exists — label uncertainty
+    cover_zh: 仅在有公开数据时粗估机会量级，并标明不确定性
 default_deprioritize:
   - country GDP and general macroeconomy unless explicitly requested
   - generic tourism or unrelated national news
   - encyclopedic country profiles
 prompt_rules: |
-  - This YAML is a COVERAGE CHECKLIST only — do NOT copy English titles into the user-facing plan.
-  - Rewrite every angle as a topic-specific verb-led instruction (调研/梳理/评估/…) with named entities.
-  - Lead with the TARGET INDUSTRY in the destination market, not national economy.
-  - Put macro/GDP only in deprioritize unless the user asked for it.
-  - Queries must be searchable and industry-specific (operators, regulators, products).
+  - YAML 只是覆盖角度清单：禁止把英文 title/goal 写进研究计划。
+  - 每一条必须改写成「动词开头 + 具体实体」的完整中文指令（调研/梳理/评估/研究/分析…）。
+  - 先写目标国的目标行业，不要先写国家宏观经济。
+  - queries 必须可搜索，含平台名、监管名、品类名等实体。

@@ -6,23 +6,29 @@ phases:
   - id: fundraising
     title: Fundraising
     goal: European vs US private debt fundraising trends
+    cover_zh: 欧洲 vs 美国私募债务募资趋势
   - id: volume_deals
     title: Deal volume
     goal: Direct lending volume LBO refinancings dividend recaps
+    cover_zh: 直接放贷成交量、LBO 再融资与分红再资本化
   - id: returns_spreads
     title: Returns and spreads
     goal: Direct lending yields spreads returns
+    cover_zh: 直接放贷收益率、利差与回报
   - id: credit_risk
     title: Credit risk
     goal: Defaults leverage credit risk watch
+    cover_zh: 违约、杠杆与信用风险观察
   - id: product_evergreen
     title: Products and evergreen
     goal: ELTIF evergreen BDC private credit fund launches
+    cover_zh: ELTIF/evergreen/BDC 等产品与基金发行
   - id: relative_value
     title: Relative value
     goal: Premium vs leveraged loans and high yield
+    cover_zh: 相对杠杆贷款与高收益债的估值溢价
 default_deprioritize:
   - unrelated equity or crypto markets unless asked
 prompt_rules: |
-  - Keep the six PD dimensions unless the user narrows scope.
-  - Prefer European primary sources when the topic is European PD.
+  - 默认覆盖六个 PD 维度，除非用户收窄范围。
+  - 禁止照抄英文 title/goal；写成可执行检索指令。

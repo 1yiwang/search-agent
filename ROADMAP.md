@@ -242,6 +242,7 @@
 | 79 | Prompt + post-parse: ban English skeleton titles; verb-led `direction_detail` | Done |
 | 80 | Domain templates (CH telecom / CH ecom) + entity-rich query repair | Done |
 | 81 | Brief UI: numbered plan primary; queries collapsed | Done |
+| 82 | System prompt gold-standard + strip English goals from checklist; brief uses strongest model | Done |
 
 ## Phase 3 — Watchlist + weekly delta (Mode B)
 

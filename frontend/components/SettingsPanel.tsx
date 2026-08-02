@@ -11,7 +11,7 @@ import {
 const EMPTY: LLMSettings = {
   llmApiKey: "",
   llmBaseUrl: "https://api.deepseek.com",
-  llmModel: "deepseek-chat",
+  llmModel: "deepseek-v4-pro",
   tavilyApiKey: "",
 };
 
@@ -85,8 +85,11 @@ export function SettingsPanel() {
               value={settings.llmModel}
               onChange={(e) => setSettings({ ...settings, llmModel: e.target.value })}
               className="mt-1 w-full rounded border border-[var(--border)] px-3 py-2 font-mono text-xs"
+              placeholder="deepseek-v4-pro"
             />
-          </label>
+            <p className="mt-1 text-[10px] text-[var(--muted)]">
+              研究计划生成会自动避开 deepseek-chat / mini 等弱模型，改用服务端最强模型。
+            </p>          </label>
           <label className="block">
             <span className="text-[var(--muted)]">Tavily API Key (optional)</span>
             <input

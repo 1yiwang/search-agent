@@ -8,10 +8,17 @@ from __future__ import annotations
 import json
 import re
 
-from frameworks import framework_prompt_block, get_framework, select_framework_id
+from frameworks import (
+    framework_forbidden_phrases,
+    framework_prompt_block,
+    get_framework,
+    select_framework_id,
+)
 from llm_context import get_openai_client, get_request_keys
 from meta import _parse_json_object, format_human_feedback
 from models import BriefDimension, ResearchBrief
+from config import config
+
 
 INDUSTRY_CLARIFY_PROMPT = """You are scoping an INDUSTRY RESEARCH project (market structure → players/products → opportunities/barriers), not encyclopedia Q&A.
 
@@ -43,85 +50,85 @@ Return ONLY valid JSON:
 Plain language. Match the user's language when the topic is Chinese. Max 4 questions."""
 
 
-BRIEF_GENERATE_PROMPT = """You write a Gemini-style RESEARCH PLAN (搜索概览 / 研究计划) for deep web research.
+BRIEF_SYSTEM_PROMPT = """你是资深行业研究策划（不是百科问答助手）。你的唯一任务：把用户选题写成「Gemini 搜索概览」风格的研究计划。
 
-Topic: {topic}
+什么叫好的研究计划：
+- 5–6 条编号方向，每条是一条完整、可执行的检索指令。
+- 动词开头（调研/梳理/评估/研究/分析/对比/探索），点名具体对象：市场、品类、平台、监管、物流、支付、公司、指标。
+- 读完就能直接拿去搜；不是栏目名、不是英文骨架、不是空泛「机会分析」。
 
-User clarifying answers (may be empty — state assumed defaults):
+════════════════════════════════
+【金标准范例】选题：中国商品卖到瑞士的跨境电商机会
+(1) 调研瑞士跨境电商市场规模、消费习惯及对中国商品的总体需求与买家偏好。
+(2) 梳理适合中国商品出口瑞士的高潜力品类，如消费电子、家居用品、户外运动装备和时尚服饰等。
+(3) 评估中国卖家进入瑞士的主要销售渠道，包括本土平台（如 Galaxus）、国际电商平台（如 Temu、AliExpress、Amazon）及 DTC 独立站模式。
+(4) 研究中瑞贸易政策与法规，包括中瑞自贸协定关税优惠、瑞士工业品关税政策、增值税（MWST）及合规认证要求。
+(5) 探索跨境物流与交付方案，分析最后一公里配送、退换货流程及瑞士本土主流支付方式（如 TWINT、账单支付）。
+(6) 综合分析中国商品在瑞士市场的核心竞争优势、潜在风险（如高标准服务需求、多语言运营）及落地建议。
+════════════════════════════════
+
+【禁止输出】（出现即不合格）
+- 英文栏目名：Demand segments and use cases / Rough opportunity sizing / Industry structure…
+- 把 checklist 的英文 goal 原样粘贴，例如 Order-of-magnitude revenue/TAM…
+- 查询写成「选题 + 英文标题」：中国商品… Rough opportunity sizing
+- 只有抽象词：市场分析、机会研究、竞争格局（无实体）
+
+【硬规则】
+1. 输出语言 = 选题语言（中文选题 → 全文中文指令；queries 可中英德混用以提高检索命中）。
+2. 每条 direction_detail = 一整句可执行指令（可两句，但必须具体）；title = ≤12 字中文短标签。
+3. research_goal = 该方向答完后应得到什么（中文一句），不得照抄英文。
+4. queries：2–4 条真实可搜字符串，必须含实体名（平台/监管/品类/公司），禁止「topic + English label」。
+5. 紧扣选题行业；除非用户要求，否则降权国家 GDP/宏观百科。
+6. overview_markdown = 把 5–6 条 direction_detail 编成 (1)(2)(3)… 列表（与金标准同格式）。
+
+只返回合法 JSON，不要 markdown 解释。"""
+
+
+BRIEF_GENERATE_PROMPT = """请为下面选题生成研究计划 JSON。
+
+选题：{topic}
+
+用户澄清答案（可能为空——请写出 assumed_defaults）：
 {answers_block}
 
-Coverage checklist (use ONLY as angles to cover — NEVER copy these English titles into the plan):
+覆盖角度清单（只参考 angle_id 与中文提示；禁止粘贴任何英文标签）：
 {framework_block}
 
-Output language: SAME as the topic (Chinese topic → Chinese plan).
-
-Write 5–6 numbered research DIRECTIONS. Each direction is a concrete search instruction, like:
-
-Good examples (style to imitate):
-- 调研瑞士跨境电商市场规模、消费习惯及对中国商品的总体需求与买家偏好。
-- 梳理适合中国商品出口瑞士的高潜力品类，如消费电子、家居用品、户外运动装备和时尚服饰等。
-- 评估中国卖家进入瑞士的主要销售渠道，包括本土平台（如 Galaxus）、国际电商平台（如 Temu、AliExpress、Amazon）及 DTC 独立站模式。
-- 研究中瑞贸易政策与法规，包括中瑞自贸协定关税优惠、增值税（MWST）及合规认证要求。
-
-Bad examples (FORBIDDEN):
-- "Demand segments and use cases"
-- "Industry structure and competitive landscape"
-- research_goal that only repeats the English checklist
-- queries like "{{topic}} Demand segments and use cases"
-
-Hard rules:
-1. Stay inside the topic industry/commerce. Deprioritize country GDP/macro unless the user asked.
-2. Each direction MUST have:
-   - title: short label in the topic language (≤20 chars), e.g. 「运营商格局」「监管准入」
-   - direction_detail: ONE full instruction sentence (or two short sentences) naming concrete objects — markets, companies, platforms, regulators, products, metrics. Start with a verb: 调研/梳理/评估/研究/分析/对比…
-   - research_goal: what a good answer looks like (one sentence)
-   - queries: 2–4 REAL search strings with entities (e.g. "Swisscom Sunrise Salt market share 2024", "BAKOM telecom license Switzerland"). Mix EN/DE when the market is Switzerland/DACH. NEVER use "topic + English phase title".
-   - priority (1=highest), info_type, phase_id (may map to checklist ids)
-3. overview_markdown: paste the plan as a numbered list of the direction_detail lines (for human review).
-4. success_criteria: 3–5 must-answer questions.
-5. deprioritize + assumed_defaults as needed.
-
-Return ONLY valid JSON:
-```json
+JSON schema：
 {{
-  "problem_restatement": "...",
+  "problem_restatement": "用一句话重述研究问题",
   "framework_id": "{framework_id}",
   "phases": [],
   "dimensions": [
     {{
-      "title": "短标题",
-      "research_goal": "该方向答完后应得到什么",
-      "direction_detail": "调研……（完整可执行指令）",
-      "queries": ["entity-rich query 1", "entity-rich query 2"],
+      "title": "短中文标题",
+      "research_goal": "答完本方向应得到什么（中文）",
+      "direction_detail": "调研/梳理/评估……（完整可执行指令，含具体实体）",
+      "queries": ["含实体的检索词1", "含实体的检索词2"],
       "priority": 1,
       "info_type": "facts",
-      "phase_id": "industry_structure"
+      "phase_id": "对应 angle_id"
     }}
   ],
   "deprioritize": ["..."],
   "source_prefs": ["..."],
-  "success_criteria": ["..."],
+  "success_criteria": ["报告必须回答的问题1", "..."],
   "assumed_defaults": ["..."],
-  "overview_markdown": "(1) …\\n(2) …"
+  "overview_markdown": "(1) …\\n(2) …\\n(3) …"
 }}
-```"""
+
+务必写出 5–6 条 dimensions，质量对齐金标准范例。"""
 
 
-BRIEF_REVISE_PROMPT = """Revise this research plan based on user feedback.
+BRIEF_REVISE_PROMPT = """根据用户反馈修订研究计划。保持 Gemini 搜索概览风格：每条 direction_detail 必须是动词开头、含具名实体的完整中文指令。禁止退回英文骨架标题或英文 goal。保持 5–6 条。语言与选题一致。
 
-Keep Gemini-style numbered directions: each direction_detail must be a concrete verb-led instruction
-with named entities (markets, firms, platforms, regulators). Do NOT revert to English skeleton titles
-like "Demand segments and use cases". Keep 5–6 directions. Same language as the topic.
-
-Current brief JSON:
+当前 brief JSON：
 {brief_json}
 
-User feedback:
+用户反馈：
 {feedback}
 
-Return ONLY valid JSON with the same schema
-(problem_restatement, framework_id, phases, dimensions with direction_detail + entity-rich queries,
-deprioritize, source_prefs, success_criteria, assumed_defaults, overview_markdown)."""
+只返回同 schema 的合法 JSON。"""
 
 
 _ENGLISH_SKELETON_TITLES = {
@@ -143,11 +150,31 @@ _ENGLISH_SKELETON_TITLES = {
     "competitive dynamics",
     "fundraising",
     "deal volume and deployment",
+    "deal volume",
     "returns and spreads",
     "credit risk",
     "products and evergreen structures",
+    "products and evergreen",
     "relative value",
 }
+
+_WEAK_BRIEF_MODEL_MARKERS = (
+    "mini", "flash", "haiku", "nano", "deepseek-chat", "deepseek-coder", "gpt-3.5",
+)
+
+
+def get_brief_model() -> str:
+    """Planning step uses the strongest available model (never weak BYOK aliases)."""
+    dedicated = (getattr(config, "llm_brief_model", None) or "").strip()
+    if dedicated:
+        return dedicated
+    keys = get_request_keys()
+    requested = (keys.llm_model or "").strip()
+    server = (config.llm_model or "").strip() or "deepseek-v4-pro"
+    low = requested.lower()
+    if not requested or any(m in low for m in _WEAK_BRIEF_MODEL_MARKERS):
+        return server
+    return requested
 
 
 def _fallback_questions(topic: str) -> list[dict]:
@@ -247,34 +274,38 @@ def _is_skeleton_title(title: str) -> bool:
     return _contains_skeleton_phrase(t)
 
 
-def _contains_skeleton_phrase(text: str) -> bool:
-    """True if text embeds a known English framework skeleton label."""
+def _contains_skeleton_phrase(text: str, extra: set[str] | None = None) -> bool:
+    """True if text embeds a known English framework skeleton label or goal."""
     low = re.sub(r"\s+", " ", (text or "").strip().lower())
     if not low:
         return False
-    return any(s in low for s in _ENGLISH_SKELETON_TITLES)
+    banned = set(_ENGLISH_SKELETON_TITLES)
+    if extra:
+        banned |= {x.strip().lower() for x in extra if x and len(x.strip()) >= 8}
+    return any(s in low for s in banned)
 
 
-_INSTRUCTION_VERBS_ZH = ("调研", "梳理", "评估", "研究", "分析", "对比", "探索", "综合", "查找", "绘制", "追踪", "概述")
+_INSTRUCTION_VERBS_ZH = (
+    "调研", "梳理", "评估", "研究", "分析", "对比", "探索", "综合", "查找", "绘制", "追踪", "概述", "粗估",
+)
 _INSTRUCTION_VERBS_EN = (
     "research", "map", "identify", "assess", "analyze", "compare", "survey",
     "evaluate", "explore", "outline", "review", "examine",
 )
 
 
-def _is_good_instruction(text: str, topic: str) -> bool:
+def _is_good_instruction(text: str, topic: str, *, forbidden: set[str] | None = None) -> bool:
     """Gemini-style plan line: verb-led, concrete, not an English skeleton dump."""
     t = (text or "").strip()
     if len(t) < 16:
         return False
-    if _contains_skeleton_phrase(t) or t.strip().lower() in _ENGLISH_SKELETON_TITLES:
+    if _contains_skeleton_phrase(t, forbidden):
         return False
-    # English goal fragments like "Who buys what — B2B..."
-    if re.match(r"^(who|what|how|why|where|which)\b", t, re.I) and not _topic_is_zh(t):
+    # English goal fragments like "Who buys what — B2B..." / "Order-of-magnitude..."
+    if re.match(r"^(who|what|how|why|where|which|order-of-magnitude|market size)\b", t, re.I):
         if _topic_is_zh(topic):
             return False
     if _topic_is_zh(topic):
-        # Chinese topic → instruction should be mostly Chinese + start with a verb
         if not re.search(r"[\u4e00-\u9fff]", t):
             return False
         if not any(t.startswith(v) for v in _INSTRUCTION_VERBS_ZH):
@@ -282,6 +313,7 @@ def _is_good_instruction(text: str, topic: str) -> bool:
         return True
     low = t.lower()
     return any(low.startswith(v) for v in _INSTRUCTION_VERBS_EN)
+
 
 
 def _weak_query(q: str, topic: str, title: str) -> bool:
@@ -379,6 +411,10 @@ def _instruction_from_phase(topic: str, phase: dict) -> str:
             "risks": (
                 "综合分析中国商品在瑞士市场的核心竞争优势、潜在风险（如高标准服务需求、多语言运营）"
                 "及落地建议。"
+            ),
+            "sizing": (
+                "粗估中国商品对瑞跨境电商的机会量级（GMV/品类增速区间，仅在有公开数据时），"
+                "并明确标注数据缺口与不确定性。"
             ),
         }
         if pid in ecom_zh:
@@ -497,6 +533,7 @@ def _parse_brief_payload(
     answers: dict[str, str],
 ) -> ResearchBrief:
     fw = get_framework(framework_id)
+    forbidden = framework_forbidden_phrases(framework_id)
     phase_by_id = {
         str(p.get("id") or ""): p for p in (fw.get("phases") or []) if isinstance(p, dict)
     }
@@ -516,13 +553,21 @@ def _parse_brief_payload(
             detail = goal or title
 
         # Replace skeleton / non-instructional dumps with topic-specific templates
-        if not _is_good_instruction(detail, topic):
+        if not _is_good_instruction(detail, topic, forbidden=forbidden):
             phase = phase_by_id.get(phase_id) or {"id": phase_id, "goal": goal or title}
             detail = _instruction_from_phase(topic, phase)
             title = _short_title_from_instruction(detail, phase_id or "方向")
             goal = detail
-        elif _is_skeleton_title(title) or not title:
+        elif (
+            _is_skeleton_title(title)
+            or _contains_skeleton_phrase(title, forbidden)
+            or not title
+        ):
             title = _short_title_from_instruction(detail, phase_id or title or "方向")
+
+        if goal and not _is_good_instruction(goal, topic, forbidden=forbidden):
+            # Keep Chinese research_goal only when instructional; else mirror detail
+            goal = detail
 
         queries = [
             str(q).strip() for q in (item.get("queries") or [])
@@ -531,7 +576,7 @@ def _parse_brief_payload(
         queries = _repair_queries(topic, title, detail, queries)
         dims.append(BriefDimension(
             title=title[:200] or "方向",
-            research_goal=goal or detail[:200],
+            research_goal=(goal or detail)[:500],
             direction_detail=detail,
             queries=queries,
             priority=int(item.get("priority") or 1),
@@ -539,9 +584,32 @@ def _parse_brief_payload(
             phase_id=phase_id,
         ))
 
+    # Second pass: any remaining bad instruction must be rewritten
+    fixed: list[BriefDimension] = []
+    for d in dims:
+        if _is_good_instruction(d.direction_detail, topic, forbidden=forbidden):
+            fixed.append(d)
+            continue
+        phase = phase_by_id.get(d.phase_id) or {"id": d.phase_id, "goal": d.title}
+        instruction = _instruction_from_phase(topic, phase)
+        title = _short_title_from_instruction(instruction, d.phase_id or d.title or "方向")
+        fixed.append(BriefDimension(
+            title=title,
+            research_goal=instruction,
+            direction_detail=instruction,
+            queries=_repair_queries(topic, title, instruction, list(d.queries)),
+            priority=d.priority,
+            info_type=d.info_type,
+            phase_id=d.phase_id,
+        ))
+    dims = fixed
+
     # If still mostly bad, full rebuild from checklist
-    bad_count = sum(1 for d in dims if not _is_good_instruction(d.direction_detail, topic))
-    skeletonish = not dims or bad_count >= max(2, (len(dims) + 1) // 2)
+    bad_count = sum(
+        1 for d in dims
+        if not _is_good_instruction(d.direction_detail, topic, forbidden=forbidden)
+    )
+    skeletonish = not dims or bad_count >= max(1, (len(dims) + 1) // 2)
     if skeletonish:
         rebuilt: list[BriefDimension] = []
         for i, phase in enumerate((fw.get("phases") or [])[:6]):
@@ -628,11 +696,15 @@ async def generate_research_brief(
         framework_block=framework_prompt_block(fid),
         framework_id=fid,
     )
+    model = get_brief_model()
     response = await get_openai_client().chat.completions.create(
-        model=get_request_keys().llm_model,
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0.3,
-        max_tokens=4000,
+        model=model,
+        messages=[
+            {"role": "system", "content": BRIEF_SYSTEM_PROMPT},
+            {"role": "user", "content": prompt},
+        ],
+        temperature=0.2,
+        max_tokens=5000,
     )
     raw = _parse_json_object(response.choices[0].message.content or "")
     return _parse_brief_payload(raw, topic=topic, framework_id=fid, answers=answers)
@@ -649,11 +721,15 @@ async def revise_research_brief(
         brief_json=json.dumps(payload, ensure_ascii=False, indent=2),
         feedback=feedback.strip(),
     )
+    model = get_brief_model()
     response = await get_openai_client().chat.completions.create(
-        model=get_request_keys().llm_model,
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0.3,
-        max_tokens=4000,
+        model=model,
+        messages=[
+            {"role": "system", "content": BRIEF_SYSTEM_PROMPT},
+            {"role": "user", "content": prompt},
+        ],
+        temperature=0.2,
+        max_tokens=5000,
     )
     raw = _parse_json_object(response.choices[0].message.content or "")
     if not raw:
@@ -669,24 +745,44 @@ async def revise_research_brief(
 def brief_seed_queries(brief: ResearchBrief, *, max_queries: int = 18) -> list[str]:
     """Round-robin queries across directions so every direction gets search budget."""
     blocked = _deprioritize_patterns(brief.deprioritize)
+    forbidden = framework_forbidden_phrases(brief.framework_id)
     dims = sorted(brief.dimensions, key=lambda d: d.priority)
     per_dim: list[list[str]] = []
     for dim in dims:
         bucket: list[str] = []
         for q in dim.queries:
             q = q.strip()
-            if q and not _matches_deprioritize(q, blocked) and q not in bucket:
+            if (
+                q
+                and not _matches_deprioritize(q, blocked)
+                and not _weak_query(q, brief.topic, dim.title)
+                and q not in bucket
+            ):
                 bucket.append(q)
-        seed = f"{brief.topic} {dim.research_goal or dim.title}".strip()
-        if seed and not _matches_deprioritize(seed, blocked) and seed not in bucket:
-            bucket.append(seed)
-        if dim.direction_detail:
-            # Pull a short keyword seed from detail first clause
-            tip = dim.direction_detail.strip().split("。")[0].split(".")[0][:80]
-            if tip:
-                extra = f"{brief.topic} {tip}".strip()
-                if extra not in bucket and not _matches_deprioritize(extra, blocked):
+        # Never seed with English skeleton title/goal
+        for candidate in (dim.direction_detail, dim.research_goal, dim.title):
+            tip = (candidate or "").strip().split("。")[0].split(".")[0][:80]
+            if not tip or _contains_skeleton_phrase(tip, forbidden):
+                continue
+            if _topic_is_zh(brief.topic) and not re.search(r"[\u4e00-\u9fff]", tip):
+                continue
+            # Prefer short keyword from Chinese instruction, not full sentence dump
+            words = re.findall(r"[A-Za-z][A-Za-z0-9&.-]{2,}|[\u4e00-\u9fff]{2,6}", tip)
+            for w in words[:3]:
+                extra = f"{w} Switzerland" if "瑞士" in brief.topic else f"{brief.topic} {w}"
+                extra = extra.strip()
+                if (
+                    extra
+                    and extra not in bucket
+                    and not _matches_deprioritize(extra, blocked)
+                    and not _weak_query(extra, brief.topic, dim.title)
+                ):
                     bucket.append(extra)
+            break
+        if not bucket:
+            for q in _seed_queries_for_topic(brief.topic, dim.direction_detail or ""):
+                if q not in bucket and not _matches_deprioritize(q, blocked):
+                    bucket.append(q)
         per_dim.append(bucket)
 
     out: list[str] = []

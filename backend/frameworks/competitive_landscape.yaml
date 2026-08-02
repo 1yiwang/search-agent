@@ -6,17 +6,21 @@ phases:
   - id: player_map
     title: Player map
     goal: Who competes — segments and positioning
+    cover_zh: 竞争玩家地图、细分与定位
   - id: shares
     title: Shares and ranking
     goal: Market share, subscribers, revenue where public
+    cover_zh: 市占、用户数或收入等公开排名数据
   - id: products
     title: Product and offer comparison
     goal: Feature, price, channel differences
+    cover_zh: 产品/套餐/价格/渠道对比
   - id: dynamics
     title: Competitive dynamics
     goal: M&A, regulation shocks, new entrants
+    cover_zh: 并购、监管冲击与新进入者等竞争动态
 default_deprioritize:
   - broad economy without competitive link
 prompt_rules: |
-  - Center on named competitors and the industry arena.
-  - Prefer hard metrics when available; flag soft claims.
+  - 围绕具名竞争对手与行业竞技场。
+  - 禁止照抄英文 title/goal；写成动词开头的完整检索指令。

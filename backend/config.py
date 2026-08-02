@@ -9,6 +9,8 @@ class Config:
     llm_api_key: str = os.getenv("LLM_API_KEY", "")
     llm_base_url: str = os.getenv("LLM_BASE_URL", "https://api.openai.com/v1")
     llm_model: str = os.getenv("LLM_MODEL", "gpt-4o-mini")
+    # Brief / research-plan writing: prefer strongest model (defaults to LLM_MODEL)
+    llm_brief_model: str = os.getenv("LLM_BRIEF_MODEL", "").strip()
 
     search_max_results: int = int(os.getenv("SEARCH_MAX_RESULTS", "10"))
     search_provider: str = os.getenv("SEARCH_PROVIDER", "tavily")

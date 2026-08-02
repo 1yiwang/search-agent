@@ -6,21 +6,25 @@ phases:
   - id: overview
     title: Industry overview
     goal: Definition, scope, and current state of the industry
+    cover_zh: 行业定义、范围与当前状态
   - id: size_drivers
     title: Market size and drivers
     goal: Scale, growth rates, key demand/supply drivers
+    cover_zh: 市场规模、增速与关键供需驱动
   - id: players
     title: Key players
     goal: Leaders, challengers, niches
+    cover_zh: 主要玩家、挑战者与利基参与者
   - id: trends
     title: Trends and outlook
     goal: Technology, regulation, customer shifts
+    cover_zh: 技术、监管与客户趋势及短期展望
   - id: risks
     title: Risks and open questions
     goal: Uncertainties, data gaps, controversies
+    cover_zh: 不确定性、数据缺口与争议点
 default_deprioritize:
   - unrelated national macro topics unless the question is macro
 prompt_rules: |
-  - Stay inside the named industry or topic.
-  - Prefer primary/industry sources over generic news roundups.
-  - Adapt phases to the question; note changes in overview_markdown.
+  - 只覆盖上述角度；禁止照抄英文 title/goal。
+  - 每条写成选题相关的动词开头完整指令。

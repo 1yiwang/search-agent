@@ -58,20 +58,22 @@ def select_framework_id(topic: str) -> str:
 
 
 def framework_prompt_block(framework_id: str) -> str:
-    """Serialize skeleton as a coverage checklist (not titles to copy)."""
+    """Serialize skeleton as Chinese coverage angles — never English titles/goals."""
     fw = get_framework(framework_id)
     lines = [
         f"Checklist id: {fw.get('id')}",
         f"Purpose: {fw.get('description', '')}",
-        "Angles to COVER (rewrite each as a topic-specific instruction — do not copy titles):",
+        "必须覆盖的角度（只参考 angle_id + 中文提示；禁止把英文标签粘贴进计划）：",
     ]
     for i, phase in enumerate(fw.get("phases") or [], 1):
-        lines.append(
-            f"  {i}. angle_id={phase.get('id')} — cover: {phase.get('goal')}"
+        cover = (
+            str(phase.get("cover_zh") or "").strip()
+            or str(phase.get("id") or "").replace("_", " ")
         )
+        lines.append(f"  {i}. angle_id={phase.get('id')} — {cover}")
     deps = fw.get("default_deprioritize") or []
     if deps:
-        lines.append("Default deprioritize:")
+        lines.append("默认降权（不要主动研究）：")
         for d in deps:
             lines.append(f"  - {d}")
     rules = (fw.get("prompt_rules") or "").strip()
@@ -79,3 +81,15 @@ def framework_prompt_block(framework_id: str) -> str:
         lines.append("Rules:")
         lines.append(rules)
     return "\n".join(lines)
+
+
+def framework_forbidden_phrases(framework_id: str) -> set[str]:
+    """English titles/goals that must never appear in user-facing plan text."""
+    fw = get_framework(framework_id)
+    out: set[str] = set()
+    for phase in fw.get("phases") or []:
+        for key in ("title", "goal"):
+            val = str(phase.get(key) or "").strip().lower()
+            if len(val) >= 8:
+                out.add(val)
+    return out
