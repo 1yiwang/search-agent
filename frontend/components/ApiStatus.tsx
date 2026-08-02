@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { getApiBase } from "@/lib/apiBase";
 
-export function ApiStatus() {
+/** Full-width banner only when personal API is offline. Healthy = silent. */
+export function OfflineBanner() {
   const [online, setOnline] = useState<boolean | null>(null);
 
   useEffect(() => {
@@ -24,14 +25,21 @@ export function ApiStatus() {
     };
   }, []);
 
-  if (online === null) return null;
+  if (online !== false) return null;
 
   return (
-    <p
-      className={`text-xs ${online ? "text-[var(--verify)]" : "text-amber-700"}`}
-      title={online ? "Personal API reachable" : "Run scripts/start-personal.ps1 on your PC"}
+    <div
+      className="border-b border-amber-700/40 bg-amber-950/40 px-4 py-2 text-center text-xs text-amber-100"
+      role="status"
     >
-      {online ? "● API online" : "○ API offline — start personal API to research"}
-    </p>
+      API offline — run{" "}
+      <code className="font-mono text-[11px]">.\scripts\start-personal.ps1</code> on your PC to
+      research.
+    </div>
   );
+}
+
+/** @deprecated Prefer OfflineBanner in AppShell. Healthy state renders nothing. */
+export function ApiStatus() {
+  return <OfflineBanner />;
 }

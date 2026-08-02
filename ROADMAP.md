@@ -2,8 +2,8 @@
 
 > **Single source of truth** for implementation progress. Update this file at the end of each Step.
 
-**Current phase:** Wave 12e Gemini-style research-plan directions  
-**Next step:** Live retest Chinese market-entry briefs (Unicom / cross-border ecom)
+**Current phase:** Wave 12f App chrome UX (Library + Settings sheet)  
+**Next step:** Live verify homepage / brief chrome; brief direction quality if API restarted
 
 ## Product constraints (personal use)
 
@@ -243,6 +243,13 @@
 | 80 | Domain templates (CH telecom / CH ecom) + entity-rich query repair | Done |
 | 81 | Brief UI: numbered plan primary; queries collapsed | Done |
 | 82 | System prompt gold-standard + strip English goals from checklist; brief uses strongest model | Done |
+
+## Wave 12f — App chrome UX
+
+| Step | Task | Status |
+|------|------|--------|
+| 83 | Global AppChrome: Library + Settings gear; Settings sheet; offline banner only | Done |
+| 84 | `/library` tabs (Saved / Watching); `/history` `/watchlist` redirect | Done |
 
 ## Phase 3 — Watchlist + weekly delta (Mode B)
 

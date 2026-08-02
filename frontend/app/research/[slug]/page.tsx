@@ -63,8 +63,8 @@ export default function ReportPage() {
     return (
       <main className="mx-auto max-w-md px-4 py-24 text-center">
         <p className="text-red-400 mb-4">{error}</p>
-        <a href="/history" className="text-sm text-[var(--link)] hover:underline">
-          Back to saved reports
+        <a href="/library" className="text-sm text-[var(--muted)] hover:text-[var(--ink)]">
+          Back to Library
         </a>
       </main>
     );
@@ -74,8 +74,8 @@ export default function ReportPage() {
     return (
       <main className="mx-auto max-w-md px-4 py-24 text-center">
         <p className="text-red-400 mb-4">Report not found.</p>
-        <a href="/history" className="text-sm text-[var(--link)] hover:underline">
-          Back to saved reports
+        <a href="/library" className="text-sm text-[var(--muted)] hover:text-[var(--ink)]">
+          Back to Library
         </a>
       </main>
     );

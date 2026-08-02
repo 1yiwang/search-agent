@@ -372,7 +372,7 @@ export function ReportView({
         recency_days: 14,
         baseline_slug: report.slug,
       });
-      setWatchMsg(`Watching — open /watchlist (${item.id.slice(0, 12)}…)`);
+      setWatchMsg(`Watching — open Library › Watching (${item.id.slice(0, 12)}…)`);
     } catch (err) {
       setWatchMsg(err instanceof Error ? err.message : "Failed to add watch");
     } finally {
@@ -388,21 +388,13 @@ export function ReportView({
             <Link href="/" className="hover:text-[var(--ink)]">
               New search
             </Link>
-            <span className="text-[var(--border)]">|</span>
-            <Link href="/history" className="hover:text-[var(--ink)]">
-              Saved reports
-            </Link>
-            <span className="text-[var(--border)]">|</span>
-            <Link href="/watchlist" className="hover:text-[var(--ink)]">
-              Watchlist
-            </Link>
           </nav>
           <div className="flex items-center gap-3">
             <button
               type="button"
               onClick={handleWatchTopic}
               disabled={watching}
-              className="text-xs text-[var(--link)] hover:underline disabled:opacity-50"
+              className="text-xs text-[var(--muted)] hover:text-[var(--ink)] disabled:opacity-50"
             >
               {watching ? "Adding…" : "Watch this topic"}
             </button>
@@ -416,11 +408,11 @@ export function ReportView({
         </div>
         {watchMsg && (
           <div className={`${PAGE_GUTTER} pb-2 text-xs text-[var(--muted)]`}>
-            {watchMsg.includes("/watchlist") ? (
+            {watchMsg.includes("Library") ? (
               <>
                 Watching —{" "}
-                <Link href="/watchlist" className="text-[var(--link)] hover:underline">
-                  open watchlist
+                <Link href="/library?tab=watching" className="text-[var(--link)] hover:underline">
+                  open Library
                 </Link>
               </>
             ) : (

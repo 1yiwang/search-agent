@@ -13,8 +13,6 @@ import {
 } from "@/lib/api";
 import { formatProgressEvent } from "@/lib/formatProgress";
 import { researchReportPath, slugFromReportReady } from "@/lib/researchNav";
-import { ApiStatus } from "@/components/ApiStatus";
-import { SettingsPanel } from "@/components/SettingsPanel";
 
 type WizardStep = 1 | 2 | 3 | 4 | 5;
 
@@ -126,27 +124,16 @@ export default function PlanWizardPage() {
   return (
     <main className="mx-auto max-w-3xl px-4 py-12 md:py-20">
       <header className="mb-8">
-        <Link href="/" className="text-sm text-[var(--link)] hover:underline">
-          ← Back to quick search
-        </Link>
-        {" · "}
-        <Link href="/brief" className="text-sm text-[var(--link)] hover:underline">
-          Industry brief (recommended)
-        </Link>
-        <h1 className="font-display text-3xl md:text-4xl text-[var(--ink)] mt-4">
+        <h1 className="font-display text-3xl md:text-4xl text-[var(--ink)] mt-0">
           Deep planning wizard
         </h1>
         <p className="mt-2 text-[var(--muted)] text-sm">
           Legacy multi-section planner. Prefer{" "}
-          <Link href="/brief" className="text-[var(--link)] hover:underline">
-            /brief
+          <Link href="/brief" className="hover:text-[var(--ink)]">
+            Industry brief
           </Link>{" "}
-          for industry market-entry research.
+          for market-entry research.
         </p>
-        <div className="mt-3 flex flex-col gap-2">
-          <ApiStatus />
-          <SettingsPanel />
-        </div>
       </header>
 
       <nav className="mb-8 flex gap-1 text-xs uppercase tracking-wide">

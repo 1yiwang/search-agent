@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { DM_Sans, Instrument_Serif } from "next/font/google";
 import { isPrivateAppHost } from "@/lib/hosts";
+import { AppShell } from "@/components/AppShell";
 import "./globals.css";
 
 const display = Instrument_Serif({
@@ -35,7 +36,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${display.variable} ${body.variable}`}>
-      <body className="min-h-screen antialiased">{children}</body>
+      <body className="min-h-screen antialiased">
+        <AppShell>{children}</AppShell>
+      </body>
     </html>
   );
 }

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   streamResearch,
   checkApiHealth,
@@ -11,26 +11,35 @@ import {
 import { formatProgressEvent } from "@/lib/formatProgress";
 import { getApiToken } from "@/lib/auth";
 import { loadSettings } from "@/lib/settings";
+import { useSettingsUi } from "@/lib/settingsUi";
 import { researchReportPath, slugFromReportReady } from "@/lib/researchNav";
-import { ApiStatus } from "@/components/ApiStatus";
-import { SettingsPanel } from "@/components/SettingsPanel";
 
 type Mode = "quick" | "deep";
 type Depth = "fast" | "standard" | "deep";
 
 export default function SearchPage() {
   const router = useRouter();
+  const { openSettings } = useSettingsUi();
   const [topic, setTopic] = useState("");
   const [mode, setMode] = useState<Mode>("quick");
   const [depth, setDepth] = useState<Depth>("deep");
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState<string[]>([]);
+  const [hasKey, setHasKey] = useState(true);
+
+  useEffect(() => {
+    function refresh() {
+      setHasKey(Boolean(loadSettings().llmApiKey.trim()));
+    }
+    refresh();
+    window.addEventListener("search-agent-settings-saved", refresh);
+    return () => window.removeEventListener("search-agent-settings-saved", refresh);
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!topic.trim() || loading) return;
 
-    // Standard / Deep → industry brief wizard (Wave 12a)
     if (mode === "quick" && depth !== "fast") {
       const q = new URLSearchParams({
         topic: topic.trim(),
@@ -57,7 +66,6 @@ export default function SearchPage() {
       setLoading(false);
       return;
     }
-    // Token only required when backend has API_AUTH_SECRET (Mode B local often has none).
     if (health.apiAuthRequired && !getApiToken()) {
       setProgress([
         "Error: API requires login — open /login, enter site password, then retry.",
@@ -67,6 +75,7 @@ export default function SearchPage() {
     }
     if (!loadSettings().llmApiKey.trim()) {
       setProgress(["Error: Add your LLM API key in Settings before researching."]);
+      openSettings();
       setLoading(false);
       return;
     }
@@ -113,16 +122,6 @@ export default function SearchPage() {
         <p className="mt-3 text-[var(--muted)] max-w-md mx-auto">
           You define the question. We search, extract, and cite every claim.
         </p>
-        <div className="mt-4 flex flex-col items-center gap-2">
-          <ApiStatus />
-          <SettingsPanel />
-          <Link href="/history" className="text-sm text-[var(--link)] hover:underline">
-            Saved reports
-          </Link>
-          <Link href="/watchlist" className="text-sm text-[var(--link)] hover:underline">
-            Watchlist
-          </Link>
-        </div>
       </header>
 
       <form onSubmit={handleSubmit} className="space-y-5">
@@ -224,13 +223,22 @@ export default function SearchPage() {
                 ? "Continue to brief →"
                 : "Start fast research"}
           </button>
-          <p className="text-sm text-[var(--muted)]">
-            <Link href="/brief" className="text-[var(--link)] hover:underline">
-              Industry brief wizard
-            </Link>
-            {" "}— clarify → overview → cited research
-            {" · "}
-            <Link href="/plan" className="text-[var(--link)] hover:underline">
+          {!hasKey && (
+            <p className="text-sm text-[var(--muted)]">
+              <button
+                type="button"
+                onClick={() => {
+                  openSettings();
+                }}
+                className="text-[var(--ink)] underline-offset-2 hover:underline"
+              >
+                Add API key
+              </button>{" "}
+              before researching.
+            </p>
+          )}
+          <p className="text-xs text-[var(--muted)]">
+            <Link href="/plan" className="hover:text-[var(--ink)]">
               Legacy multi-section plan
             </Link>
           </p>
@@ -256,7 +264,6 @@ export default function SearchPage() {
           </ol>
         </div>
       )}
-
     </main>
   );
 }
