@@ -277,6 +277,7 @@ def generate_report(
         summary=synthesis.thesis or synthesis.executive_summary,
         key_takeaways=list(synthesis.key_takeaways),
         so_what=synthesis.so_what,
+        citation_issues=list(synthesis.citation_issues),
         structured_findings=synthesis.structured_findings,
         coverage=synthesis.coverage,
         gaps=synthesis.gaps,

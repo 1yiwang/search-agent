@@ -28,7 +28,7 @@ from frameworks import (
     get_framework,
     select_framework_id,
 )
-from llm_context import get_openai_client, get_request_keys
+from llm_context import get_openai_client, get_request_keys, get_strong_model
 from meta import _parse_json_object, format_human_feedback
 from models import BriefDimension, ResearchBrief
 from config import config
@@ -159,24 +159,9 @@ BRIEF_REWRITE_PROMPT = """以下研究方向未通过质量校验，请只重写
 只返回被重写条目的 JSON：{{"dimensions": [ ... ]}}"""
 
 
-_WEAK_BRIEF_MODEL_MARKERS = (
-    "mini", "flash", "haiku", "nano", "lite", "tiny", "small",
-    "deepseek-chat", "deepseek-coder", "gpt-3.5", "qwen-turbo", "qwen-plus",
-)
-
-
 def get_brief_model() -> str:
     """Planning step uses the strongest available model (never weak BYOK aliases)."""
-    dedicated = (getattr(config, "llm_brief_model", None) or "").strip()
-    if dedicated:
-        return dedicated
-    keys = get_request_keys()
-    requested = (keys.llm_model or "").strip()
-    server = (config.llm_model or "").strip() or "deepseek-v4-pro"
-    low = requested.lower()
-    if not requested or any(m in low for m in _WEAK_BRIEF_MODEL_MARKERS):
-        return server
-    return requested
+    return get_strong_model()
 
 
 def _fallback_questions(topic: str) -> list[dict]:

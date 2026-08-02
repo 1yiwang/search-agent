@@ -171,6 +171,7 @@ export interface ResearchReport {
   summary?: string;
   key_takeaways?: string[];
   so_what?: string;
+  citation_issues?: string[];
   structured_findings?: StructuredFinding[];
   coverage?: string;
   gaps?: string;

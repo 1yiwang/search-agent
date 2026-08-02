@@ -3,7 +3,7 @@
 > **Single source of truth** for implementation progress. Update this file at the end of each Step.
 
 **Current phase:** Wave 12g Signal Flag UI (red / white / yellow)  
-**Next step:** Wave 12h Step 89 — Citation integrity gate + synthesis strong model + L1/L2 eval
+**Next step:** Wave 12e — second search provider failover + early-stop eval
 
 ## Product constraints (personal use)
 
@@ -266,7 +266,7 @@
 | 86 | Direction budget + leftover queries + Chinese coverage tokens | Done |
 | 87 | Brief rubric + targeted regenerate; examples YAML (no hardcode) | Done |
 | 88 | Report bilingual skeleton + thesis gate + args==directions | Done |
-| 89 | Citation integrity gate + synthesis strong model + L1/L2 eval | Planned |
+| 89 | Citation integrity gate + synthesis strong model + L1/L2 eval | Done |
 
 ## Phase 3 — Watchlist + weekly delta (Mode B)
 

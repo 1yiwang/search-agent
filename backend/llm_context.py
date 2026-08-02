@@ -41,6 +41,24 @@ def get_openai_client() -> AsyncOpenAI:
     )
 
 
+_WEAK_MODEL_MARKERS = (
+    "mini", "flash", "haiku", "nano", "lite", "tiny", "small",
+    "deepseek-chat", "deepseek-coder", "gpt-3.5", "qwen-turbo", "qwen-plus",
+)
+
+
+def get_strong_model() -> str:
+    """Planning and writing use the strongest model, never a weak BYOK alias."""
+    dedicated = (getattr(config, "llm_brief_model", None) or "").strip()
+    if dedicated:
+        return dedicated
+    requested = (get_request_keys().llm_model or "").strip()
+    server = (config.llm_model or "").strip() or "deepseek-v4-pro"
+    if not requested or any(m in requested.lower() for m in _WEAK_MODEL_MARKERS):
+        return server
+    return requested
+
+
 def get_tavily_api_key() -> str:
     keys = get_request_keys()
     return keys.tavily_api_key or config.tavily_api_key

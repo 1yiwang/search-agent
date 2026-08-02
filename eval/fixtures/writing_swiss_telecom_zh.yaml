@@ -1,0 +1,45 @@
+# L2 fixture: fixed facts + approved brief → the writing contract must hold offline.
+topic: 中国运营商进入瑞士电信市场的机会
+framework_id: market_entry
+problem_restatement: 中国运营商以何种方式进入瑞士电信市场最可行
+topics_searched:
+  - Swisscom Sunrise Salt mobile market share 2026
+  - BAKOM ComCom spectrum licence MVNO wholesale rules
+  - Switzerland MVNO wholesale pricing Salt Sunrise
+dimensions:
+  - title: 市场结构与份额
+    phase_id: industry_structure
+    direction_id: industry_structure
+    direction_detail: 调研 Swisscom、Sunrise、Salt 三家运营商的移动份额与用户规模变化。
+    priority: 1
+  - title: 监管与牌照
+    phase_id: regulation
+    direction_id: regulation
+    direction_detail: 梳理 BAKOM 对频谱牌照与 MVNO 批发接入的具体规定。
+    priority: 2
+  - title: 批发接入成本
+    phase_id: cost_structure
+    direction_id: cost_structure
+    direction_detail: 量化瑞士 MVNO 批发资费与漫游成本的公开价格区间。
+    priority: 3
+facts:
+  - fact: Swisscom 在瑞士移动市场约占 55% 份额，Sunrise 与 Salt 合计约 45%。
+    source_url: https://example.com/shares
+    source_title: 瑞士移动市场份额 2026
+    quoted_text: Swisscom held about 55% of the Swiss mobile market in 2026
+    confidence: high
+  - fact: BAKOM 要求 MVNO 批发接入按商业协商定价，未设强制批发价格上限。
+    source_url: https://example.com/bakom
+    source_title: BAKOM 批发接入规定
+    quoted_text: BAKOM leaves MVNO wholesale access to commercial negotiation
+    confidence: medium
+  - fact: 瑞士 MVNO 批发资费公开区间为每 GB 2 至 4 瑞郎，低于零售价约 60%。
+    source_url: https://example.com/wholesale
+    source_title: 瑞士批发资费
+    quoted_text: Swiss MVNO wholesale rates range from CHF 2 to 4 per GB
+    confidence: medium
+  - fact: Salt 在 2025 年将 5G 覆盖扩展至 99% 人口，网络质量差距缩小。
+    source_url: https://example.com/salt
+    source_title: Salt 5G 覆盖
+    quoted_text: Salt extended 5G coverage to 99% of the population in 2025
+    confidence: high

@@ -80,6 +80,15 @@ export function formatProgressEvent(event: SSEEvent): string {
       return `模板补写方向 ${d.count || 0} 条：${((d.direction_ids as string[]) || []).slice(0, 3).join(", ")}`;
     case "draft_ready":
       return `Evidence draft: ${d.outline_id || "outline"} · ${d.filled_slots || 0}/${d.slot_count || "?"} slots · quarantine ${d.quarantine_count || 0}`;
+    case "citation_integrity": {
+      const issues = (d.issues as string[]) || [];
+      const model = d.model_used ? ` · ${d.model_used}` : "";
+      return issues.length
+        ? `引用校验：${d.sections || 0} 节，${issues.length} 处问题（${issues.slice(0, 3).join(", ")}）${model}`
+        : `引用校验通过：${d.sections || 0} 节${model}`;
+    }
+    case "synthesis_degraded":
+      return `成文降级为确定性写作：${d.reason || "unknown"}`;
     case "dimension_start":
       return `Dimension “${d.title}”: ${(d.queries as string[])?.length || 0} queries`;
     case "dimension_complete":

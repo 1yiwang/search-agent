@@ -258,6 +258,15 @@ class ReportSynthesis(BaseModel):
         default_factory=list,
         description="Thesis gate findings when the LLM thesis had to be repaired",
     )
+    citation_issues: list[str] = Field(
+        default_factory=list,
+        description="Citation gate findings as 'slot_id:kind' (Wave 12h)",
+    )
+    model_used: str = Field(default="", description="Model that wrote the prose")
+    degraded_reason: str = Field(
+        default="",
+        description="Why synthesis fell back to the deterministic writer",
+    )
 
 
 class ResearchReport(BaseModel):
@@ -278,6 +287,7 @@ class ResearchReport(BaseModel):
     summary: str = ""
     key_takeaways: list[str] = Field(default_factory=list)
     so_what: str = ""
+    citation_issues: list[str] = Field(default_factory=list)
     structured_findings: list[StructuredFinding] = Field(default_factory=list)
     coverage: str = ""
     gaps: str = ""

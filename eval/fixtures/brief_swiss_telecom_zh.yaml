@@ -1,0 +1,48 @@
+# L1 fixture: an approved Chinese research plan the engine must accept as-is.
+topic: 中国运营商进入瑞士电信市场的机会
+framework_id: market_entry
+problem_restatement: 中国运营商以何种方式进入瑞士电信市场最可行
+min_entities_per_direction: 2
+dimensions:
+  - title: 市场结构与份额
+    phase_id: industry_structure
+    direction_id: industry_structure
+    direction_detail: 调研 Swisscom、Sunrise、Salt 三家运营商的移动与固网份额、ARPU 与用户规模变化。
+    queries:
+      - Swisscom Sunrise Salt mobile market share 2026
+    priority: 1
+  - title: 监管与牌照
+    phase_id: regulation
+    direction_id: regulation
+    direction_detail: 梳理 BAKOM 与 ComCom 对频谱牌照、MVNO 批发接入与外资持股的具体规定。
+    queries:
+      - BAKOM ComCom spectrum licence MVNO wholesale rules
+    priority: 2
+  - title: 批发接入成本
+    phase_id: cost_structure
+    direction_id: cost_structure
+    direction_detail: 量化瑞士 MVNO 批发资费、漫游成本与终端补贴，对比 Salt 与 Sunrise 的公开价格。
+    queries:
+      - Switzerland MVNO wholesale pricing Salt Sunrise
+    priority: 3
+  - title: 目标客群
+    phase_id: demand
+    direction_id: demand
+    direction_detail: 研究在瑞士的华人社群、跨境通勤者与留学生对国际资费与 eSIM 的需求规模。
+    queries:
+      - Switzerland Chinese diaspora eSIM international tariff demand
+    priority: 4
+  - title: 竞争对手与前车之鉴
+    phase_id: competition
+    direction_id: competition
+    direction_detail: 复盘 Lycamobile、Lebara 等 MVNO 在瑞士与欧洲市场的进入路径与失败原因。
+    queries:
+      - Lycamobile Lebara Switzerland MVNO entry outcome
+    priority: 5
+  - title: 落地路径
+    phase_id: entry_path
+    direction_id: entry_path
+    direction_detail: 评估自建 MVNO、收购既有 MVNO 与与 Swisscom 合作三条路径的投入、周期与风险。
+    queries:
+      - Switzerland MVNO acquisition partnership telecom entry cost
+    priority: 6

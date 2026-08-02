@@ -12,7 +12,8 @@ from dataclasses import dataclass
 from typing import Any
 
 from brief_rubric import harvest_entities
-from llm_context import get_openai_client, get_request_keys
+from citation_integrity import enforce_citation_integrity
+from llm_context import get_openai_client, get_request_keys, get_strong_model
 from report_labels import get_labels, report_language
 from models import (
     EvidenceDraft,
@@ -487,7 +488,8 @@ def _arguments_from_draft(
         confs: list[str] = []
         for idx in slot.fact_indices[:5]:
             if 1 <= idx <= len(facts):
-                bodies.append(facts[idx - 1].fact)
+                # Cite inline so the deterministic writer passes the same gate as the LLM
+                bodies.append(f"{facts[idx - 1].fact} [{idx}]")
                 confs.append(facts[idx - 1].confidence or "medium")
         if not bodies:
             claim = (
@@ -648,9 +650,16 @@ def fallback_synthesis(
             draft_sufficiency="thin",
         )
 
-    arguments = _align_arguments_to_slots(
-        _arguments_from_draft(draft, facts), draft, topics_searched, topic,
+    lang = _topic_language_hint(topic)
+    integrity = enforce_citation_integrity(
+        _align_arguments_to_slots(
+            _arguments_from_draft(draft, facts), draft, topics_searched, topic,
+        ),
+        draft,
+        facts,
+        lang=lang,
     )
+    arguments = integrity.arguments
     qset = {q.fact_index for q in draft.quarantine}
     thesis = _judgment_thesis(
         topic,
@@ -677,6 +686,9 @@ def fallback_synthesis(
     gaps = (
         f"Quarantined off-topic: {q_notes}" if q_notes else "Verify via citations."
     )
+    gate_note = integrity.summary(lang)
+    if gate_note:
+        gaps = f"{gaps} {gate_note}".strip()
     return ReportSynthesis(
         thesis=thesis,
         arguments=arguments,
@@ -686,6 +698,7 @@ def fallback_synthesis(
         gaps=gaps,
         outline_id=outline_id,
         draft_sufficiency=draft.sufficiency,
+        citation_issues=[f"{i.slot_id}:{i.kind}" for i in integrity.issues],
     )
 
 
@@ -799,8 +812,6 @@ def _normalize_write_arguments(
                 continue
             if 1 <= idx <= len(facts) and idx not in indices:
                 indices.append(idx)
-        if not indices and sid in slot_by_id:
-            indices = list(slot_by_id[sid].fact_indices[:6])
         body = str(item.get("body") or item.get("detail") or "").strip()
         conf = str(item.get("confidence") or "medium").lower()
         if conf not in ("high", "medium", "low"):
@@ -909,6 +920,21 @@ async def build_evidence_draft(
         return _heuristic_draft(topic, facts, slots, outline_id, dep, restatement)
 
 
+def _degraded(
+    topic: str,
+    facts: list[ExtractedFact],
+    topics_searched: list[str],
+    draft: EvidenceDraft,
+    reason: str,
+) -> ReportSynthesis:
+    """Deterministic writer took over — say so instead of failing silently."""
+    syn = fallback_synthesis(topic, facts, topics_searched)
+    syn.outline_id = draft.outline_id
+    syn.draft_sufficiency = draft.sufficiency
+    syn.degraded_reason = reason
+    return syn
+
+
 async def write_from_draft(
     topic: str,
     facts: list[ExtractedFact],
@@ -925,11 +951,11 @@ async def write_from_draft(
 
     keys = get_request_keys()
     if not keys or not keys.llm_api_key:
-        syn = fallback_synthesis(topic, facts, topics_searched)
-        syn.outline_id = draft.outline_id
-        syn.draft_sufficiency = draft.sufficiency
-        return syn
+        return _degraded(
+            topic, facts, topics_searched, draft, "no_llm_key",
+        )
 
+    write_model = get_strong_model()
     draft_slots_json = json.dumps(
         [
             {
@@ -959,23 +985,29 @@ async def write_from_draft(
     )
     try:
         response = await get_openai_client().chat.completions.create(
-            model=keys.llm_model,
+            model=write_model,
             messages=[{"role": "user", "content": prompt}],
             temperature=0.3,
             max_tokens=4500,
         )
         raw = _parse_json_object(response.choices[0].message.content or "")
         if not raw:
-            syn = fallback_synthesis(topic, facts, topics_searched)
-            syn.outline_id = draft.outline_id
-            return syn
+            return _degraded(
+                topic, facts, topics_searched, draft, "unparseable_write_response",
+            )
 
-        arguments = _align_arguments_to_slots(
-            _normalize_write_arguments(raw.get("arguments") or [], draft, facts),
+        integrity = enforce_citation_integrity(
+            _align_arguments_to_slots(
+                _normalize_write_arguments(raw.get("arguments") or [], draft, facts),
+                draft,
+                topics_searched,
+                topic,
+            ),
             draft,
-            topics_searched,
-            topic,
+            facts,
+            lang=_topic_language_hint(topic),
         )
+        arguments = integrity.arguments
         qset = {q.fact_index for q in draft.quarantine}
         raw_thesis = (
             str(raw.get("thesis") or "").strip()
@@ -984,7 +1016,7 @@ async def write_from_draft(
         verdict = check_thesis(raw_thesis, topic)
         if not verdict.ok:
             raw_thesis = await _repair_thesis(
-                raw_thesis, topic, draft, facts, verdict, model=keys.llm_model,
+                raw_thesis, topic, draft, facts, verdict, model=write_model,
             )
             verdict = check_thesis(raw_thesis, topic)
         thesis = _sanitize_thesis(
@@ -1026,12 +1058,13 @@ async def write_from_draft(
             outline_id=draft.outline_id,
             draft_sufficiency=draft.sufficiency,
             thesis_reasons=verdict.reasons,
+            citation_issues=[f"{i.slot_id}:{i.kind}" for i in integrity.issues],
+            model_used=write_model,
         )
-    except Exception:
-        syn = fallback_synthesis(topic, facts, topics_searched)
-        syn.outline_id = draft.outline_id
-        syn.draft_sufficiency = draft.sufficiency
-        return syn
+    except Exception as exc:
+        return _degraded(
+            topic, facts, topics_searched, draft, f"write_failed:{type(exc).__name__}",
+        )
 
 
 async def synthesize_report(
@@ -1060,6 +1093,18 @@ async def synthesize_report(
         "topic_restatement": draft.topic_restatement[:240],
     })
 
-    return await write_from_draft(
+    synthesis = await write_from_draft(
         topic, facts, draft, topics_searched, report_type=report_type,
     )
+    if synthesis.degraded_reason:
+        await emit("synthesis_degraded", {
+            "reason": synthesis.degraded_reason,
+            "outline_id": synthesis.outline_id,
+        })
+    await emit("citation_integrity", {
+        "sections": len(synthesis.arguments),
+        "issues": synthesis.citation_issues,
+        "model_used": synthesis.model_used,
+        "thesis_reasons": synthesis.thesis_reasons,
+    })
+    return synthesis
