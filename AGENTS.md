@@ -42,6 +42,8 @@ D:/Projects/search-agent/
 │   ├── brief.py               ← Wave 12a ResearchBrief（澄清→概览）
 │   ├── frameworks/            ← 行业研究骨架 YAML
 │   ├── report_outlines/       ← Wave 12c 成文固定槽位
+│   ├── report_labels.yaml     ← Wave 12h 报告双语骨架标签
+│   ├── brief_rubric.py        ← Wave 12h 方向质量 rubric
 │   ├── report_synthesis.py    ← 两阶段：draft → 长论述
 │   ├── agent.py               ← 研究管线编排（6 步 pipeline）
 │   ├── deploy.py              ← 静态 HTML 部署到 reports/
@@ -217,6 +219,8 @@ agent.run_research()
 - [x] **Wave 12b 报告层次**：`thesis` + `arguments`；ReportView 结论→分论点；Signals 降为折叠附录
 - [x] **Wave 12c 两阶段成文**：EvidenceDraft → 固定骨架长论述（Gemini 式 150–300 字/节）；偏题 quarantine
 - [x] **Wave 12d 方向驱动 A′**：详细检索方向 + 代码分预算 query；禁止元叙述结论；信源按 URL 去重
+- [x] **Wave 12h 契约化（86–88）**：方向契约（`brief_rubric` + `frameworks/examples/*.yaml` few-shot + 定向重写）；报告契约（`report_labels.yaml` 双语骨架、thesis 门禁 + 定向重写、章节数 == 批准方向数、空槽诚实产出、元数据移文末）
+- [ ] Wave 12h Step 89：引用完整性硬门禁 + 成文强模型 + L1/L2 eval
 - [ ] Wave 12e：第二搜索源 failover + 早停 eval
 - [ ] Phase 3 41f：本机周更脚本（Task Scheduler）
 - [ ] Always-on Fly API（**延后**；个人自用默认本机 Mode B，省钱更安全）

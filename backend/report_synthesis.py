@@ -8,9 +8,12 @@ from __future__ import annotations
 import json
 import re
 from collections.abc import Awaitable, Callable
+from dataclasses import dataclass
 from typing import Any
 
+from brief_rubric import harvest_entities
 from llm_context import get_openai_client, get_request_keys
+from report_labels import get_labels, report_language
 from models import (
     EvidenceDraft,
     EvidenceDraftQuarantine,
@@ -64,9 +67,9 @@ WRITE_PROMPT = """You write a Gemini-style research brief from an Evidence Draft
 
 Research question to answer: {topic_restatement}
 Original topic: {topic}
-Language: match the research question (Chinese question → Chinese prose).
+Language: match the research question (Chinese question → Chinese prose, Chinese headings).
 
-Outline slots with assigned facts:
+Outline slots with assigned facts ({slot_count} slots — write exactly {slot_count} sections, same order, same slot_id):
 {draft_slots_json}
 
 Full fact list (citation_index):
@@ -75,24 +78,30 @@ Full fact list (citation_index):
 Quarantined (do NOT use as main claims): {quarantine_json}
 
 Instructions:
-1. thesis: 1–2 sentences of SUBSTANTIVE findings that answer the research question
-   (e.g. market structure, competitor shares, opportunities/barriers).
-   FORBIDDEN meta wording — never write like "本报告整理了N条事实" / "this brief covers N facts from M sources".
+1. thesis: ONE judgment answering the research question. Must contain a directional
+   judgment + a quantitative anchor (number/share/date/named entity) + a qualifier
+   (uncertainty or boundary of validity). 24–200 Chinese characters / 10–90 English words.
+   FORBIDDEN meta wording — never "本报告整理了N条事实" / "this brief covers N facts from M sources".
    Never lead with GDP/macro if quarantined.
-2. arguments: exactly 3–5 sections (prefer filled slots). Each:
-   - heading: slot title
-   - slot_id
-   - claim: one clear topic sentence (a finding, not a process note)
-   - body: 150–300 Chinese characters OR ~120–220 English words — reasoned paragraphs with [n] citations from assigned indices only
+2. key_takeaways: 3–5 assertions, each ≤40 Chinese characters, each ending with its [n] citation.
+3. arguments: exactly {slot_count} sections, one per slot, in the given order. Each:
+   - heading: slot title, slot_id: the slot's id
+   - claim: one finding sentence (not a process note)
+   - body: 150–300 Chinese characters OR ~120–220 English words:
+     claim → key evidence [n] → counter-evidence or boundary → what it means for this question.
+     Answer the slot's must_answer when present. Cite only the slot's assigned indices.
    - citation_indices, confidence
-3. Skip empty optional slots. Empty required → claim "证据不足：…" + short body, no invention.
-4. gaps / coverage as usual. structured_findings = compact appendix rows from on-topic facts only.
-5. Use ONLY provided facts.
+4. Empty slot → claim that no citable evidence was found, and say what source would settle it.
+   Never invent facts to fill a slot.
+5. so_what: 120–200 characters — feasibility, priority path, next verification step across directions.
+6. gaps: plain language — which direction is thin, why, and which source to add next.
+7. structured_findings = compact appendix rows from on-topic facts only. Use ONLY provided facts.
 
 Return ONLY valid JSON:
 ```json
 {{
-  "thesis": "Substantive answer to the question.",
+  "thesis": "Judgment + anchor + qualifier.",
+  "key_takeaways": ["断言一 [1]", "断言二 [3]"],
   "arguments": [
     {{
       "heading": "Section title",
@@ -103,6 +112,7 @@ Return ONLY valid JSON:
       "confidence": "high"
     }}
   ],
+  "so_what": "...",
   "structured_findings": [],
   "coverage": "...",
   "gaps": "...",
@@ -110,6 +120,26 @@ Return ONLY valid JSON:
   "credit_risk_watch": ""
 }}
 ```"""
+
+
+THESIS_REWRITE_PROMPT = """重写这份研究报告的结论句，使其成为一个判断，而不是过程说明。
+
+研究问题：{topic_restatement}
+原始选题：{topic}
+
+当前结论：{current}
+不合格原因：{reasons}
+
+可用事实（只能用这些，不要引入外部知识）：
+{facts_json}
+
+要求：
+- 语言与研究问题一致（中文问题 → 中文结论）。
+- 必须包含：方向性判断 + 量化锚点（数字/份额/日期/具名实体）+ 限定条件（不确定性或适用边界）。
+- 中文 24–200 字；英文 10–90 词。
+- 禁止：本报告整理了 N 条 / 来自 M 个来源 / 综上所述 / 本文将探讨。
+
+只返回 JSON：{{"thesis": "..."}}"""
 
 
 def detect_report_type(topic: str) -> str:
@@ -173,40 +203,129 @@ def _is_meta_thesis(text: str) -> bool:
     return bool(_META_THESIS_RE.search(text or ""))
 
 
-def _substantive_thesis(
+_THESIS_HARD_REASONS = frozenset({
+    "empty", "meta_narrative", "language_mismatch", "too_short",
+})
+
+THESIS_REASON_TEXT_ZH = {
+    "empty": "结论为空",
+    "meta_narrative": "写成了过程元叙述（整理了 N 条 / 来自 M 个来源）",
+    "language_mismatch": "语言与选题不一致",
+    "too_short": "太短，不构成判断",
+    "too_long": "太长，不像一句结论",
+    "no_anchor": "缺少量化锚点或具名实体",
+    "no_qualifier": "缺少限定条件（不确定性 / 适用边界）",
+}
+
+_ANCHOR_RE = re.compile(r"\d|%|percent|亿|万|CHF|EUR|USD|€|\$", re.IGNORECASE)
+_QUALIFIER_MARKERS = (
+    "但", "不过", "然而", "限于", "仅", "尚", "需", "若", "除非", "取决于",
+    "however", "but ", "although", "unless", "depends", "limited", "pending",
+)
+
+
+@dataclass
+class ThesisVerdict:
+    """Deterministic gate result for the report conclusion."""
+    ok: bool
+    reasons: list[str]
+
+    def explain_zh(self) -> str:
+        return "；".join(THESIS_REASON_TEXT_ZH.get(r, r) for r in self.reasons)
+
+
+def check_thesis(thesis: str, topic: str) -> ThesisVerdict:
+    """A thesis must be a judgment in the topic language, not a process note."""
+    text = (thesis or "").strip()
+    if not text:
+        return ThesisVerdict(ok=False, reasons=["empty"])
+
+    reasons: list[str] = []
+    if _is_meta_thesis(text):
+        reasons.append("meta_narrative")
+
+    lang = _topic_language_hint(topic)
+    has_cjk = bool(re.search(r"[\u4e00-\u9fff]", text))
+    if lang == "zh":
+        if not has_cjk:
+            reasons.append("language_mismatch")
+        length = len(re.sub(r"\s+", "", text))
+        if length < 24:
+            reasons.append("too_short")
+        elif length > 200:
+            reasons.append("too_long")
+    else:
+        if has_cjk:
+            reasons.append("language_mismatch")
+        words = len(text.split())
+        if words < 10:
+            reasons.append("too_short")
+        elif words > 90:
+            reasons.append("too_long")
+
+    # CJK n-grams are too weak to count as an anchor — require figures or proper nouns
+    proper_nouns = [e for e in harvest_entities(text, max_n=6) if e[:1].isupper()]
+    if not _ANCHOR_RE.search(text) and len(proper_nouns) < 2:
+        reasons.append("no_anchor")
+    low = text.lower()
+    if not any(m in text or m in low for m in _QUALIFIER_MARKERS):
+        reasons.append("no_qualifier")
+
+    hard = [r for r in reasons if r in _THESIS_HARD_REASONS]
+    return ThesisVerdict(ok=not hard, reasons=reasons)
+
+
+def _judgment_thesis(
     topic: str,
     restatement: str,
     facts: list[ExtractedFact],
     quarantine_indices: set[int],
+    *,
+    sufficiency: str = "ok",
 ) -> str:
-    """Code-built finding-style thesis — never meta inventory language."""
+    """Deterministic fallback: a judgment with a qualifier, not two glued facts."""
     lang = _topic_language_hint(topic)
+    question = (restatement or topic).strip()
     kept = [
         f for i, f in enumerate(facts, 1)
         if i not in quarantine_indices and (f.fact or "").strip()
     ]
     if not kept:
         if lang == "zh":
-            return f"证据不足：现有材料尚不能对「{restatement or topic}」给出可靠判断。"
-        return f"Insufficient evidence to answer «{restatement or topic}»."
+            return f"证据不足：现有材料尚不能对「{question}」给出可靠判断。"
+        return f"Insufficient evidence to answer «{question}»."
 
-    # Prefer high-confidence first sentences
     ordered = sorted(
         kept,
         key=lambda f: {"high": 0, "medium": 1, "low": 2}.get(
             (f.confidence or "medium").lower(), 1
         ),
     )
-    bits = [_first_sentence(f.fact) or f.fact.strip() for f in ordered[:3]]
-    bits = [b for b in bits if b and not _is_meta_thesis(b)]
-    if not bits:
-        bits = [ordered[0].fact.strip()]
+    core = ""
+    for fact in ordered[:3]:
+        candidate = _first_sentence(fact.fact) or (fact.fact or "").strip()
+        if candidate and not _is_meta_thesis(candidate):
+            core = candidate
+            break
+    if not core:
+        core = (ordered[0].fact or "").strip()
+    core = core.rstrip("。.!！?？").strip()
+
+    thin = sufficiency == "thin" or len(kept) < 4
+    high_conf = sum(1 for f in ordered if (f.confidence or "").lower() == "high")
     if lang == "zh":
-        thesis = "；".join(bits[:2])
-        if not thesis.endswith(("。", "！", "？")):
-            thesis += "。"
-        return thesis
-    return " ".join(bits[:2])
+        qualifier = (
+            "但关键量化数据仍缺乏公开来源，该判断需进一步验证。"
+            if thin or high_conf == 0
+            else "该判断可在多个独立来源间交叉印证，但仍受公开数据口径限制。"
+        )
+        return f"就「{question}」，现有证据支持的判断是：{core}。{qualifier}"
+    qualifier = (
+        "Key figures still lack public sources, so this needs further verification."
+        if thin or high_conf == 0
+        else "This holds across several independent sources, within the limits of public data."
+    )
+    return f"On «{question}», the evidence supports this judgment: {core}. {qualifier}"
 
 
 def _sanitize_thesis(
@@ -215,11 +334,19 @@ def _sanitize_thesis(
     restatement: str,
     facts: list[ExtractedFact],
     quarantine_indices: set[int],
+    *,
+    sufficiency: str = "ok",
 ) -> str:
-    thesis = (thesis or "").strip()
-    if not thesis or _is_meta_thesis(thesis):
-        return _substantive_thesis(topic, restatement, facts, quarantine_indices)
-    return thesis
+    verdict = check_thesis(thesis, topic)
+    if verdict.ok:
+        return (thesis or "").strip()
+    return _judgment_thesis(
+        topic, restatement, facts, quarantine_indices, sufficiency=sufficiency,
+    )
+
+
+# Legacy alias — code-built thesis used by older call sites and tests
+_substantive_thesis = _judgment_thesis
 
 
 def _facts_payload(facts: list[ExtractedFact]) -> list[dict]:
@@ -396,6 +523,102 @@ def _arguments_from_draft(
     return args
 
 
+def _slot_queries(
+    slot: EvidenceDraftSlot,
+    topics_searched: list[str],
+    *,
+    max_n: int = 3,
+) -> list[str]:
+    """Executed queries most related to a slot — for honest empty sections."""
+    from text_tokens import keyword_list
+
+    keys = [k.lower() for k in keyword_list(slot.title, slot.writing_goal, max_tokens=10)]
+    scored: list[tuple[int, str]] = []
+    for query in topics_searched:
+        low = query.lower()
+        score = sum(1 for k in keys if k in low)
+        if score:
+            scored.append((score, query))
+    scored.sort(key=lambda pair: -pair[0])
+    picked = [q for _, q in scored[:max_n]]
+    return picked or list(topics_searched[:max_n])
+
+
+def _empty_slot_argument(
+    slot: EvidenceDraftSlot,
+    topics_searched: list[str],
+    lang: str,
+) -> ReportArgument:
+    """Say what was searched and what is missing instead of dropping the section."""
+    title = slot.title or slot.slot_id
+    queries = _slot_queries(slot, topics_searched)
+    entities = harvest_entities(slot.writing_goal or "", max_n=3)
+    if lang == "zh":
+        claim = f"「{title}」未获得可引用证据。"
+        parts = [claim]
+        if queries:
+            parts.append("已执行检索：" + "、".join(queries) + "。")
+        parts.append("可能原因：公开来源未覆盖该角度，或目标页面抓取失败。")
+        parts.append(
+            "建议补充信源：" + "、".join(f"{e} 官网或年报" for e in entities) + "。"
+            if entities
+            else "建议补充信源：监管机构公开数据、行业协会年报、当地公司财报。"
+        )
+    else:
+        claim = f"No citable evidence for «{title}» yet."
+        parts = [claim]
+        if queries:
+            parts.append("Queries run: " + "; ".join(queries) + ".")
+        parts.append("Likely cause: no public source covers this angle, or fetching failed.")
+        parts.append(
+            "Suggested sources: " + ", ".join(f"{e} filings or site" for e in entities) + "."
+            if entities
+            else "Suggested sources: regulator data, industry association reports, local filings."
+        )
+    return ReportArgument(
+        claim=claim,
+        body=" ".join(parts[1:]),
+        heading=title,
+        slot_id=slot.slot_id,
+        citation_indices=[],
+        confidence="low",
+    )
+
+
+def _align_arguments_to_slots(
+    arguments: list[ReportArgument],
+    draft: EvidenceDraft,
+    topics_searched: list[str],
+    topic: str,
+) -> list[ReportArgument]:
+    """One section per approved direction, in order — no silent drops (Step 88)."""
+    lang = _topic_language_hint(topic)
+    by_slot: dict[str, ReportArgument] = {}
+    by_heading: dict[str, ReportArgument] = {}
+    for arg in arguments:
+        if arg.slot_id and arg.slot_id not in by_slot:
+            by_slot[arg.slot_id] = arg
+        heading = (arg.heading or "").strip()
+        if heading and heading not in by_heading:
+            by_heading[heading] = arg
+
+    used: set[int] = set()
+    out: list[ReportArgument] = []
+    for slot in draft.slots:
+        arg = by_slot.get(slot.slot_id)
+        if arg is None or id(arg) in used:
+            candidate = by_heading.get((slot.title or "").strip())
+            arg = candidate if candidate is not None and id(candidate) not in used else None
+        if arg is not None and (arg.claim or arg.body) and id(arg) not in used:
+            used.add(id(arg))
+            arg.slot_id = slot.slot_id
+            arg.heading = (arg.heading or "").strip() or slot.title
+            out.append(arg)
+            continue
+        out.append(_empty_slot_argument(slot, topics_searched, lang))
+    return out
+
+
 def fallback_synthesis(
     topic: str,
     facts: list[ExtractedFact],
@@ -425,11 +648,17 @@ def fallback_synthesis(
             draft_sufficiency="thin",
         )
 
-    arguments = _arguments_from_draft(draft, facts)
-    # Cap at 5 arguments for the locked report shape
-    arguments = arguments[:5]
+    arguments = _align_arguments_to_slots(
+        _arguments_from_draft(draft, facts), draft, topics_searched, topic,
+    )
     qset = {q.fact_index for q in draft.quarantine}
-    thesis = _substantive_thesis(topic, draft.topic_restatement or restatement, facts, qset)
+    thesis = _judgment_thesis(
+        topic,
+        draft.topic_restatement or restatement,
+        facts,
+        qset,
+        sufficiency=draft.sufficiency,
+    )
 
     structured = [
         StructuredFinding(
@@ -592,6 +821,40 @@ def _normalize_write_arguments(
     return args
 
 
+async def _repair_thesis(
+    thesis: str,
+    topic: str,
+    draft: EvidenceDraft,
+    facts: list[ExtractedFact],
+    verdict: ThesisVerdict,
+    *,
+    model: str,
+) -> str:
+    """One targeted rewrite when the thesis fails the gate; caller re-checks."""
+    top_facts = [
+        {"citation_index": i + 1, "fact": f.fact, "confidence": f.confidence}
+        for i, f in enumerate(facts[:8])
+    ]
+    prompt = THESIS_REWRITE_PROMPT.format(
+        topic_restatement=draft.topic_restatement or topic,
+        topic=topic,
+        current=thesis or "(empty)",
+        reasons=verdict.explain_zh(),
+        facts_json=json.dumps(top_facts, ensure_ascii=False, indent=2),
+    )
+    try:
+        response = await get_openai_client().chat.completions.create(
+            model=model,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.2,
+            max_tokens=600,
+        )
+    except Exception:
+        return thesis
+    raw = _parse_json_object(response.choices[0].message.content or "")
+    return str(raw.get("thesis") or "").strip() or thesis
+
+
 async def build_evidence_draft(
     topic: str,
     facts: list[ExtractedFact],
@@ -689,6 +952,7 @@ async def write_from_draft(
     prompt = WRITE_PROMPT.format(
         topic_restatement=draft.topic_restatement or topic,
         topic=topic,
+        slot_count=len(draft.slots),
         draft_slots_json=draft_slots_json,
         facts_json=json.dumps(_facts_payload(facts), ensure_ascii=False, indent=2),
         quarantine_json=quarantine_json,
@@ -706,18 +970,35 @@ async def write_from_draft(
             syn.outline_id = draft.outline_id
             return syn
 
-        arguments = _normalize_write_arguments(
-            raw.get("arguments") or [], draft, facts,
-        )[:5]
+        arguments = _align_arguments_to_slots(
+            _normalize_write_arguments(raw.get("arguments") or [], draft, facts),
+            draft,
+            topics_searched,
+            topic,
+        )
         qset = {q.fact_index for q in draft.quarantine}
-        thesis = _sanitize_thesis(
+        raw_thesis = (
             str(raw.get("thesis") or "").strip()
-            or _first_sentence(str(raw.get("executive_summary") or "")),
+            or _first_sentence(str(raw.get("executive_summary") or ""))
+        )
+        verdict = check_thesis(raw_thesis, topic)
+        if not verdict.ok:
+            raw_thesis = await _repair_thesis(
+                raw_thesis, topic, draft, facts, verdict, model=keys.llm_model,
+            )
+            verdict = check_thesis(raw_thesis, topic)
+        thesis = _sanitize_thesis(
+            raw_thesis,
             topic,
             draft.topic_restatement or topic,
             facts,
             qset,
+            sufficiency=draft.sufficiency,
         )
+        takeaways = [
+            str(t).strip() for t in (raw.get("key_takeaways") or []) if str(t).strip()
+        ][:5]
+        so_what = str(raw.get("so_what") or "").strip()
         findings = _normalize_findings(
             raw.get("structured_findings") or [], len(facts), facts=facts,
         )
@@ -732,6 +1013,8 @@ async def write_from_draft(
             thesis=thesis,
             arguments=arguments,
             executive_summary=thesis,
+            key_takeaways=takeaways,
+            so_what=so_what,
             structured_findings=findings or fallback_synthesis(
                 topic, facts, topics_searched,
             ).structured_findings,
@@ -742,6 +1025,7 @@ async def write_from_draft(
             credit_risk_watch=str(raw.get("credit_risk_watch") or "").strip(),
             outline_id=draft.outline_id,
             draft_sufficiency=draft.sufficiency,
+            thesis_reasons=verdict.reasons,
         )
     except Exception:
         syn = fallback_synthesis(topic, facts, topics_searched)

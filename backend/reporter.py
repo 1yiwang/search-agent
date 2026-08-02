@@ -10,6 +10,7 @@ from models import (
     ReportSynthesis,
     SearchResult,
 )
+from report_labels import get_labels, report_language
 from report_synthesis import fallback_synthesis
 from source_snapshots import build_source_snapshots
 
@@ -69,11 +70,22 @@ def _truncate_signal(signal: str, max_len: int = 120) -> str:
     return signal[: max_len - 1].rstrip() + "…"
 
 
-def _findings_table_markdown(synthesis: ReportSynthesis, heading: str = "Structured Findings") -> list[str]:
+def _findings_table_markdown(
+    synthesis: ReportSynthesis,
+    heading: str = "Structured Findings",
+    labels: dict[str, str] | None = None,
+) -> list[str]:
+    labels = labels or {}
+    head = (
+        f"| {labels.get('table_signal', 'Signal')} "
+        f"| {labels.get('table_date', 'Date')} "
+        f"| {labels.get('table_confidence', 'Confidence')} "
+        f"| {labels.get('table_ref', 'Ref')} |"
+    )
     lines = [
         f"## {heading}",
         "",
-        "| Signal | Date | Confidence | Ref |",
+        head,
         "| --- | --- | --- | --- |",
     ]
     for row in synthesis.structured_findings:
@@ -96,26 +108,27 @@ def _generate_markdown(
     completed_at: datetime,
     report_type: str = "intelligence_brief",
 ) -> str:
-    """Generate structured Markdown: thesis → arguments → appendix ledger."""
-    title = "Investor Brief" if report_type == "investor_brief" else "Intelligence Brief"
+    """Structured Markdown in the topic's language: thesis → sections → appendix."""
+    labels = get_labels(topic)
+    title = labels.get(report_type) or labels.get("intelligence_brief", "Intelligence Brief")
     thesis = (synthesis.thesis or synthesis.executive_summary or "").strip()
     lines = [
-        f"# {title}: {topic}",
-        "",
-        f"*Generated: {completed_at.strftime('%Y-%m-%d %H:%M UTC')}*",
-        f"*Sources: {len(facts)} facts from {len(set(f.source_url for f in facts))} unique URLs*",
+        f"# {title}：{topic}" if report_language(topic) == "zh" else f"# {title}: {topic}",
         "",
         "---",
         "",
-        "## Conclusion",
+        f"## {labels['conclusion']}",
         "",
-        thesis or "_No conclusion._",
-        "",
-        "---",
-        "",
-        "## Arguments",
+        thesis or f"_{labels['no_conclusion']}_",
         "",
     ]
+
+    if synthesis.key_takeaways:
+        lines.extend([f"## {labels['takeaways']}", ""])
+        lines.extend(f"- {t}" for t in synthesis.key_takeaways[:5])
+        lines.append("")
+
+    lines.extend(["---", "", f"## {labels['arguments']}", ""])
 
     if synthesis.arguments:
         for i, arg in enumerate(synthesis.arguments, 1):
@@ -131,14 +144,24 @@ def _generate_markdown(
                 lines.append(body)
                 lines.append("")
     else:
-        lines.append("_No structured arguments._")
+        lines.append(f"_{labels['no_arguments']}_")
         lines.append("")
 
     lines.extend(["---", ""])
 
+    if synthesis.so_what:
+        lines.extend([
+            f"## {labels['so_what']}",
+            "",
+            synthesis.so_what,
+            "",
+            "---",
+            "",
+        ])
+
     if synthesis.gaps:
         lines.extend([
-            "## Limits",
+            f"## {labels['limits']}",
             "",
             synthesis.gaps,
             "",
@@ -149,7 +172,7 @@ def _generate_markdown(
     if report_type == "investor_brief":
         if synthesis.fund_activity:
             lines.extend([
-                "## Fund & Product Activity",
+                f"## {labels['fund_activity']}",
                 "",
                 synthesis.fund_activity,
                 "",
@@ -158,7 +181,7 @@ def _generate_markdown(
             ])
         if synthesis.credit_risk_watch:
             lines.extend([
-                "## Credit Risk Watch",
+                f"## {labels['credit_risk_watch']}",
                 "",
                 synthesis.credit_risk_watch,
                 "",
@@ -167,15 +190,14 @@ def _generate_markdown(
             ])
 
     if synthesis.structured_findings:
-        table_heading = (
-            "Signal ledger" if report_type == "investor_brief" else "Signal ledger"
-        )
-        lines.extend(_findings_table_markdown(synthesis, heading=table_heading))
+        lines.extend(_findings_table_markdown(
+            synthesis, heading=labels["signal_ledger"], labels=labels,
+        ))
         lines.extend(["---", ""])
 
     if synthesis.coverage:
         lines.extend([
-            "## Coverage",
+            f"## {labels['coverage']}",
             "",
             synthesis.coverage,
             "",
@@ -184,14 +206,25 @@ def _generate_markdown(
         ])
 
     lines.extend([
-        "## Sources",
+        f"## {labels['sources']}",
         "",
     ])
     lines.extend(_build_sources_markdown(citations))
+
+    # Run metadata belongs at the end — a brief must not open with process metrics
+    unique_urls = len({f.source_url for f in facts})
     lines.extend([
         "---",
         "",
-        "*Generated by Search Agent. Verify important claims against original sources.*",
+        f"## {labels['appendix_meta']}",
+        "",
+        f"- {labels['generated_at']}: {completed_at.strftime('%Y-%m-%d %H:%M UTC')}",
+        f"- {labels['fact_count']}: {len(facts)}",
+        f"- {labels['url_count']}: {unique_urls}",
+        "",
+        "---",
+        "",
+        f"*{labels['footer']}*",
     ])
 
     return "\n".join(lines)
@@ -242,6 +275,8 @@ def generate_report(
         thesis=synthesis.thesis or synthesis.executive_summary,
         arguments=list(synthesis.arguments),
         summary=synthesis.thesis or synthesis.executive_summary,
+        key_takeaways=list(synthesis.key_takeaways),
+        so_what=synthesis.so_what,
         structured_findings=synthesis.structured_findings,
         coverage=synthesis.coverage,
         gaps=synthesis.gaps,

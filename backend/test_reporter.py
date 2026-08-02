@@ -76,7 +76,7 @@ def test_investor_brief_report_type():
     assert report.report_type == "investor_brief"
     assert "# Investor Brief:" in report.markdown
     assert "## Conclusion" in report.markdown
-    assert "## Fund & Product Activity" in report.markdown
+    assert "## Fund & product activity" in report.markdown
     assert report.fund_activity
     print("test_investor_brief_report_type: PASS")
 

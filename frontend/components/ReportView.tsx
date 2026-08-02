@@ -276,6 +276,9 @@ export function ReportView({
         coverage: "检索范围",
         overview: "结论",
         evidence: "分论点",
+        takeaways: "要点",
+        soWhat: "落地含义",
+        implication: "含义",
       }
     : {
         conclusion: "Conclusion",
@@ -286,6 +289,9 @@ export function ReportView({
         coverage: "Coverage",
         overview: "Conclusion",
         evidence: "Arguments",
+        takeaways: "Key takeaways",
+        soWhat: "So what",
+        implication: "Implication",
       };
 
   const thesis =
@@ -460,6 +466,18 @@ export function ReportView({
                 <p className="brief-summary text-[var(--muted)] mt-5">{legacySummary}</p>
               ) : null}
             </div>
+            {report.key_takeaways && report.key_takeaways.length > 0 ? (
+              <ul className="mt-6 space-y-2">
+                {report.key_takeaways.slice(0, 5).map((item, i) => (
+                  <li
+                    key={i}
+                    className="brief-body text-[var(--ink)]/85 pl-4 border-l-2 border-[var(--ink)]/15"
+                  >
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            ) : null}
           </section>
 
           {hasStructuredArgs ? (
@@ -477,6 +495,12 @@ export function ReportView({
                 }))}
                 onCitationClick={openCitation}
               />
+            </Section>
+          ) : null}
+
+          {report.so_what ? (
+            <Section label={labels.implication} title={labels.soWhat}>
+              <p className="brief-body text-[var(--ink)]/85">{report.so_what}</p>
             </Section>
           ) : null}
 

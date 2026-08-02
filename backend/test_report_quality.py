@@ -37,16 +37,31 @@ def test_brief_seed_round_robin():
         topic="瑞士电信",
         framework_id="market_entry",
         dimensions=[
-            BriefDimension(title="Shares", research_goal="shares", queries=["q-a1", "q-a2"], priority=1),
-            BriefDimension(title="Regulation", research_goal="regulation", queries=["q-b1"], priority=2),
-            BriefDimension(title="Operators", research_goal="ops", queries=["q-c1", "q-c2"], priority=3),
+            BriefDimension(
+                title="Shares",
+                research_goal="shares",
+                queries=["Swisscom mobile market share 2026", "Sunrise subscriber base 2026"],
+                priority=1,
+            ),
+            BriefDimension(
+                title="Regulation",
+                research_goal="regulation",
+                queries=["BAKOM spectrum licence conditions 2026"],
+                priority=2,
+            ),
+            BriefDimension(
+                title="Operators",
+                research_goal="ops",
+                queries=["Salt Mobile network coverage 2026", "Swiss MVNO wholesale pricing"],
+                priority=3,
+            ),
         ],
     )
     seeds = brief_seed_queries(brief, max_queries=6)
     # Round-robin should interleave A then B then C before second from A
-    assert seeds[0] == "q-a1"
-    assert seeds[1] == "q-b1"
-    assert seeds[2] == "q-c1"
+    assert seeds[0] == "Swisscom mobile market share 2026"
+    assert seeds[1] == "BAKOM spectrum licence conditions 2026"
+    assert seeds[2] == "Salt Mobile network coverage 2026"
 
 
 if __name__ == "__main__":

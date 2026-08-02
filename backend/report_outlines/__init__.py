@@ -68,19 +68,28 @@ def slots_from_outline(outline: dict[str, Any]) -> list[dict[str, Any]]:
 
 
 def slots_from_brief(brief: ResearchBrief) -> list[dict[str, Any]]:
-    """Map brief directions to writing slots (preferred when confirmed)."""
+    """Map brief directions to writing slots 1:1 — every approved direction is a section."""
     slots: list[dict[str, Any]] = []
     for i, dim in enumerate(brief.dimensions):
-        sid = (dim.phase_id or f"dim_{i}").strip() or f"dim_{i}"
-        goal = dim.research_goal or dim.title
+        sid = (dim.direction_id or dim.phase_id or f"dim_{i}").strip() or f"dim_{i}"
+        goal = (dim.research_goal or "").strip()
         detail = (dim.direction_detail or "").strip()
-        writing = f"{goal}. {detail}".strip() if detail else goal
+        parts = [p for p in (detail, goal) if p]
+        # goal often mirrors detail — repeating it empties the writing contract
+        if len(parts) == 2 and parts[0] == parts[1]:
+            parts = parts[:1]
+        if not parts:
+            parts = [dim.title]
+        if dim.must_answer:
+            parts.append("必须回答：" + "；".join(dim.must_answer[:3]))
         slots.append({
             "id": sid,
             "title": dim.title,
             "title_zh": dim.title,
-            "writing_goal": writing[:1200],
-            "required": i < 5,
+            "writing_goal": " ".join(parts)[:1200],
+            "must_answer": list(dim.must_answer or [])[:3],
+            "entities": list(dim.entities or [])[:6],
+            "required": True,
         })
     return slots
 
@@ -112,4 +121,7 @@ def outline_prompt_block(slots: list[dict[str, Any]], *, zh: bool = False) -> st
         lines.append(
             f"  {i}. [{slot.get('id')}] {title} ({req}): {slot.get('writing_goal', '')}"
         )
+        must = slot.get("must_answer") or []
+        if must:
+            lines.append(f"     must_answer: {'; '.join(str(m) for m in must)}")
     return "\n".join(lines)

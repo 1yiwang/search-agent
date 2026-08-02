@@ -169,6 +169,8 @@ export interface ResearchReport {
   thesis?: string;
   arguments?: ReportArgument[];
   summary?: string;
+  key_takeaways?: string[];
+  so_what?: string;
   structured_findings?: StructuredFinding[];
   coverage?: string;
   gaps?: string;

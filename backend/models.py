@@ -242,6 +242,11 @@ class ReportSynthesis(BaseModel):
         default="",
         description="Compat: mirrors thesis (or legacy multi-sentence summary)",
     )
+    key_takeaways: list[str] = Field(
+        default_factory=list,
+        description="3–5 short assertions with [n] refs (Wave 12h)",
+    )
+    so_what: str = Field(default="", description="Cross-direction implications")
     structured_findings: list[StructuredFinding] = Field(default_factory=list)
     coverage: str = ""
     gaps: str = ""
@@ -249,6 +254,10 @@ class ReportSynthesis(BaseModel):
     credit_risk_watch: str = Field(default="", description="Investor brief: credit risk section")
     outline_id: str = ""
     draft_sufficiency: str = ""
+    thesis_reasons: list[str] = Field(
+        default_factory=list,
+        description="Thesis gate findings when the LLM thesis had to be repaired",
+    )
 
 
 class ResearchReport(BaseModel):
@@ -267,6 +276,8 @@ class ResearchReport(BaseModel):
     thesis: str = ""
     arguments: list[ReportArgument] = Field(default_factory=list)
     summary: str = ""
+    key_takeaways: list[str] = Field(default_factory=list)
+    so_what: str = ""
     structured_findings: list[StructuredFinding] = Field(default_factory=list)
     coverage: str = ""
     gaps: str = ""
