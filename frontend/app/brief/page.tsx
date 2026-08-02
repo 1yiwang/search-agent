@@ -20,7 +20,7 @@ import { SettingsPanel } from "@/components/SettingsPanel";
 type WizardStep = 1 | 2 | 3 | 4 | 5;
 type Depth = "fast" | "standard" | "deep";
 
-const STEP_LABELS = ["Topic", "Clarify", "Brief", "Confirm", "Execute"];
+const STEP_LABELS = ["Topic", "Clarify", "Directions", "Confirm", "Execute"];
 
 function BriefWizardInner() {
   const router = useRouter();
@@ -243,7 +243,7 @@ function BriefWizardInner() {
               disabled={loading || !topic.trim()}
               className="rounded-lg border border-[var(--border)] px-4 py-2.5 text-sm disabled:opacity-40"
             >
-              Skip clarify, generate brief
+              Skip clarify → directions
             </button>
           </div>
         </section>
@@ -312,7 +312,7 @@ function BriefWizardInner() {
               disabled={loading}
               className="rounded-lg bg-[var(--accent)] px-6 py-2.5 font-semibold text-[#1a1408] disabled:opacity-40"
             >
-              {loading ? "Building brief…" : "Generate brief →"}
+              {loading ? "Building directions…" : "Generate directions →"}
             </button>
           </div>
         </section>
@@ -324,14 +324,26 @@ function BriefWizardInner() {
             {brief.problem_restatement || brief.topic}
           </h2>
           <p className="text-xs text-[var(--muted)]">
-            Framework: {brief.framework_id}
+            Framework: {brief.framework_id} · {brief.dimensions.length} retrieval directions
           </p>
           {brief.overview_markdown && (
-            <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-4 text-sm text-[var(--muted)] whitespace-pre-wrap max-h-48 overflow-y-auto">
+            <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-4 text-sm text-[var(--muted)] whitespace-pre-wrap max-h-40 overflow-y-auto">
               {brief.overview_markdown.slice(0, 2000)}
               {brief.overview_markdown.length > 2000 && "…"}
             </div>
           )}
+          {brief.success_criteria?.length ? (
+            <div>
+              <p className="text-xs uppercase tracking-wide text-[var(--muted)] mb-1">
+                Report must answer
+              </p>
+              <ul className="text-sm text-[var(--ink)]/85 list-disc pl-5 space-y-1">
+                {brief.success_criteria.slice(0, 6).map((c) => (
+                  <li key={c}>{c}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
           {brief.deprioritize.length > 0 && (
             <div>
               <p className="text-xs uppercase tracking-wide text-[var(--muted)] mb-1">
@@ -344,22 +356,30 @@ function BriefWizardInner() {
               </ul>
             </div>
           )}
-          <ul className="space-y-3">
+          <ol className="space-y-4 list-none">
             {brief.dimensions.map((dim, i) => (
               <li
                 key={i}
                 className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-4"
               >
-                <p className="font-medium text-[var(--ink)]">{dim.title}</p>
+                <p className="font-medium text-[var(--ink)]">
+                  <span className="text-[var(--accent-dim)] mr-2">{i + 1}.</span>
+                  {dim.title}
+                </p>
                 {dim.research_goal && (
-                  <p className="mt-1 text-xs text-[var(--muted)]">{dim.research_goal}</p>
+                  <p className="mt-1 text-sm text-[var(--ink)]/80">{dim.research_goal}</p>
                 )}
-                <p className="mt-1 text-xs text-[var(--muted)]">
-                  {dim.queries.join(" · ")}
+                {(dim.direction_detail || "").trim() ? (
+                  <p className="mt-2 text-sm text-[var(--muted)] leading-relaxed whitespace-pre-wrap">
+                    {dim.direction_detail}
+                  </p>
+                ) : null}
+                <p className="mt-2 text-xs text-[var(--muted)]">
+                  Queries: {dim.queries.join(" · ") || "—"}
                 </p>
               </li>
             ))}
-          </ul>
+          </ol>
           <div className="flex gap-3">
             <button
               type="button"

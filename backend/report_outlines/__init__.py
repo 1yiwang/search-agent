@@ -47,16 +47,19 @@ def slots_from_outline(outline: dict[str, Any]) -> list[dict[str, Any]]:
 
 
 def slots_from_brief(brief: ResearchBrief) -> list[dict[str, Any]]:
-    """Map brief dimensions to writing slots (preferred when confirmed)."""
+    """Map brief directions to writing slots (preferred when confirmed)."""
     slots: list[dict[str, Any]] = []
     for i, dim in enumerate(brief.dimensions):
         sid = (dim.phase_id or f"dim_{i}").strip() or f"dim_{i}"
+        goal = dim.research_goal or dim.title
+        detail = (dim.direction_detail or "").strip()
+        writing = f"{goal}. {detail}".strip() if detail else goal
         slots.append({
             "id": sid,
             "title": dim.title,
             "title_zh": dim.title,
-            "writing_goal": dim.research_goal or dim.title,
-            "required": i < 4,
+            "writing_goal": writing[:1200],
+            "required": i < 5,
         })
     return slots
 

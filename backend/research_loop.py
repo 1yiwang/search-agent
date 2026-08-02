@@ -12,6 +12,7 @@ from dedup import deduplicate_facts, deduplicate_search_results, normalize_url
 from depth_profile import depth_overrides, resolve_request
 from extraction import extract_facts
 from brief import (
+    brief_direction_queries,
     brief_gap_dimension_ids,
     brief_seed_queries,
     filter_queries_by_deprioritize,
@@ -136,6 +137,17 @@ async def _run_research_loop_body(
     # Seed pending open queries from brief on hop 0
     if brief:
         state.pending_open_queries = brief_seed_queries(brief)
+        await emit("direction_plan", {
+            "directions": [
+                {
+                    "title": d.title,
+                    "goal": d.research_goal,
+                    "query_count": len(d.queries),
+                }
+                for d in brief.dimensions[:8]
+            ],
+            "seed_queries": state.pending_open_queries[:12],
+        })
 
     prev_fact_count = 0
     while True:
@@ -304,20 +316,15 @@ async def _run_research_loop_body(
                         [eq.query for eq in expand_result.queries],
                         deprioritize,
                     ) if deprioritize else [eq.query for eq in expand_result.queries]
-            # Brief: also inject missing dimension seed queries
+            # Brief A′: prioritize queries for missing directions (code-driven)
             if brief and coverage.missing_dimensions:
-                missing_set = set(coverage.missing_dimensions)
-                ids = brief_gap_dimension_ids(brief)
-                for dim_id, dim in zip(ids, brief.dimensions):
-                    if dim_id not in missing_set:
-                        continue
-                    for q in dim.queries:
-                        if q and q not in state.pending_open_queries:
-                            if not deprioritize or q in filter_queries_by_deprioritize(
-                                [q], deprioritize
-                            ):
-                                state.pending_open_queries.append(q)
-                state.pending_open_queries = state.pending_open_queries[:12]
+                directed = brief_direction_queries(
+                    brief, coverage.missing_dimensions, max_queries=8,
+                )
+                merged = directed + [
+                    q for q in state.pending_open_queries if q not in directed
+                ]
+                state.pending_open_queries = merged[:12]
             state.pending_preferred_source_ids = preferred_source_ids_for_gaps(
                 coverage.gap_hints
             ) if candidates else []

@@ -72,6 +72,8 @@ export function formatProgressEvent(event: SSEEvent): string {
       return `Brief ready: ${d.framework_id || "industry"} (${d.dimension_count || "?"} dims)`;
     case "brief_bound":
       return `Bound to brief: ${d.framework_id || ""}`;
+    case "direction_plan":
+      return `Directions: ${Array.isArray(d.directions) ? (d.directions as unknown[]).length : "?"} · seeds ${(d.seed_queries as string[])?.length || 0}`;
     case "draft_ready":
       return `Evidence draft: ${d.outline_id || "outline"} · ${d.filled_slots || 0}/${d.slot_count || "?"} slots · quarantine ${d.quarantine_count || 0}`;
     case "dimension_start":

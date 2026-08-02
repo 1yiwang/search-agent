@@ -43,22 +43,28 @@ Return ONLY valid JSON:
 Plain language. Match the user's language when the topic is Chinese. Max 4 questions."""
 
 
-BRIEF_GENERATE_PROMPT = """You produce a ResearchBrief for an industry research agent.
+BRIEF_GENERATE_PROMPT = """You produce a ResearchBrief: a human-approved SEARCH PLAN with detailed retrieval directions.
 
 Topic: {topic}
 
 User clarifying answers (may be empty — then state assumed defaults):
 {answers_block}
 
-Selected framework skeleton (MUST adapt from this; do not invent an unrelated structure):
+Selected framework skeleton (adapt; do not invent an unrelated structure):
 {framework_block}
 
 Hard rules:
-1. Stay inside the TARGET INDUSTRY / commercial question. Do NOT make country GDP or general macroeconomy a primary phase unless the user explicitly asked.
-2. Every dimension needs a clear research_goal and 1–3 searchable queries (industry-specific).
-3. Fill deprioritize with topics to avoid (often from boundary answers + framework defaults).
+1. Stay inside the TARGET INDUSTRY / commercial question. Do NOT make country GDP or general macroeconomy a primary direction unless the user explicitly asked.
+2. Produce exactly 4–6 research DIRECTIONS (dimensions). Each direction must include:
+   - title: short label
+   - research_goal: one sentence outcome
+   - direction_detail: a DETAILED paragraph (80–180 words / 150–350 Chinese characters) explaining WHAT to search, WHY it matters for answering the topic, WHAT kinds of sources/data to prefer, and what would count as a good answer for this direction
+   - queries: 2–4 concrete searchable query strings (industry-specific, not vague)
+   - priority, info_type, phase_id
+3. Fill deprioritize (exclude GDP/macro unless asked).
 4. If answers are missing, list assumed_defaults and mention them in overview_markdown.
-5. Adapt phases: merge/drop/reorder as needed; note changes in overview_markdown.
+5. overview_markdown: short plan overview for the reviewer (directions list + assumptions).
+6. success_criteria: 3–5 questions the final report must answer (e.g. market shares, opportunities).
 
 Return ONLY valid JSON:
 ```json
@@ -70,6 +76,7 @@ Return ONLY valid JSON:
     {{
       "title": "...",
       "research_goal": "...",
+      "direction_detail": "Detailed retrieval paragraph...",
       "queries": ["...", "..."],
       "priority": 1,
       "info_type": "facts",
@@ -80,14 +87,14 @@ Return ONLY valid JSON:
   "source_prefs": ["..."],
   "success_criteria": ["..."],
   "assumed_defaults": ["..."],
-  "overview_markdown": "Markdown overview for the human reviewer"
+  "overview_markdown": "..."
 }}
 ```
 
-Produce 4–8 dimensions. Queries must be concrete search strings, not vague wishes."""
+Match the user's language when the topic is Chinese."""
 
 
-BRIEF_REVISE_PROMPT = """Revise this ResearchBrief based on user feedback. Keep industry focus; do not add GDP/macro as a primary phase unless feedback asks for it.
+BRIEF_REVISE_PROMPT = """Revise this ResearchBrief based on user feedback. Keep industry focus; do not add GDP/macro as a primary direction unless feedback asks for it. Keep 4–6 directions with rich direction_detail paragraphs.
 
 Current brief JSON:
 {brief_json}
@@ -96,8 +103,8 @@ User feedback:
 {feedback}
 
 Return the full updated brief as ONLY valid JSON with the same schema
-(problem_restatement, framework_id, phases, dimensions, deprioritize,
-source_prefs, success_criteria, assumed_defaults, overview_markdown)."""
+(problem_restatement, framework_id, phases, dimensions with direction_detail,
+deprioritize, source_prefs, success_criteria, assumed_defaults, overview_markdown)."""
 
 
 def _fallback_questions(topic: str) -> list[dict]:
@@ -207,6 +214,7 @@ def _parse_brief_payload(
         dims.append(BriefDimension(
             title=title,
             research_goal=str(item.get("research_goal") or "").strip(),
+            direction_detail=str(item.get("direction_detail") or "").strip()[:2500],
             queries=queries,
             priority=int(item.get("priority") or 1),
             info_type=str(item.get("info_type") or "facts"),
@@ -216,9 +224,11 @@ def _parse_brief_payload(
     if not dims:
         fw = get_framework(framework_id)
         for phase in fw.get("phases") or []:
+            goal = str(phase.get("goal") or "")
             dims.append(BriefDimension(
                 title=str(phase.get("title") or phase.get("id") or "Research"),
-                research_goal=str(phase.get("goal") or ""),
+                research_goal=goal,
+                direction_detail=goal,
                 queries=[f"{topic} {phase.get('title', '')}".strip()],
                 phase_id=str(phase.get("id") or ""),
             ))
@@ -271,7 +281,7 @@ async def generate_research_brief(
         model=get_request_keys().llm_model,
         messages=[{"role": "user", "content": prompt}],
         temperature=0.3,
-        max_tokens=2500,
+        max_tokens=4000,
     )
     raw = _parse_json_object(response.choices[0].message.content or "")
     return _parse_brief_payload(raw, topic=topic, framework_id=fid, answers=answers)
@@ -292,7 +302,7 @@ async def revise_research_brief(
         model=get_request_keys().llm_model,
         messages=[{"role": "user", "content": prompt}],
         temperature=0.3,
-        max_tokens=2500,
+        max_tokens=4000,
     )
     raw = _parse_json_object(response.choices[0].message.content or "")
     if not raw:
@@ -305,23 +315,69 @@ async def revise_research_brief(
     )
 
 
-def brief_seed_queries(brief: ResearchBrief, *, max_queries: int = 12) -> list[str]:
-    """Flatten dimension queries for hop-0 open search, filtering deprioritize."""
+def brief_seed_queries(brief: ResearchBrief, *, max_queries: int = 18) -> list[str]:
+    """Round-robin queries across directions so every direction gets search budget."""
     blocked = _deprioritize_patterns(brief.deprioritize)
-    out: list[str] = []
-    for dim in sorted(brief.dimensions, key=lambda d: d.priority):
+    dims = sorted(brief.dimensions, key=lambda d: d.priority)
+    per_dim: list[list[str]] = []
+    for dim in dims:
+        bucket: list[str] = []
         for q in dim.queries:
             q = q.strip()
-            if not q or _matches_deprioritize(q, blocked):
+            if q and not _matches_deprioritize(q, blocked) and q not in bucket:
+                bucket.append(q)
+        seed = f"{brief.topic} {dim.research_goal or dim.title}".strip()
+        if seed and not _matches_deprioritize(seed, blocked) and seed not in bucket:
+            bucket.append(seed)
+        if dim.direction_detail:
+            # Pull a short keyword seed from detail first clause
+            tip = dim.direction_detail.strip().split("。")[0].split(".")[0][:80]
+            if tip:
+                extra = f"{brief.topic} {tip}".strip()
+                if extra not in bucket and not _matches_deprioritize(extra, blocked):
+                    bucket.append(extra)
+        per_dim.append(bucket)
+
+    out: list[str] = []
+    seen: set[str] = set()
+    # Round-robin so direction 1..N each get a turn before stacking
+    max_len = max((len(b) for b in per_dim), default=0)
+    for i in range(max_len):
+        for bucket in per_dim:
+            if i >= len(bucket):
                 continue
-            if q not in out:
+            q = bucket[i]
+            if q not in seen:
+                out.append(q)
+                seen.add(q)
+            if len(out) >= max_queries:
+                return out
+    return out[:max_queries]
+
+
+def brief_direction_queries(
+    brief: ResearchBrief,
+    missing_ids: list[str],
+    *,
+    max_queries: int = 8,
+) -> list[str]:
+    """Queries only for missing coverage direction ids."""
+    blocked = _deprioritize_patterns(brief.deprioritize)
+    id_list = brief_gap_dimension_ids(brief)
+    missing = set(missing_ids)
+    out: list[str] = []
+    for dim_id, dim in zip(id_list, brief.dimensions):
+        if dim_id not in missing:
+            continue
+        for q in dim.queries:
+            q = q.strip()
+            if q and not _matches_deprioritize(q, blocked) and q not in out:
                 out.append(q)
             if len(out) >= max_queries:
                 return out
-        if dim.research_goal and len(out) < max_queries:
-            seed = f"{brief.topic} {dim.research_goal}".strip()
-            if seed not in out and not _matches_deprioritize(seed, blocked):
-                out.append(seed)
+        seed = f"{brief.topic} {dim.research_goal or dim.title}".strip()
+        if seed and seed not in out and not _matches_deprioritize(seed, blocked):
+            out.append(seed)
     return out[:max_queries]
 
 

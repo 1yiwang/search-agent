@@ -60,7 +60,7 @@ Return ONLY valid JSON:
 ```"""
 
 
-WRITE_PROMPT = """You write a Gemini-style research report section narrative from an Evidence Draft.
+WRITE_PROMPT = """You write a Gemini-style research brief from an Evidence Draft.
 
 Research question to answer: {topic_restatement}
 Original topic: {topic}
@@ -75,30 +75,30 @@ Full fact list (citation_index):
 Quarantined (do NOT use as main claims): {quarantine_json}
 
 Instructions:
-1. thesis: EXACTLY ONE sentence that directly answers the research question. Never meta ("this report collected N facts"). Never lead with GDP/macro if quarantined.
-2. For EACH slot that has fact_indices, write one argument object:
-   - heading: use the provided slot title
-   - slot_id: copy slot_id
-   - claim: one topic sentence
-   - body: 150–300 Chinese characters if writing Chinese, or ~120–220 English words if English — 1–2 short paragraphs. Cite as [n] using only assigned citation indices. Substantive analysis, not a bullet dump.
-   - citation_indices: the indices you used
-   - confidence: high|medium|low from supporting facts
-3. Skip empty optional slots. For empty required slots, one short claim saying evidence is insufficient (no invention) + empty body ok.
-4. gaps: include material gaps + summarize quarantine themes.
-5. coverage: what was searched / languages.
-6. structured_findings: compact appendix rows (entity/signal/date/confidence/citation_index) from on-topic facts only.
-7. Use ONLY provided facts — no outside knowledge.
+1. thesis: 1–2 sentences of SUBSTANTIVE findings that answer the research question
+   (e.g. market structure, competitor shares, opportunities/barriers).
+   FORBIDDEN meta wording — never write like "本报告整理了N条事实" / "this brief covers N facts from M sources".
+   Never lead with GDP/macro if quarantined.
+2. arguments: exactly 3–5 sections (prefer filled slots). Each:
+   - heading: slot title
+   - slot_id
+   - claim: one clear topic sentence (a finding, not a process note)
+   - body: 150–300 Chinese characters OR ~120–220 English words — reasoned paragraphs with [n] citations from assigned indices only
+   - citation_indices, confidence
+3. Skip empty optional slots. Empty required → claim "证据不足：…" + short body, no invention.
+4. gaps / coverage as usual. structured_findings = compact appendix rows from on-topic facts only.
+5. Use ONLY provided facts.
 
 Return ONLY valid JSON:
 ```json
 {{
-  "thesis": "One sentence answering the question.",
+  "thesis": "Substantive answer to the question.",
   "arguments": [
     {{
       "heading": "Section title",
       "slot_id": "industry_structure",
-      "claim": "Topic sentence.",
-      "body": "Longer Gemini-style paragraphs with [1] [2] citations...",
+      "claim": "Finding topic sentence.",
+      "body": "Longer reasoned paragraphs with [1] [2]…",
       "citation_indices": [1, 2],
       "confidence": "high"
     }}
@@ -158,6 +158,68 @@ def _first_sentence(text: str) -> str:
                 return part + sep.strip()
             return part + "."
     return text
+
+
+_META_THESIS_RE = re.compile(
+    r"(本报告围绕|整理了\s*\d+\s*条|已验证事实|来自\s*\d+\s*个独立来源|"
+    r"this brief covers\s*\d+|verified facts on|unique sources|"
+    r"No verified facts were extracted|"
+    r"未能就「[^」]+」提取到可验证事实)",
+    re.IGNORECASE,
+)
+
+
+def _is_meta_thesis(text: str) -> bool:
+    return bool(_META_THESIS_RE.search(text or ""))
+
+
+def _substantive_thesis(
+    topic: str,
+    restatement: str,
+    facts: list[ExtractedFact],
+    quarantine_indices: set[int],
+) -> str:
+    """Code-built finding-style thesis — never meta inventory language."""
+    lang = _topic_language_hint(topic)
+    kept = [
+        f for i, f in enumerate(facts, 1)
+        if i not in quarantine_indices and (f.fact or "").strip()
+    ]
+    if not kept:
+        if lang == "zh":
+            return f"证据不足：现有材料尚不能对「{restatement or topic}」给出可靠判断。"
+        return f"Insufficient evidence to answer «{restatement or topic}»."
+
+    # Prefer high-confidence first sentences
+    ordered = sorted(
+        kept,
+        key=lambda f: {"high": 0, "medium": 1, "low": 2}.get(
+            (f.confidence or "medium").lower(), 1
+        ),
+    )
+    bits = [_first_sentence(f.fact) or f.fact.strip() for f in ordered[:3]]
+    bits = [b for b in bits if b and not _is_meta_thesis(b)]
+    if not bits:
+        bits = [ordered[0].fact.strip()]
+    if lang == "zh":
+        thesis = "；".join(bits[:2])
+        if not thesis.endswith(("。", "！", "？")):
+            thesis += "。"
+        return thesis
+    return " ".join(bits[:2])
+
+
+def _sanitize_thesis(
+    thesis: str,
+    topic: str,
+    restatement: str,
+    facts: list[ExtractedFact],
+    quarantine_indices: set[int],
+) -> str:
+    thesis = (thesis or "").strip()
+    if not thesis or _is_meta_thesis(thesis):
+        return _substantive_thesis(topic, restatement, facts, quarantine_indices)
+    return thesis
 
 
 def _facts_payload(facts: list[ExtractedFact]) -> list[dict]:
@@ -348,9 +410,9 @@ def fallback_synthesis(
     if not facts:
         lang = _topic_language_hint(topic)
         thesis = (
-            f"未能就「{restatement}」提取到可验证事实，目前无法给出可靠结论。"
+            f"证据不足：现有材料尚不能对「{restatement}」给出可靠判断。"
             if lang == "zh"
-            else f"No verified facts for «{restatement}»; no reliable conclusion yet."
+            else f"Insufficient evidence to answer «{restatement}»."
         )
         return ReportSynthesis(
             thesis=thesis,
@@ -363,14 +425,10 @@ def fallback_synthesis(
         )
 
     arguments = _arguments_from_draft(draft, facts)
-    thesis = draft.topic_restatement
-    if facts:
-        # Prefer first on-topic fact as provisional thesis answer seed
-        qset = {q.fact_index for q in draft.quarantine}
-        for i, f in enumerate(facts, 1):
-            if i not in qset:
-                thesis = _first_sentence(f.fact) or f.fact
-                break
+    # Cap at 5 arguments for the locked report shape
+    arguments = arguments[:5]
+    qset = {q.fact_index for q in draft.quarantine}
+    thesis = _substantive_thesis(topic, draft.topic_restatement or restatement, facts, qset)
 
     structured = [
         StructuredFinding(
@@ -649,12 +707,16 @@ async def write_from_draft(
 
         arguments = _normalize_write_arguments(
             raw.get("arguments") or [], draft, facts,
+        )[:5]
+        qset = {q.fact_index for q in draft.quarantine}
+        thesis = _sanitize_thesis(
+            str(raw.get("thesis") or "").strip()
+            or _first_sentence(str(raw.get("executive_summary") or "")),
+            topic,
+            draft.topic_restatement or topic,
+            facts,
+            qset,
         )
-        thesis = str(raw.get("thesis") or "").strip()
-        if not thesis:
-            thesis = _first_sentence(str(raw.get("executive_summary") or "")) or (
-                draft.topic_restatement or topic
-            )
         findings = _normalize_findings(
             raw.get("structured_findings") or [], len(facts), facts=facts,
         )

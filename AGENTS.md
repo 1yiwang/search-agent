@@ -216,7 +216,8 @@ agent.run_research()
 - [x] **Wave 12a Brief-first**：行业澄清 → `ResearchBrief` 骨架 → 确认后绑定 `research_loop`（`/brief`；Fast 可跳过）
 - [x] **Wave 12b 报告层次**：`thesis` + `arguments`；ReportView 结论→分论点；Signals 降为折叠附录
 - [x] **Wave 12c 两阶段成文**：EvidenceDraft → 固定骨架长论述（Gemini 式 150–300 字/节）；偏题 quarantine
-- [ ] Wave 12d：第二搜索源 failover + 早停 eval
+- [x] **Wave 12d 方向驱动 A′**：详细检索方向 + 代码分预算 query；禁止元叙述结论；信源按 URL 去重
+- [ ] Wave 12e：第二搜索源 failover + 早停 eval
 - [ ] Phase 3 41f：本机周更脚本（Task Scheduler）
 - [ ] Always-on Fly API（**延后**；个人自用默认本机 Mode B，省钱更安全）
 - [ ] `job_brief`（swiss-job-agent 集成）

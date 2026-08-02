@@ -45,9 +45,14 @@ class ResearchRequest(BaseModel):
 
 
 class BriefDimension(BaseModel):
-    """One searchable dimension inside an industry ResearchBrief."""
+    """One research direction inside an industry ResearchBrief."""
     title: str = Field(..., min_length=2, max_length=200)
-    research_goal: str = Field(default="", max_length=500)
+    research_goal: str = Field(default="", max_length=800)
+    direction_detail: str = Field(
+        default="",
+        max_length=2500,
+        description="Detailed retrieval brief: what to search, why, expected sources",
+    )
     queries: list[str] = Field(default_factory=list, max_length=8)
     priority: int = Field(default=1, ge=1, le=10)
     info_type: str = Field(

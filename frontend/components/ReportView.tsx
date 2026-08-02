@@ -523,32 +523,39 @@ export function ReportView({
           )}
 
           <Section label={labels.sources} title={labels.sources} className="pb-4">
-            <ol className="space-y-5 brief-body">
-              {groupedSources.map((src) => (
-                <li key={normalizeUrl(src.url)} className="flex gap-3">
-                  <span className="citation-mark font-semibold shrink-0 text-xs pt-0.5">
-                    {src.indices.map((i) => `[${i}]`).join(" ")}
-                  </span>
-                  <div className="min-w-0">
+            <ul className="space-y-5 brief-body list-none">
+              {groupedSources.map((src) => {
+                const host = (() => {
+                  try {
+                    return new URL(src.url).hostname.replace(/^www\./, "");
+                  } catch {
+                    return src.url;
+                  }
+                })();
+                return (
+                  <li key={normalizeUrl(src.url)} className="min-w-0">
                     <button
                       type="button"
                       onClick={() => openCitation(src.indices[0])}
-                      className="text-[var(--link)] hover:underline text-left"
+                      className="text-[var(--link)] hover:underline text-left font-medium"
                     >
-                      {src.name}
+                      {src.name || host}
                     </button>
                     <p className="text-xs text-[var(--muted)] mt-0.5">
-                      {src.indices.length} fact{src.indices.length > 1 ? "s" : ""} from this
-                      source
+                      {host}
+                      {" · "}
+                      {zh
+                        ? `支撑 ${src.indices.length} 处`
+                        : `Supports ${src.indices.length} claim${src.indices.length > 1 ? "s" : ""}`}
                     </p>
                     <p className="text-[var(--muted)] mt-1.5 italic leading-relaxed text-sm">
-                      &ldquo;{src.quote.slice(0, 200)}
-                      {src.quote.length > 200 ? "…" : ""}&rdquo;
+                      &ldquo;{src.quote.slice(0, 160)}
+                      {src.quote.length > 160 ? "…" : ""}&rdquo;
                     </p>
-                  </div>
-                </li>
-              ))}
-            </ol>
+                  </li>
+                );
+              })}
+            </ul>
           </Section>
 
           {showLedger ? (

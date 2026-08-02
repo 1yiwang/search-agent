@@ -68,6 +68,7 @@ export interface BriefClarifyResponse {
 export interface BriefDimension {
   title: string;
   research_goal: string;
+  direction_detail?: string;
   queries: string[];
   priority: number;
   info_type: string;

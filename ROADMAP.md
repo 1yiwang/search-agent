@@ -2,8 +2,8 @@
 
 > **Single source of truth** for implementation progress. Update this file at the end of each Step.
 
-**Current phase:** Wave 12c two-pass report writing (draft → Gemini-style sections)  
-**Next step:** Live Unicom brief quality check; Wave 12d second search provider / early-stop eval
+**Current phase:** Wave 12d code-led directions + substantive thesis (cost-controlled A′)  
+**Next step:** Live Swiss telecom brief quality check
 
 ## Product constraints (personal use)
 
@@ -225,6 +225,15 @@
 | 72 | Fixed `report_outlines/` + brief→slots mapping | Done |
 | 73 | Pass A EvidenceDraft (assign/quarantine) + `draft_ready` SSE | Done |
 | 74 | Pass B long section prose (~150–300 字) + ReportView body | Done |
+
+## Wave 12d — Directions + substantive thesis (A′)
+
+| Step | Task | Status |
+|------|------|--------|
+| 75 | Brief directions with rich `direction_detail`; clarify skippable | Done |
+| 76 | Round-robin direction queries + missing-slot expand (code) | Done |
+| 77 | Ban meta thesis; sanitize/fallback to findings | Done |
+| 78 | Sources UI: one row per URL, no citation pile | Done |
 
 ## Phase 3 — Watchlist + weekly delta (Mode B)
 
