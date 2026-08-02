@@ -3,6 +3,10 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { listReports, type ReportSummary } from "@/lib/api";
+import {
+  isApiOfflineError,
+  listCachedReports,
+} from "@/lib/reportCache";
 import { researchReportPath } from "@/lib/researchNav";
 import { ApiStatus } from "@/components/ApiStatus";
 
@@ -19,11 +23,36 @@ export default function HistoryPage() {
   const [reports, setReports] = useState<ReportSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [fromCache, setFromCache] = useState(false);
 
   useEffect(() => {
     listReports(50)
-      .then(setReports)
-      .catch((err) => setError(err instanceof Error ? err.message : "Failed to load"))
+      .then((list) => {
+        setReports(list);
+        setFromCache(false);
+        setError(null);
+      })
+      .catch((err) => {
+        const message = err instanceof Error ? err.message : "Failed to load";
+        const cached = listCachedReports(50);
+        if (cached.length > 0) {
+          setReports(cached);
+          setFromCache(true);
+          setError(
+            isApiOfflineError(message)
+              ? "Personal API offline — showing reports previously opened in this browser. Start API to sync the full list."
+              : `${message} — showing browser cache.`,
+          );
+        } else {
+          setReports([]);
+          setFromCache(false);
+          setError(
+            isApiOfflineError(message)
+              ? "Personal API offline. Saved reports live on your PC — run .\\scripts\\start-personal.ps1, then refresh. Or open a report URL you bookmarked after viewing it once (it will cache here)."
+              : message,
+          );
+        }
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -39,7 +68,8 @@ export default function HistoryPage() {
         </Link>
         <h1 className="font-display text-4xl text-[var(--ink)] mt-4">Saved reports</h1>
         <p className="mt-2 text-sm text-[var(--muted)]">
-          Reports are stored on your personal API — bookmark a report URL or find it here.
+          Full list needs your personal API. Reports you have opened before are also cached in this
+          browser for offline reading.
         </p>
         <div className="mt-4">
           <ApiStatus />
@@ -51,7 +81,7 @@ export default function HistoryPage() {
       )}
 
       {error && (
-        <p className="text-sm text-red-600">
+        <p className="mb-6 text-sm text-amber-800 dark:text-amber-200/90 rounded-lg border border-amber-700/30 bg-amber-50/10 px-4 py-3">
           {error}
           {error.includes("Not signed in") && (
             <>
@@ -64,8 +94,20 @@ export default function HistoryPage() {
         </p>
       )}
 
+      {fromCache && !loading && reports.length > 0 && (
+        <p className="mb-4 text-xs uppercase tracking-wide text-[var(--muted)]">
+          Cached in this browser
+        </p>
+      )}
+
       {!loading && !error && reports.length === 0 && (
         <p className="text-sm text-[var(--muted)]">No saved reports yet. Run a search on the home page.</p>
+      )}
+
+      {!loading && error && reports.length === 0 && (
+        <p className="text-sm text-[var(--muted)]">
+          Tip: after you open a report once while the API is online, it stays readable here offline.
+        </p>
       )}
 
       <ul className="space-y-3">

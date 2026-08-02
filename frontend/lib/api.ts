@@ -381,10 +381,13 @@ export async function getReport(slug: string): Promise<ResearchReport> {
   if (response.status === 401) {
     throw new Error("Not signed in — log in again to view reports.");
   }
-  if (response.status === 503) {
+  if (response.status === 503 || response.status === 502 || response.status === 504) {
     const data = await response.json().catch(() => ({}));
     throw new Error(
-      String(data.error || "Personal API offline — start backend + tunnel."),
+      String(
+        data.error ||
+          "Personal API offline — run .\\scripts\\start-personal.ps1 on your PC.",
+      ),
     );
   }
   if (!response.ok) {
@@ -410,14 +413,19 @@ export async function listReports(limit = 30): Promise<ReportSummary[]> {
   if (response.status === 401) {
     throw new Error("Not signed in — log in again to view saved reports.");
   }
-  if (response.status === 503) {
+  if (response.status === 503 || response.status === 502 || response.status === 504) {
     const data = await response.json().catch(() => ({}));
     throw new Error(
-      String(data.error || "Personal API offline — start backend + tunnel."),
+      String(
+        data.error ||
+          "Personal API offline — run .\\scripts\\start-personal.ps1 on your PC to list saved reports.",
+      ),
     );
   }
   if (!response.ok) {
-    throw new Error("Failed to load saved reports");
+    throw new Error(
+      `Failed to load saved reports (${response.status}). If API is offline, start it with .\\scripts\\start-personal.ps1.`,
+    );
   }
   const data = await response.json();
   return (data.reports ?? []) as ReportSummary[];
