@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Search Agent — dossier starter</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0a0c10;
+      --surface: #12151c;
+      --surface-raised: #181c26;
+      --border: #2a3040;
+      --ink: #e8e6e1;
+      --muted: #8a909c;
+      --accent: #d4a05c;
+      --accent-dim: #9a7340;
+      --verify: #6ba88a;
+      --link: #7eb8da;
+      --font-display: "Instrument Serif", Georgia, serif;
+      --font-body: "DM Sans", system-ui, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: var(--font-body);
+      color: var(--ink);
+      background: var(--bg);
+      background-image:
+        radial-gradient(ellipse 80% 50% at 50% -20%, rgba(212, 160, 92, 0.08), transparent),
+        linear-gradient(180deg, var(--bg) 0%, #0d1016 100%);
+    }
+    .font-display { font-family: var(--font-display); }
+    .chrome {
+      position: sticky; top: 0; z-index: 40;
+      display: flex; justify-content: space-between; align-items: center;
+      max-width: 72rem; margin: 0 auto; padding: 0.65rem 1rem;
+      border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+      background: color-mix(in srgb, var(--bg) 90%, transparent);
+      backdrop-filter: blur(8px);
+    }
+    .chrome a, .chrome button {
+      color: var(--muted); background: none; border: 0; cursor: pointer;
+      font: inherit; font-size: 0.875rem; text-decoration: none;
+    }
+    .chrome a:hover, .chrome button:hover { color: var(--ink); }
+    .chrome .brand { font-family: var(--font-display); font-size: 1.125rem; color: var(--ink); }
+    main { max-width: 48rem; margin: 0 auto; padding: 4rem 1rem 6rem; text-align: center; }
+    .eyebrow {
+      font-size: 0.75rem; letter-spacing: 0.2em; text-transform: uppercase;
+      color: var(--muted); margin-bottom: 0.5rem;
+    }
+    h1 { font-family: var(--font-display); font-weight: 400; font-size: clamp(2.25rem, 5vw, 3rem); margin: 0; }
+    .lede { color: var(--muted); max-width: 28rem; margin: 0.75rem auto 2rem; line-height: 1.5; }
+    input[type="text"] {
+      width: 100%; padding: 1rem 1.25rem; font-size: 1.125rem;
+      color: var(--ink); background: var(--surface);
+      border: 1px solid var(--border); border-radius: 0.5rem;
+    }
+    input:focus { outline: none; border-color: var(--accent-dim); }
+    .cta {
+      margin-top: 1.5rem; padding: 0.75rem 2.5rem;
+      font-weight: 600; color: #1a1408; background: var(--accent);
+      border: 0; border-radius: 0.5rem; cursor: pointer;
+    }
+    .cta:hover { filter: brightness(1.08); }
+    /* Citation example — only place for --link */
+    .cite { color: var(--link); text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <header class="chrome">
+    <span class="brand" style="visibility:hidden">Search Agent</span>
+    <nav style="display:flex;gap:1.25rem;align-items:center">
+      <a href="#library">Library</a>
+      <button type="button" aria-label="Settings">⚙</button>
+    </nav>
+  </header>
+  <main>
+    <p class="eyebrow">Verifiable research</p>
+    <h1>Search Agent</h1>
+    <p class="lede">You define the question. We search, extract, and cite every claim.</p>
+    <input type="text" placeholder="What do you want to research?" />
+    <div><button class="cta" type="button">Continue to brief →</button></div>
+    <p style="margin-top:2rem;font-size:0.875rem;color:var(--muted)">
+      Example citation only: <a class="cite" href="#">source.example</a>
+    </p>
+  </main>
+</body>
+</html>
