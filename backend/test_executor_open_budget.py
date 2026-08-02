@@ -44,7 +44,7 @@ async def _test_open_budget_reserved_when_defer():
         patch("sources.executor.config.fetch_top_k_per_hop", 12),
         patch("sources.executor.config.open_search_parallel", True),
     ):
-        results, searched = await execute_router_decision(
+        results, searched, _leftover = await execute_router_decision(
             "European private debt",
             decision,
             seen,
@@ -87,7 +87,7 @@ async def _test_fetch_retry_alternate_url():
         patch("sources.executor.fetch_page", side_effect=fake_fetch),
         patch("sources.executor.search_web", new_callable=AsyncMock, return_value=[]),
     ):
-        results, _ = await execute_router_decision(
+        results, _, _leftover = await execute_router_decision(
             "European private debt",
             decision,
             seen,
@@ -226,7 +226,7 @@ async def _test_site_search_failover_on_empty():
             return_value=["site:privateequityinternational.com European private debt"],
         ),
     ):
-        results, searched = await execute_router_decision(
+        results, searched, _leftover = await execute_router_decision(
             "European private debt",
             decision,
             seen,
@@ -268,7 +268,7 @@ async def _test_fetch_failover_cross_source():
         patch("sources.executor.fetch_page", side_effect=fake_fetch),
         patch("sources.executor.search_and_fetch", new_callable=AsyncMock, return_value=[]),
     ):
-        results, _ = await execute_router_decision(
+        results, _, _leftover = await execute_router_decision(
             "European private debt",
             decision,
             seen,

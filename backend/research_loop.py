@@ -63,16 +63,21 @@ async def _verify_facts(
 def _brief_coverage_dims(
     brief: ResearchBrief,
 ) -> list[tuple[str, str, list[str]]]:
+    from text_tokens import keyword_list
+
     ids = brief_gap_dimension_ids(brief)
     out: list[tuple[str, str, list[str]]] = []
     for dim_id, dim in zip(ids, brief.dimensions):
-        keywords = [dim.title.lower()]
         goal = dim.research_goal or ""
-        extra = [
-            w.lower() for w in goal.replace(",", " ").split()
-            if len(w) > 3
-        ][:8]
-        keywords.extend(extra)
+        keywords = keyword_list(
+            dim.title,
+            goal,
+            dim.direction_detail,
+            " ".join(dim.entities or []),
+            max_tokens=16,
+        )
+        if not keywords and dim.title:
+            keywords = [dim.title.lower()]
         out.append((dim_id, goal or dim.title, keywords))
     return out
 
@@ -140,13 +145,24 @@ async def _run_research_loop_body(
         await emit("direction_plan", {
             "directions": [
                 {
+                    "direction_id": d.direction_id or d.phase_id or d.title,
                     "title": d.title,
                     "goal": d.research_goal,
+                    "entities": (d.entities or [])[:8],
+                    "must_answer": (d.must_answer or [])[:4],
+                    "budget_weight": d.budget_weight,
                     "query_count": len(d.queries),
                 }
                 for d in brief.dimensions[:8]
             ],
             "seed_queries": state.pending_open_queries[:12],
+        })
+        await emit("direction_budget", {
+            "weights": {
+                (d.direction_id or d.phase_id or d.title): d.budget_weight
+                for d in brief.dimensions
+            },
+            "seed_query_count": len(state.pending_open_queries),
         })
 
     prev_fact_count = 0
@@ -230,7 +246,7 @@ async def _run_research_loop_body(
         if open_q and deprioritize:
             open_q = filter_queries_by_deprioritize(open_q, deprioritize)
 
-        new_results, searched = await execute_router_decision(
+        new_results, searched, leftover_open = await execute_router_decision(
             request.topic,
             decision,
             seen_urls,
@@ -243,7 +259,8 @@ async def _run_research_loop_body(
                 bool(state.last_missing_dimensions) or not state.facts
             ),
         )
-        state.pending_open_queries = []
+        # Re-queue open queries the executor could not run this hop (budget slice).
+        state.pending_open_queries = list(leftover_open or [])
         for q in searched:
             if q not in state.topics_searched:
                 state.topics_searched.append(q)
@@ -306,8 +323,12 @@ async def _run_research_loop_body(
             if deprioritize:
                 site_q = filter_queries_by_deprioritize(site_q, deprioritize)
                 open_pending = filter_queries_by_deprioritize(open_pending, deprioritize)
+            # Keep unexecuted leftovers ahead of freshly expanded opens.
+            leftover_keep = list(state.pending_open_queries)
             state.pending_site_queries = site_q
-            state.pending_open_queries = open_pending
+            state.pending_open_queries = leftover_keep + [
+                q for q in open_pending if q not in leftover_keep
+            ]
             # General topics: open-only expand (ignore site channel).
             if not candidates:
                 state.pending_site_queries = []

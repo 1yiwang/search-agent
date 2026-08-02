@@ -159,7 +159,8 @@ _ENGLISH_SKELETON_TITLES = {
 }
 
 _WEAK_BRIEF_MODEL_MARKERS = (
-    "mini", "flash", "haiku", "nano", "deepseek-chat", "deepseek-coder", "gpt-3.5",
+    "mini", "flash", "haiku", "nano", "lite", "tiny", "small",
+    "deepseek-chat", "deepseek-coder", "gpt-3.5", "qwen-turbo", "qwen-plus",
 )
 
 
@@ -178,6 +179,43 @@ def get_brief_model() -> str:
 
 
 def _fallback_questions(topic: str) -> list[dict]:
+    if _topic_is_zh(topic):
+        return [
+            {
+                "id": "q1",
+                "category": "boundary",
+                "question": "是否排除该国宏观/GDP，只做目标行业本身？",
+                "hint": "市场进入类选题通常选「只做行业」",
+                "options": [
+                    "是 — 只做行业，弱化 GDP/宏观",
+                    "也需要少量宏观背景",
+                ],
+            },
+            {
+                "id": "q2",
+                "category": "breadth",
+                "question": "最关键的产品线 / 细分市场是哪些？",
+                "hint": "例如：消费移动、B2B、批发、云/ICT",
+                "options": [],
+            },
+            {
+                "id": "q3",
+                "category": "depth",
+                "question": "需要可执行的进入路径与壁垒，还是以市场概览为主？",
+                "hint": "面试准备 vs 内部提案",
+                "options": [
+                    "概览 + 主要玩家",
+                    "概览 + 机会与壁垒",
+                ],
+            },
+            {
+                "id": "q4",
+                "category": "audience",
+                "question": "主要读者是谁、报告将用于什么决策？",
+                "hint": "例如：销售面试、内部备忘",
+                "options": [],
+            },
+        ]
     return [
         {
             "id": "q1",
@@ -219,7 +257,7 @@ def _fallback_questions(topic: str) -> list[dict]:
 async def generate_industry_clarifying_questions(topic: str) -> list[dict]:
     """2–4 industry-research clarifying questions (no web search)."""
     response = await get_openai_client().chat.completions.create(
-        model=get_request_keys().llm_model,
+        model=get_brief_model(),
         messages=[
             {"role": "user", "content": INDUSTRY_CLARIFY_PROMPT.format(topic=topic)},
         ],
@@ -525,6 +563,73 @@ def _repair_queries(topic: str, title: str, detail: str, queries: list[str]) -> 
     return out[:4]
 
 
+def _harvest_entities(text: str, *, max_n: int = 8) -> list[str]:
+    """Pull named entities from instruction text when LLM omits entities[]."""
+    from text_tokens import tokens as text_tokens
+
+    skip = frozenset({
+        "research", "researching", "map", "mapping", "analyze", "assess",
+        "evaluate", "study", "review", "industry", "market", "demand",
+        "调研", "梳理", "评估", "研究", "分析",
+    })
+    found: list[str] = []
+    seen: set[str] = set()
+    for m in re.finditer(r"\b([A-Z][A-Za-z0-9&.-]{1,40})\b", text or ""):
+        w = m.group(1)
+        key = w.lower()
+        if key in seen or key in skip or len(w) < 2:
+            continue
+        seen.add(key)
+        found.append(w)
+        if len(found) >= max_n:
+            return found
+    for tok in text_tokens(text or "", max_tokens=20):
+        if not re.search(r"[\u4e00-\u9fff]", tok):
+            continue
+        if len(tok) < 2 or tok in seen or tok in skip:
+            continue
+        seen.add(tok)
+        found.append(tok)
+        if len(found) >= max_n:
+            break
+    return found
+
+
+def _build_brief_dimension(
+    *,
+    title: str,
+    goal: str,
+    detail: str,
+    queries: list[str],
+    priority: int = 1,
+    info_type: str = "facts",
+    phase_id: str = "",
+    direction_id: str = "",
+    entities: list[str] | None = None,
+    must_answer: list[str] | None = None,
+    budget_weight: int = 1,
+) -> BriefDimension:
+    did = (direction_id or phase_id or title)[:80]
+    ents = [str(e).strip() for e in (entities or []) if str(e).strip()][:8]
+    if not ents:
+        ents = _harvest_entities(f"{detail} {goal} {title}")
+    answers = [str(a).strip() for a in (must_answer or []) if str(a).strip()][:6]
+    weight = max(1, min(10, int(budget_weight or 1)))
+    return BriefDimension(
+        title=title[:200] or "方向",
+        research_goal=(goal or detail)[:500],
+        direction_detail=detail,
+        queries=queries,
+        priority=priority,
+        info_type=info_type,
+        phase_id=phase_id,
+        direction_id=did,
+        entities=ents,
+        must_answer=answers,
+        budget_weight=weight,
+    )
+
+
 def _parse_brief_payload(
     raw: dict,
     *,
@@ -574,14 +679,18 @@ def _parse_brief_payload(
             if str(q).strip()
         ][:8]
         queries = _repair_queries(topic, title, detail, queries)
-        dims.append(BriefDimension(
+        dims.append(_build_brief_dimension(
             title=title[:200] or "方向",
-            research_goal=(goal or detail)[:500],
-            direction_detail=detail,
+            goal=(goal or detail)[:500],
+            detail=detail,
             queries=queries,
             priority=int(item.get("priority") or 1),
             info_type=str(item.get("info_type") or "facts"),
             phase_id=phase_id,
+            direction_id=str(item.get("direction_id") or phase_id),
+            entities=[str(e) for e in (item.get("entities") or []) if str(e).strip()],
+            must_answer=[str(a) for a in (item.get("must_answer") or []) if str(a).strip()],
+            budget_weight=int(item.get("budget_weight") or max(1, 7 - int(item.get("priority") or 1))),
         ))
 
     # Second pass: any remaining bad instruction must be rewritten
@@ -593,14 +702,18 @@ def _parse_brief_payload(
         phase = phase_by_id.get(d.phase_id) or {"id": d.phase_id, "goal": d.title}
         instruction = _instruction_from_phase(topic, phase)
         title = _short_title_from_instruction(instruction, d.phase_id or d.title or "方向")
-        fixed.append(BriefDimension(
+        fixed.append(_build_brief_dimension(
             title=title,
-            research_goal=instruction,
-            direction_detail=instruction,
+            goal=instruction,
+            detail=instruction,
             queries=_repair_queries(topic, title, instruction, list(d.queries)),
             priority=d.priority,
             info_type=d.info_type,
             phase_id=d.phase_id,
+            direction_id=d.direction_id or d.phase_id,
+            entities=list(d.entities or []),
+            must_answer=list(d.must_answer or []),
+            budget_weight=d.budget_weight,
         ))
     dims = fixed
 
@@ -615,13 +728,14 @@ def _parse_brief_payload(
         for i, phase in enumerate((fw.get("phases") or [])[:6]):
             instruction = _instruction_from_phase(topic, phase)
             title = _short_title_from_instruction(instruction, str(phase.get("id") or f"d{i}"))
-            rebuilt.append(BriefDimension(
+            rebuilt.append(_build_brief_dimension(
                 title=title,
-                research_goal=instruction,
-                direction_detail=instruction,
+                goal=instruction,
+                detail=instruction,
                 queries=_repair_queries(topic, title, instruction, []),
                 priority=i + 1,
                 phase_id=str(phase.get("id") or ""),
+                budget_weight=max(1, 6 - i),
             ))
         if rebuilt:
             dims = rebuilt
@@ -637,13 +751,14 @@ def _parse_brief_payload(
                 continue
             instruction = _instruction_from_phase(topic, phase)
             title = _short_title_from_instruction(instruction, pid or "方向")
-            dims.append(BriefDimension(
+            dims.append(_build_brief_dimension(
                 title=title,
-                research_goal=instruction,
-                direction_detail=instruction,
+                goal=instruction,
+                detail=instruction,
                 queries=_repair_queries(topic, title, instruction, []),
                 priority=len(dims) + 1,
                 phase_id=pid,
+                budget_weight=max(1, 6 - len(dims)),
             ))
 
     phases = raw.get("phases") if isinstance(raw.get("phases"), list) else []

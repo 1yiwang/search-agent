@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
@@ -11,17 +10,39 @@ import yaml
 from models import ResearchBrief
 
 _OUTLINES_DIR = Path(__file__).resolve().parent
+_outlines_cache: dict[str, dict[str, Any]] | None = None
+_outlines_cache_key: tuple[tuple[str, float], ...] | None = None
 
 
-@lru_cache(maxsize=1)
+def _outlines_mtime_key() -> tuple[tuple[str, float], ...]:
+    return tuple(
+        sorted(
+            (p.name, p.stat().st_mtime)
+            for p in _OUTLINES_DIR.glob("*.yaml")
+        )
+    )
+
+
 def load_all_outlines() -> dict[str, dict[str, Any]]:
+    global _outlines_cache, _outlines_cache_key
+    key = _outlines_mtime_key()
+    if _outlines_cache is not None and _outlines_cache_key == key:
+        return _outlines_cache
     out: dict[str, dict[str, Any]] = {}
     for path in sorted(_OUTLINES_DIR.glob("*.yaml")):
         data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
         oid = str(data.get("id") or path.stem)
         data["id"] = oid
         out[oid] = data
+    _outlines_cache = out
+    _outlines_cache_key = key
     return out
+
+
+def clear_outlines_cache() -> None:
+    global _outlines_cache, _outlines_cache_key
+    _outlines_cache = None
+    _outlines_cache_key = None
 
 
 def get_outline(outline_id: str) -> dict[str, Any]:

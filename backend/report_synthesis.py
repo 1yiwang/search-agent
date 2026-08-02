@@ -315,13 +315,14 @@ def _heuristic_draft(
     draft_slots: list[EvidenceDraftSlot] = []
     for slot in slots:
         goal = str(slot.get("writing_goal") or slot.get("title") or "")
-        tokens = [t.lower() for t in re.split(r"[\s,/|]+", goal) if len(t) > 3][:8]
+        from text_tokens import tokens as text_tokens
+        tokens = text_tokens(goal, max_tokens=8)
         matched: list[int] = []
         for i in on_topic_indices:
             if i in qset:
                 continue
             blob = f"{facts[i - 1].fact} {facts[i - 1].quoted_text}".lower()
-            if not tokens or any(t in blob for t in tokens):
+            if not tokens or any(t.lower() in blob for t in tokens):
                 matched.append(i)
         if not matched and on_topic_indices and slot.get("required"):
             # Round-robin leftover for required slots

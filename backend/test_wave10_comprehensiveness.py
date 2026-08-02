@@ -76,7 +76,7 @@ async def _test_open_queries_run_in_parallel():
         patch("sources.executor.config.fetch_top_k_per_hop", 10),
         patch("sources.executor.config.open_search_parallel", True),
     ):
-        results, searched = await execute_router_decision(
+        results, searched, _leftover = await execute_router_decision(
             "Switzerland telecom",
             decision,
             seen,

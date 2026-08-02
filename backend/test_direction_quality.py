@@ -122,9 +122,9 @@ def test_ecommerce_style_plan_when_skeleton():
 
 
 def test_framework_block_has_no_english_goals():
-    from frameworks import framework_prompt_block, load_all_frameworks
+    from frameworks import clear_frameworks_cache, framework_prompt_block
 
-    load_all_frameworks.cache_clear()
+    clear_frameworks_cache()
     block = framework_prompt_block("market_entry")
     assert "Order-of-magnitude" not in block
     assert "Demand segments and use cases" not in block

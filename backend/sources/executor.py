@@ -171,9 +171,14 @@ async def execute_router_decision(
     open_queries: list[str] | None = None,
     missing_dimensions: list[str] | None = None,
     gap_hop: bool = False,
-) -> tuple[list[SearchResult], list[str]]:
-    """Run direct_fetch → site_search → optional open_search."""
+) -> tuple[list[SearchResult], list[str], list[str]]:
+    """Run direct_fetch → site_search → optional open_search.
+
+    Returns ``(results, topics_searched, leftover_open_queries)`` where leftover
+    are open queries that were queued but not executed this hop (budget slice).
+    """
     topics_searched: list[str] = []
+    leftover_open: list[str] = []
     recency_days = config.research_recency_days if has_registry_intent(topic) else None
     open_budget_reserved = max(2, budget_remaining // 3)
     site_budget = max(0, budget_remaining - open_budget_reserved)
@@ -229,7 +234,7 @@ async def execute_router_decision(
             max(open_budget_reserved, budget_remaining - len(collected)),
             budget_remaining - len(collected),
         )
-        queries_to_run = open_queries or [topic]
+        queries_to_run = list(open_queries or [topic])
         # Budget-aware open query count: ≥2 when possible; up to open_max (default 6) on force_open.
         open_cap = (
             config.open_max_queries_per_hop
@@ -241,6 +246,7 @@ async def execute_router_decision(
             max(1, min(open_cap, max(2, open_budget // 2))),
         )
         queries_slice = queries_to_run[:max_open_queries]
+        leftover_open = queries_to_run[max_open_queries:]
         per_query = max(1, open_budget // max(1, len(queries_slice)))
         max_results = config.search_max_results
         if force_open_web:
@@ -312,6 +318,9 @@ async def execute_router_decision(
                     collected.append(r)
                     if len(collected) >= budget_remaining:
                         break
+    elif open_queries:
+        # Open search deferred this hop — keep the queue for the next hop.
+        leftover_open = list(open_queries)
 
     unique = deduplicate_search_results(collected)
-    return unique[:budget_remaining], topics_searched
+    return unique[:budget_remaining], topics_searched, leftover_open

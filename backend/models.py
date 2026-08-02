@@ -60,6 +60,19 @@ class BriefDimension(BaseModel):
         description="facts | cases | criticism | trends",
     )
     phase_id: str = Field(default="", description="Optional framework phase id")
+    direction_id: str = Field(
+        default="",
+        description="Stable id for budget/coverage (defaults to phase_id)",
+    )
+    entities: list[str] = Field(
+        default_factory=list,
+        description="Named entities this direction must search for",
+    )
+    must_answer: list[str] = Field(
+        default_factory=list,
+        description="Concrete questions this direction must answer",
+    )
+    budget_weight: int = Field(default=1, ge=1, le=10)
 
 
 class ResearchBrief(BaseModel):

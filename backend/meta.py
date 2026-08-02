@@ -61,8 +61,10 @@ def _parse_json_object(content: str) -> dict:
 
 async def generate_clarifying_questions(topic: str) -> list[dict]:
     """LLM-generated scope questions (no web search)."""
+    from brief import get_brief_model
+
     response = await get_openai_client().chat.completions.create(
-        model=get_request_keys().llm_model,
+        model=get_brief_model(),
         messages=[{"role": "user", "content": CLARIFY_PROMPT.format(topic=topic)}],
         temperature=0.4,
         max_tokens=512,
@@ -91,29 +93,8 @@ async def generate_clarifying_questions(topic: str) -> list[dict]:
             })
 
     if not questions:
-        questions = [
-            {
-                "id": "q1",
-                "category": "audience",
-                "question": "Who is the primary audience for this report?",
-                "hint": "e.g. executives, engineers, students",
-                "options": [],
-            },
-            {
-                "id": "q2",
-                "category": "depth",
-                "question": "What depth do you need?",
-                "hint": "e.g. executive summary vs detailed analysis",
-                "options": [],
-            },
-            {
-                "id": "q3",
-                "category": "boundary",
-                "question": "Should we stay inside the industry and deprioritize general macro/GDP?",
-                "hint": "Usually yes for market-entry topics",
-                "options": [],
-            },
-        ]
+        from brief import _fallback_questions
+        questions = _fallback_questions(topic)
     return questions[:4]
 
 

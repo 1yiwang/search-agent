@@ -103,4 +103,6 @@ def test_parse_brief_payload_merges_framework_deprioritize():
     )
     assert brief.framework_id == "market_entry"
     assert any("gdp" in d.lower() or "macro" in d.lower() for d in brief.deprioritize)
-    assert brief.dimensions[0].title == "Industry structure"
+    assert brief.dimensions[0].phase_id == "industry_structure"
+    assert brief.dimensions[0].direction_id == "industry_structure"
+    assert brief.dimensions[0].direction_detail

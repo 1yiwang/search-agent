@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
@@ -12,17 +11,39 @@ from report_synthesis import detect_report_type
 from sources.telecom_intent import has_swiss_telecom_intent, telecom_intent_score
 
 _FRAMEWORKS_DIR = Path(__file__).resolve().parent
+_frameworks_cache: dict[str, dict[str, Any]] | None = None
+_frameworks_cache_key: tuple[tuple[str, float], ...] | None = None
 
 
-@lru_cache(maxsize=1)
+def _frameworks_mtime_key() -> tuple[tuple[str, float], ...]:
+    return tuple(
+        sorted(
+            (p.name, p.stat().st_mtime)
+            for p in _FRAMEWORKS_DIR.glob("*.yaml")
+        )
+    )
+
+
 def load_all_frameworks() -> dict[str, dict[str, Any]]:
+    global _frameworks_cache, _frameworks_cache_key
+    key = _frameworks_mtime_key()
+    if _frameworks_cache is not None and _frameworks_cache_key == key:
+        return _frameworks_cache
     out: dict[str, dict[str, Any]] = {}
     for path in sorted(_FRAMEWORKS_DIR.glob("*.yaml")):
         data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
         fid = str(data.get("id") or path.stem)
         data["id"] = fid
         out[fid] = data
+    _frameworks_cache = out
+    _frameworks_cache_key = key
     return out
+
+
+def clear_frameworks_cache() -> None:
+    global _frameworks_cache, _frameworks_cache_key
+    _frameworks_cache = None
+    _frameworks_cache_key = None
 
 
 def get_framework(framework_id: str) -> dict[str, Any]:

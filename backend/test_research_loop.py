@@ -67,7 +67,7 @@ async def _test_research_loop_completes_with_mocks():
 
     with (
         patch("research_loop.route_sources", new_callable=AsyncMock, return_value=decision),
-        patch("research_loop.execute_router_decision", new_callable=AsyncMock, return_value=([], ["site:q"])),
+        patch("research_loop.execute_router_decision", new_callable=AsyncMock, return_value=([], ["site:q"], [])),
         patch("research_loop.expand_queries") as mock_expand,
         patch("research_loop.extract_facts", new_callable=AsyncMock, return_value=rich_facts),
         patch("research_loop.verify_and_review", return_value=(rich_facts, MagicMock(
@@ -133,18 +133,22 @@ async def _test_research_loop_wires_gap_hints_to_next_hop():
             (
                 [SearchResult(url="https://a.com/1", title="A", snippet="s", full_text="body")],
                 ["site:stepstonegroup.com direct lending"],
+                [],
             ),
             (
                 [SearchResult(url="https://b.com/2", title="B", snippet="s", full_text="body")],
                 ["site:pei.com European private debt fundraising", "open q"],
+                [],
             ),
             (
                 [SearchResult(url="https://c.com/3", title="C", snippet="s", full_text="body")],
                 ["open q2"],
+                [],
             ),
             (
                 [SearchResult(url="https://d.com/4", title="D", snippet="s", full_text="body")],
                 ["open q3"],
+                [],
             ),
         ]
     )
@@ -290,6 +294,7 @@ async def _test_research_loop_event_chain_with_real_expand():
             (
                 [SearchResult(url="https://a.com/1", title="A", snippet="s", full_text="body")],
                 ["site:stepstonegroup.com direct lending"],
+                [],
             ),
             (
                 [
@@ -298,6 +303,7 @@ async def _test_research_loop_event_chain_with_real_expand():
                     SearchResult(url="https://d.com/4", title="D", snippet="s", full_text="body"),
                 ],
                 ["site:privateequityinternational.com …", "open fundraising"],
+                [],
             ),
         ]
     )
@@ -389,6 +395,7 @@ async def _test_research_loop_stops_when_stagnant():
         return_value=(
             [SearchResult(url="https://a.com/1", title="A", snippet="s", full_text="body")],
             ["site:q"],
+            [],
         )
     )
 

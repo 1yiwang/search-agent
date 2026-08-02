@@ -43,12 +43,28 @@ DIMENSION_INFO_TYPES: dict[str, list[str]] = {
     "examples": ["examples", "landscape"],
     "challenges": ["challenges", "experts"],
     "experts": ["experts", "trends"],
+    # market_entry / competitive_landscape framework phase ids (Wave 12h)
+    "industry_structure": ["landscape", "facts_data", "comp_matrix"],
+    "demand_segments": ["landscape", "examples", "facts_data"],
+    "sizing": ["market_forecast", "facts_data"],
+    "value_chain": ["landscape", "experts"],
+    "barriers": ["challenges", "experts"],
+    "opportunities": ["examples", "trends"],
+    "own_capabilities": ["comparisons", "examples"],
+    "risks": ["challenges", "experts"],
+    "regulation": ["experts", "facts_data"],
+    "pricing": ["comparisons", "facts_data"],
+    "channels": ["examples", "landscape"],
+    "tech_stack": ["examples", "trends"],
 }
 
 # Dimensions that should never use vertical catalog site: queries
 OPEN_ONLY_DIMENSIONS = frozenset({
     "_empty", "overview", "ranking", "competitors", "market", "funding", "_diversity",
     "examples", "challenges", "experts",
+    "industry_structure", "demand_segments", "sizing", "value_chain", "barriers",
+    "opportunities", "own_capabilities", "risks",
+    "regulation", "pricing", "channels", "tech_stack",
 })
 
 # Geographic / time / ranking-source angles for general open-web expand
@@ -150,9 +166,11 @@ _GOAL_STOPWORDS = frozenset({
 
 def _goal_keywords(goal: str, max_words: int = 8) -> str:
     """Distinctive tokens from research_goal for open-web queries."""
+    from text_tokens import tokens as text_tokens
+
     words = [
-        w for w in goal.replace(",", " ").replace("/", " ").split()
-        if w and w.lower() not in _GOAL_STOPWORDS
+        w for w in text_tokens(goal, max_tokens=max_words * 2)
+        if w.lower() not in _GOAL_STOPWORDS
     ]
     return " ".join(words[:max_words])
 
@@ -484,17 +502,33 @@ def expand_queries(
                 dimension="_empty",
             ))
 
-    # For Chinese topics: rewrite residual CJK open queries (keep multilang_seed as-is)
+    # For Chinese topics: enrich with English pivot, but keep CJK entities
+    # (wholesale CJK wipe collapsed distinct gaps into identical queries).
     if detect_script(topic) in ("zh", "mixed"):
+        from text_tokens import tokens as text_tokens
+
         rewritten: list[ExpandedQuery] = []
         for eq in expanded:
             if eq.channel != "open":
                 rewritten.append(eq)
                 continue
             if re.search(r"[\u4e00-\u9fff]", eq.query) and eq.template_id != "multilang_seed":
-                latinish = re.sub(r"[\u4e00-\u9fff]+", " ", eq.query)
-                latinish = " ".join(latinish.split())
-                new_q = f"{pivot} {latinish}".strip() if pivot else latinish
+                latin = re.findall(r"[A-Za-z][A-Za-z0-9&.-]{1,}", eq.query)
+                cjk_bits = [
+                    t for t in text_tokens(eq.research_goal or eq.query, max_tokens=8)
+                    if re.search(r"[\u4e00-\u9fff]", t)
+                ][:4]
+                parts = [p for p in [pivot, *latin, *cjk_bits] if p]
+                # Dedup while preserving order
+                seen_p: set[str] = set()
+                ordered: list[str] = []
+                for p in parts:
+                    key = p.lower()
+                    if key in seen_p:
+                        continue
+                    seen_p.add(key)
+                    ordered.append(p)
+                new_q = " ".join(ordered).strip()
                 rewritten.append(ExpandedQuery(
                     query=new_q or eq.query,
                     research_goal=eq.research_goal,
