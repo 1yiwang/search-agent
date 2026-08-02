@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Search Agent — Signal Flag</title>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Schibsted+Grotesk:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --paper: #FFFEFA;
+      --ink: #1A1210;
+      --mute: #6B6560;
+      --signal-red: #E23B2F;
+      --flag-yellow: #F5C518;
+      --rule: #E8E2D8;
+      --panel: #FFF8F0;
+      --font-display: "Fraunces", Georgia, serif;
+      --font-body: "Schibsted Grotesk", system-ui, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: var(--font-body);
+      color: var(--ink);
+      background: var(--paper);
+    }
+    /* Signature: left signal bar */
+    body::before {
+      content: "";
+      position: fixed;
+      left: 0; top: 0; bottom: 0;
+      width: 7px;
+      background: linear-gradient(
+        180deg,
+        var(--signal-red) 0 48px,
+        var(--flag-yellow) 48px 100%
+      );
+      z-index: 50;
+    }
+    .chrome {
+      position: sticky; top: 0; z-index: 40;
+      display: flex; justify-content: space-between; align-items: center;
+      max-width: 72rem; margin: 0 auto;
+      padding: 0.7rem 1.25rem 0.7rem 1.5rem;
+      border-bottom: 1px solid var(--rule);
+      background: color-mix(in srgb, var(--paper) 92%, transparent);
+      backdrop-filter: blur(8px);
+    }
+    .chrome a, .chrome button {
+      color: var(--mute); background: none; border: 0; cursor: pointer;
+      font: inherit; font-size: 0.875rem; text-decoration: none;
+    }
+    .chrome a:hover, .chrome button:hover { color: var(--ink); }
+    main {
+      max-width: 42rem;
+      margin: 0 auto;
+      padding: 4.5rem 1.25rem 5rem 1.5rem;
+      text-align: center;
+    }
+    .eyebrow {
+      font-size: 0.7rem;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--mute);
+      margin-bottom: 0.75rem;
+    }
+    h1 {
+      font-family: var(--font-display);
+      font-weight: 600;
+      font-size: clamp(2.4rem, 6vw, 3.25rem);
+      margin: 0;
+      letter-spacing: -0.02em;
+      display: inline-block;
+      border-bottom: 3px solid var(--signal-red);
+      padding-bottom: 0.15rem;
+      animation: underline-draw 0.45s ease-out both;
+    }
+    @keyframes underline-draw {
+      from { border-bottom-color: transparent; }
+      to { border-bottom-color: var(--signal-red); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      h1 { animation: none; }
+    }
+    .lede {
+      color: var(--mute);
+      max-width: 26rem;
+      margin: 1rem auto 2.25rem;
+      line-height: 1.55;
+      font-size: 1.05rem;
+    }
+    input[type="text"] {
+      width: 100%;
+      padding: 1rem 1.15rem;
+      font-size: 1.05rem;
+      font-family: inherit;
+      color: var(--ink);
+      background: var(--panel);
+      border: 1px solid var(--rule);
+      border-radius: 0.55rem;
+    }
+    input:focus {
+      outline: 2px solid var(--flag-yellow);
+      outline-offset: 2px;
+      border-color: var(--ink);
+    }
+    .cta {
+      margin-top: 1.5rem;
+      padding: 0.8rem 2.25rem;
+      font-weight: 600;
+      font-family: inherit;
+      font-size: 0.95rem;
+      color: var(--ink);
+      background: var(--flag-yellow);
+      border: 0;
+      border-radius: 0.55rem;
+      cursor: pointer;
+    }
+    .cta:hover { filter: brightness(0.97); }
+    .cite {
+      color: var(--signal-red);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+  </style>
+</head>
+<body>
+  <header class="chrome">
+    <span aria-hidden="true"></span>
+    <nav style="display:flex;gap:1.25rem;align-items:center">
+      <a href="#library">Library</a>
+      <button type="button" aria-label="Settings">Settings</button>
+    </nav>
+  </header>
+  <main>
+    <p class="eyebrow">Verifiable research</p>
+    <h1>Search Agent</h1>
+    <p class="lede">You define the question. We search, extract, and cite every claim.</p>
+    <input type="text" placeholder="What do you want to research?" />
+    <div><button class="cta" type="button">Continue to brief →</button></div>
+    <p style="margin-top:2.25rem;font-size:0.875rem;color:var(--mute)">
+      Citation example: <a class="cite" href="#">source.example</a>
+    </p>
+  </main>
+</body>
+</html>
