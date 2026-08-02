@@ -3,7 +3,7 @@
 > **Single source of truth** for implementation progress. Update this file at the end of each Step.
 
 **Current phase:** Wave 12g Signal Flag UI (red / white / yellow)  
-**Next step:** Live verify Vercel restyle; brief direction quality if needed
+**Next step:** Wave 12h Direction Contract + Report Contract — see [docs/2026-08-02-architecture-review-brief-and-report.md](docs/2026-08-02-architecture-review-brief-and-report.md)
 
 ## Product constraints (personal use)
 
