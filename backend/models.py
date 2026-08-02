@@ -91,6 +91,10 @@ class ResearchBrief(BaseModel):
     success_criteria: list[str] = Field(default_factory=list)
     assumed_defaults: list[str] = Field(default_factory=list)
     overview_markdown: str = ""
+    fallback_direction_ids: list[str] = Field(
+        default_factory=list,
+        description="Directions the engine had to rewrite from templates (Wave 12h)",
+    )
     confirmed: bool = False
 
 

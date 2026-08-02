@@ -316,6 +316,12 @@ function BriefWizardInner() {
           <p className="text-xs text-[var(--muted)]">
             Framework: {brief.framework_id} · {brief.dimensions.length} 条研究指令
           </p>
+          {brief.fallback_direction_ids?.length ? (
+            <p className="text-xs text-[var(--signal)] border-l-2 border-[var(--signal)] pl-2">
+              有 {brief.fallback_direction_ids.length} 条方向由模板补写（模型未通过质量校验），
+              建议用下方反馈补充具体实体后重新生成。
+            </p>
+          ) : null}
           {brief.success_criteria?.length ? (
             <div>
               <p className="text-xs uppercase tracking-wide text-[var(--muted)] mb-1">

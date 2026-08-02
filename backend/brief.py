@@ -8,7 +8,21 @@ from __future__ import annotations
 import json
 import re
 
+from brief_rubric import (
+    INSTRUCTION_VERBS_ZH as _INSTRUCTION_VERBS_ZH,
+    RubricResult,
+    check_direction,
+    check_instruction,
+    contains_skeleton_phrase,
+    harvest_entities,
+    is_skeleton_title,
+    topic_is_zh,
+    weak_query,
+)
 from frameworks import (
+    example_instruction,
+    example_seed_queries,
+    few_shot_block,
     framework_forbidden_phrases,
     framework_prompt_block,
     get_framework,
@@ -55,16 +69,11 @@ BRIEF_SYSTEM_PROMPT = """你是资深行业研究策划（不是百科问答助�
 什么叫好的研究计划：
 - 5–6 条编号方向，每条是一条完整、可执行的检索指令。
 - 动词开头（调研/梳理/评估/研究/分析/对比/探索），点名具体对象：市场、品类、平台、监管、物流、支付、公司、指标。
+- 每条 direction_detail 至少含 2 个具名实体；entities 与 must_answer 必填。
 - 读完就能直接拿去搜；不是栏目名、不是英文骨架、不是空泛「机会分析」。
 
 ════════════════════════════════
-【金标准范例】选题：中国商品卖到瑞士的跨境电商机会
-(1) 调研瑞士跨境电商市场规模、消费习惯及对中国商品的总体需求与买家偏好。
-(2) 梳理适合中国商品出口瑞士的高潜力品类，如消费电子、家居用品、户外运动装备和时尚服饰等。
-(3) 评估中国卖家进入瑞士的主要销售渠道，包括本土平台（如 Galaxus）、国际电商平台（如 Temu、AliExpress、Amazon）及 DTC 独立站模式。
-(4) 研究中瑞贸易政策与法规，包括中瑞自贸协定关税优惠、瑞士工业品关税政策、增值税（MWST）及合规认证要求。
-(5) 探索跨境物流与交付方案，分析最后一公里配送、退换货流程及瑞士本土主流支付方式（如 TWINT、账单支付）。
-(6) 综合分析中国商品在瑞士市场的核心竞争优势、潜在风险（如高标准服务需求、多语言运营）及落地建议。
+【金标准范例】{few_shot_examples}
 ════════════════════════════════
 
 【禁止输出】（出现即不合格）
@@ -104,6 +113,8 @@ JSON schema：
       "title": "短中文标题",
       "research_goal": "答完本方向应得到什么（中文）",
       "direction_detail": "调研/梳理/评估……（完整可执行指令，含具体实体）",
+      "entities": ["具名实体1", "具名实体2"],
+      "must_answer": ["本方向必须回答的具体问题"],
       "queries": ["含实体的检索词1", "含实体的检索词2"],
       "priority": 1,
       "info_type": "facts",
@@ -131,32 +142,22 @@ BRIEF_REVISE_PROMPT = """根据用户反馈修订研究计划。保持 Gemini �
 只返回同 schema 的合法 JSON。"""
 
 
-_ENGLISH_SKELETON_TITLES = {
-    "industry structure and competitive landscape",
-    "regulation and market access",
-    "demand segments and use cases",
-    "entrant capabilities and comparable products",
-    "commercial opportunities and business models",
-    "risks and barriers",
-    "rough opportunity sizing",
-    "industry overview",
-    "market size and drivers",
-    "key players",
-    "trends and outlook",
-    "risks and open questions",
-    "player map",
-    "shares and ranking",
-    "product and offer comparison",
-    "competitive dynamics",
-    "fundraising",
-    "deal volume and deployment",
-    "deal volume",
-    "returns and spreads",
-    "credit risk",
-    "products and evergreen structures",
-    "products and evergreen",
-    "relative value",
-}
+BRIEF_REWRITE_PROMPT = """以下研究方向未通过质量校验，请只重写这些条目，其余方向不要动。
+
+选题：{topic}
+
+不合格条目与原因：
+{failures}
+
+重写要求：
+- 保持每条的 phase_id 与 priority 不变。
+- direction_detail：动词开头的完整中文指令，30–120 字，至少 2 个具名实体（平台/监管/公司/品类/指标）。
+- research_goal：答完该方向应得到什么产出物，措辞不得与 direction_detail 重复。
+- entities：≥2 个具名实体；must_answer：1–2 个具体问题。
+- queries：2–4 条含实体的可搜字符串，禁止「选题 + 英文标题」。
+
+只返回被重写条目的 JSON：{{"dimensions": [ ... ]}}"""
+
 
 _WEAK_BRIEF_MODEL_MARKERS = (
     "mini", "flash", "haiku", "nano", "lite", "tiny", "small",
@@ -301,162 +302,30 @@ def _answers_block(answers: dict[str, str], questions: list[dict]) -> str:
     return text or "(No answers provided — use framework defaults and list assumed_defaults.)"
 
 
-def _topic_is_zh(topic: str) -> bool:
-    return bool(re.search(r"[\u4e00-\u9fff]", topic))
-
-
-def _is_skeleton_title(title: str) -> bool:
-    t = title.strip().lower()
-    if t in _ENGLISH_SKELETON_TITLES:
-        return True
-    return _contains_skeleton_phrase(t)
-
-
-def _contains_skeleton_phrase(text: str, extra: set[str] | None = None) -> bool:
-    """True if text embeds a known English framework skeleton label or goal."""
-    low = re.sub(r"\s+", " ", (text or "").strip().lower())
-    if not low:
-        return False
-    banned = set(_ENGLISH_SKELETON_TITLES)
-    if extra:
-        banned |= {x.strip().lower() for x in extra if x and len(x.strip()) >= 8}
-    return any(s in low for s in banned)
-
-
-_INSTRUCTION_VERBS_ZH = (
-    "调研", "梳理", "评估", "研究", "分析", "对比", "探索", "综合", "查找", "绘制", "追踪", "概述", "粗估",
-)
-_INSTRUCTION_VERBS_EN = (
-    "research", "map", "identify", "assess", "analyze", "compare", "survey",
-    "evaluate", "explore", "outline", "review", "examine",
-)
+# Rubric owns the judging vocabulary (Wave 12h Step 87); brief keeps thin aliases.
+_topic_is_zh = topic_is_zh
+_is_skeleton_title = is_skeleton_title
+_contains_skeleton_phrase = contains_skeleton_phrase
+_weak_query = weak_query
+_harvest_entities = harvest_entities
 
 
 def _is_good_instruction(text: str, topic: str, *, forbidden: set[str] | None = None) -> bool:
-    """Gemini-style plan line: verb-led, concrete, not an English skeleton dump."""
-    t = (text or "").strip()
-    if len(t) < 16:
-        return False
-    if _contains_skeleton_phrase(t, forbidden):
-        return False
-    # English goal fragments like "Who buys what — B2B..." / "Order-of-magnitude..."
-    if re.match(r"^(who|what|how|why|where|which|order-of-magnitude|market size)\b", t, re.I):
-        if _topic_is_zh(topic):
-            return False
-    if _topic_is_zh(topic):
-        if not re.search(r"[\u4e00-\u9fff]", t):
-            return False
-        if not any(t.startswith(v) for v in _INSTRUCTION_VERBS_ZH):
-            return False
-        return True
-    low = t.lower()
-    return any(low.startswith(v) for v in _INSTRUCTION_VERBS_EN)
-
-
-
-def _weak_query(q: str, topic: str, title: str) -> bool:
-    qn = re.sub(r"\s+", " ", q.strip().lower())
-    if not qn or len(qn) < 8:
-        return True
-    if _contains_skeleton_phrase(qn):
-        return True
-    # "topic + English title" pattern
-    combo = re.sub(r"\s+", " ", f"{topic} {title}".strip().lower())
-    if qn == combo or (title and qn.endswith(title.strip().lower())):
-        return True
-    if _is_skeleton_title(title) and title.lower() in qn:
-        return True
-    return False
-
-
-def _topic_hints(topic: str) -> dict[str, bool]:
-    t = topic.lower()
-    return {
-        "telecom": any(k in topic or k in t for k in (
-            "电信", "运营商", "联通", "移动", "电信", "swisscom", "sunrise", "salt",
-            "telecom", "mvno", "5g", "mobile",
-        )),
-        "swiss": any(k in topic or k in t for k in ("瑞士", "switzerland", "swiss", "zürich", "zurich")),
-        "china": any(k in topic or k in t for k in ("中国", "china", "联通", "中资", "出海")),
-        "ecommerce": any(k in topic or k in t for k in (
-            "跨境", "电商", "ecommerce", "e-commerce", "temu", "galaxus", "amazon",
-        )),
-    }
+    return check_instruction(text, topic, forbidden=forbidden).ok
 
 
 def _instruction_from_phase(topic: str, phase: dict) -> str:
-    """Deterministic verb-led instruction when LLM dumps skeleton text."""
+    """Last-resort verb-led instruction when the LLM still dumps skeleton text.
+
+    Domain wording lives in frameworks/examples/*.yaml, never in code.
+    """
     pid = str(phase.get("id") or "")
     goal = str(phase.get("goal") or phase.get("title") or "")
     zh = _topic_is_zh(topic)
-    hints = _topic_hints(topic)
 
-    # Domain-specific Gemini-style plans (preferred over generic templates)
-    if zh and hints["telecom"] and hints["swiss"]:
-        telecom_zh = {
-            "industry_structure": (
-                "调研瑞士电信市场的规模、增速与竞争格局，梳理 Swisscom、Sunrise、Salt 等主要运营商"
-                "的市占、用户数与收入结构（不含瑞士宏观经济/GDP）。"
-            ),
-            "regulation": (
-                "研究瑞士电信监管与市场准入：BAKOM/ComCom 职责、频谱与牌照、MVNO/批发规则，"
-                "以及外资或新进入者的合规门槛（围绕「{topic}」）。"
-            ).format(topic=topic),
-            "demand_segments": (
-                "梳理瑞士电信需求细分与使用场景：消费移动、B2B/政企、华人/侨民漫游、批发/MVNO、"
-                "固网宽带与 ICT/云，并判断哪些细分对「{topic}」最有商业价值。"
-            ).format(topic=topic),
-            "own_capabilities": (
-                "对比中国联通（或进入方）可输出的产品能力与瑞士在位运营商/MVNO 的可比套餐、"
-                "国际漫游、政企与跨境连接服务，找出可对标与差异化点。"
-            ),
-            "opportunities": (
-                "评估「{topic}」的具体进入路径与商业模式：批发/漫游合作、MVNO、政企专线、"
-                "华人市场 niche、与本地运营商/渠道伙伴的合作方式。"
-            ).format(topic=topic),
-            "risks": (
-                "分析进入瑞士电信市场的主要风险：在位者竞争、监管与频谱门槛、渠道与品牌、"
-                "资本强度与本地化运营要求。"
-            ),
-            "sizing": (
-                "在有公开数据的前提下，粗估与「{topic}」相关的机会数量级（用户/收入区间），"
-                "并明确标注数据缺口与不确定性。"
-            ).format(topic=topic),
-        }
-        if pid in telecom_zh:
-            return telecom_zh[pid]
-
-    if zh and hints["ecommerce"] and hints["swiss"]:
-        ecom_zh = {
-            "industry_structure": (
-                "调研瑞士跨境电商市场规模、消费习惯及对中国商品的总体需求与买家偏好。"
-            ),
-            "demand_segments": (
-                "梳理适合中国商品出口瑞士的高潜力品类，如消费电子、家居用品、户外运动装备和时尚服饰等。"
-            ),
-            "opportunities": (
-                "评估中国卖家进入瑞士的主要销售渠道，包括本土平台（如 Galaxus）、国际电商平台"
-                "（如 Temu、AliExpress、Amazon）及 DTC 独立站模式。"
-            ),
-            "regulation": (
-                "研究中瑞贸易政策与法规，包括中瑞自贸协定关税优惠、瑞士工业品关税政策、"
-                "增值税（MWST）及合规认证要求。"
-            ),
-            "own_capabilities": (
-                "探索跨境物流与交付方案，分析最后一公里配送、退换货流程及瑞士本土主流支付方式"
-                "（如 TWINT、账单支付）。"
-            ),
-            "risks": (
-                "综合分析中国商品在瑞士市场的核心竞争优势、潜在风险（如高标准服务需求、多语言运营）"
-                "及落地建议。"
-            ),
-            "sizing": (
-                "粗估中国商品对瑞跨境电商的机会量级（GMV/品类增速区间，仅在有公开数据时），"
-                "并明确标注数据缺口与不确定性。"
-            ),
-        }
-        if pid in ecom_zh:
-            return ecom_zh[pid]
+    from_example = example_instruction(topic, pid)
+    if from_example:
+        return from_example
 
     templates_zh = {
         "industry_structure": f"调研「{topic}」所在市场的规模、增速、主要玩家与市场份额（聚焦行业本身，不含宏观经济/GDP）。",
@@ -509,29 +378,10 @@ def _short_title_from_instruction(instruction: str, fallback: str) -> str:
 
 def _seed_queries_for_topic(topic: str, detail: str) -> list[str]:
     """Entity-rich fallback queries when LLM emits topic+skeleton titles."""
-    hints = _topic_hints(topic)
-    seeds: list[str] = []
-    if hints["telecom"] and hints["swiss"]:
-        seeds.extend([
-            "Swisscom Sunrise Salt market share Switzerland 2024",
-            "BAKOM ComCom telecom license Switzerland MVNO",
-            "Switzerland mobile subscribers ARPU B2B enterprise",
-            "China Unicom Switzerland roaming wholesale partnership",
-        ])
-    elif hints["ecommerce"] and hints["swiss"]:
-        seeds.extend([
-            "Switzerland cross-border e-commerce market size China",
-            "Galaxus Temu AliExpress Switzerland Chinese sellers",
-            "Switzerland MWST import VAT China FTA customs",
-            "TWINT Switzerland online payment last mile delivery",
-        ])
-    # Pull Latin / Chinese entity tokens from the instruction
-    for token in re.findall(
-        r"[A-Za-z][A-Za-z0-9&.-]{2,}|[\u4e00-\u9fff]{2,8}", detail or ""
-    ):
-        if token.lower() in {"the", "and", "for", "with", "from", "that", "this"}:
-            continue
-        tip = f"{token} {topic}".strip() if hints["swiss"] else f"{topic} {token}".strip()
+    seeds: list[str] = list(example_seed_queries(topic))
+    # Pull named entities out of the instruction itself
+    for token in harvest_entities(detail or "", max_n=8):
+        tip = f"{topic} {token}".strip()
         if tip not in seeds:
             seeds.append(tip)
         if len(seeds) >= 6:
@@ -644,6 +494,13 @@ def _parse_brief_payload(
     }
 
     dims: list[BriefDimension] = []
+    fallback_ids: list[str] = []
+
+    def _mark_fallback(direction_id: str) -> None:
+        did = direction_id or "方向"
+        if did not in fallback_ids:
+            fallback_ids.append(did)
+
     for item in raw.get("dimensions") or []:
         if not isinstance(item, dict):
             continue
@@ -663,6 +520,7 @@ def _parse_brief_payload(
             detail = _instruction_from_phase(topic, phase)
             title = _short_title_from_instruction(detail, phase_id or "方向")
             goal = detail
+            _mark_fallback(phase_id or title)
         elif (
             _is_skeleton_title(title)
             or _contains_skeleton_phrase(title, forbidden)
@@ -702,6 +560,7 @@ def _parse_brief_payload(
         phase = phase_by_id.get(d.phase_id) or {"id": d.phase_id, "goal": d.title}
         instruction = _instruction_from_phase(topic, phase)
         title = _short_title_from_instruction(instruction, d.phase_id or d.title or "方向")
+        _mark_fallback(d.direction_id or d.phase_id or title)
         fixed.append(_build_brief_dimension(
             title=title,
             goal=instruction,
@@ -728,6 +587,7 @@ def _parse_brief_payload(
         for i, phase in enumerate((fw.get("phases") or [])[:6]):
             instruction = _instruction_from_phase(topic, phase)
             title = _short_title_from_instruction(instruction, str(phase.get("id") or f"d{i}"))
+            _mark_fallback(str(phase.get("id") or title))
             rebuilt.append(_build_brief_dimension(
                 title=title,
                 goal=instruction,
@@ -751,6 +611,7 @@ def _parse_brief_payload(
                 continue
             instruction = _instruction_from_phase(topic, phase)
             title = _short_title_from_instruction(instruction, pid or "方向")
+            _mark_fallback(pid or title)
             dims.append(_build_brief_dimension(
                 title=title,
                 goal=instruction,
@@ -790,8 +651,99 @@ def _parse_brief_payload(
             str(s).strip() for s in (raw.get("assumed_defaults") or []) if str(s).strip()
         ],
         overview_markdown=overview,
+        fallback_direction_ids=[
+            fid for fid in fallback_ids
+            if any((d.direction_id or d.phase_id or d.title) == fid for d in dims)
+        ],
         confirmed=False,
     )
+
+
+def _brief_system_prompt(topic: str) -> str:
+    return BRIEF_SYSTEM_PROMPT.format(few_shot_examples=few_shot_block(topic))
+
+
+def _judge_directions(
+    dims: list[dict],
+    topic: str,
+    forbidden: set[str],
+) -> list[tuple[int, dict, RubricResult]]:
+    """Directions worth a rewrite, with the reasons to hand back to the LLM."""
+    out: list[tuple[int, dict, RubricResult]] = []
+    for i, item in enumerate(dims):
+        result = check_direction(item, topic, forbidden=forbidden)
+        if result.reasons:
+            out.append((i, item, result))
+    return out
+
+
+async def _rewrite_failed_directions(
+    raw: dict,
+    *,
+    topic: str,
+    framework_id: str,
+    model: str,
+) -> dict:
+    """Judge → rewrite only the failing directions → keep the better version."""
+    dims = [d for d in (raw.get("dimensions") or []) if isinstance(d, dict)]
+    if not dims:
+        return raw
+    forbidden = framework_forbidden_phrases(framework_id)
+    failures = _judge_directions(dims, topic, forbidden)
+    if not failures:
+        return raw
+
+    lines = []
+    for i, item, result in failures[:6]:
+        current = str(item.get("direction_detail") or item.get("research_goal") or "")
+        lines.append(
+            f"- index={i} phase_id={item.get('phase_id') or ''}\n"
+            f"  当前：{current[:150]}\n"
+            f"  问题：{result.explain_zh()}"
+        )
+    prompt = BRIEF_REWRITE_PROMPT.format(topic=topic, failures="\n".join(lines))
+    try:
+        response = await get_openai_client().chat.completions.create(
+            model=model,
+            messages=[
+                {"role": "system", "content": _brief_system_prompt(topic)},
+                {"role": "user", "content": prompt},
+            ],
+            temperature=0.2,
+            max_tokens=2500,
+        )
+    except Exception:
+        return raw
+
+    payload = _parse_json_object(response.choices[0].message.content or "")
+    rewritten = [
+        d for d in (payload.get("dimensions") or []) if isinstance(d, dict)
+    ]
+    if not rewritten:
+        return raw
+
+    by_phase = {
+        str(d.get("phase_id") or ""): d
+        for d in rewritten
+        if str(d.get("phase_id") or "")
+    }
+    for pos, (index, item, result) in enumerate(failures):
+        phase_id = str(item.get("phase_id") or "")
+        candidate = by_phase.get(phase_id)
+        if candidate is None and pos < len(rewritten) and not by_phase:
+            candidate = rewritten[pos]
+        if not candidate:
+            continue
+        merged = {**item, **{k: v for k, v in candidate.items() if v}}
+        merged["phase_id"] = phase_id or str(candidate.get("phase_id") or "")
+        merged["priority"] = item.get("priority") or pos + 1
+        after = check_direction(merged, topic, forbidden=forbidden)
+        improved = (after.ok and not result.ok) or len(after.reasons) < len(result.reasons)
+        if improved:
+            dims[index] = merged
+
+    raw["dimensions"] = dims
+    return raw
 
 
 async def generate_research_brief(
@@ -815,13 +767,16 @@ async def generate_research_brief(
     response = await get_openai_client().chat.completions.create(
         model=model,
         messages=[
-            {"role": "system", "content": BRIEF_SYSTEM_PROMPT},
+            {"role": "system", "content": _brief_system_prompt(topic)},
             {"role": "user", "content": prompt},
         ],
         temperature=0.2,
         max_tokens=5000,
     )
     raw = _parse_json_object(response.choices[0].message.content or "")
+    raw = await _rewrite_failed_directions(
+        raw, topic=topic, framework_id=fid, model=model,
+    )
     return _parse_brief_payload(raw, topic=topic, framework_id=fid, answers=answers)
 
 
@@ -840,7 +795,7 @@ async def revise_research_brief(
     response = await get_openai_client().chat.completions.create(
         model=model,
         messages=[
-            {"role": "system", "content": BRIEF_SYSTEM_PROMPT},
+            {"role": "system", "content": _brief_system_prompt(brief.topic)},
             {"role": "user", "content": prompt},
         ],
         temperature=0.2,
@@ -849,6 +804,9 @@ async def revise_research_brief(
     raw = _parse_json_object(response.choices[0].message.content or "")
     if not raw:
         return brief
+    raw = await _rewrite_failed_directions(
+        raw, topic=brief.topic, framework_id=brief.framework_id, model=model,
+    )
     return _parse_brief_payload(
         raw,
         topic=brief.topic,

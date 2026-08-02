@@ -1,0 +1,27 @@
+# Few-shot example plan — Chinese carrier entering the Swiss telecom market.
+id: swiss_telecom_zh
+language: zh
+topic_example: 中国联通进入瑞士电信市场的机会
+match:
+  - ["电信", "运营商", "联通", "移动", "swisscom", "sunrise", "salt", "telecom", "mvno", "5g"]
+  - ["瑞士", "switzerland", "swiss", "zürich", "zurich"]
+seed_queries:
+  - Swisscom Sunrise Salt market share Switzerland 2024
+  - BAKOM ComCom telecom license Switzerland MVNO
+  - Switzerland mobile subscribers ARPU B2B enterprise
+  - China Unicom Switzerland roaming wholesale partnership
+directions:
+  - phase_id: industry_structure
+    detail: 调研瑞士电信市场的规模、增速与竞争格局，梳理 Swisscom、Sunrise、Salt 等主要运营商的市占、用户数与收入结构（不含瑞士宏观经济/GDP）。
+  - phase_id: regulation
+    detail: 研究瑞士电信监管与市场准入：BAKOM/ComCom 职责、频谱与牌照、MVNO/批发规则，以及外资或新进入者的合规门槛（围绕「{topic}」）。
+  - phase_id: demand_segments
+    detail: 梳理瑞士电信需求细分与使用场景：消费移动、B2B/政企、华人/侨民漫游、批发/MVNO、固网宽带与 ICT/云，并判断哪些细分对「{topic}」最有商业价值。
+  - phase_id: own_capabilities
+    detail: 对比中国联通（或进入方）可输出的产品能力与瑞士在位运营商/MVNO 的可比套餐、国际漫游、政企与跨境连接服务，找出可对标与差异化点。
+  - phase_id: opportunities
+    detail: 评估「{topic}」的具体进入路径与商业模式：批发/漫游合作、MVNO、政企专线、华人市场 niche、与本地运营商/渠道伙伴的合作方式。
+  - phase_id: risks
+    detail: 分析进入瑞士电信市场的主要风险：在位者竞争、监管与频谱门槛、渠道与品牌、资本强度与本地化运营要求。
+  - phase_id: sizing
+    detail: 在有公开数据的前提下，粗估与「{topic}」相关的机会数量级（用户/收入区间），并明确标注数据缺口与不确定性。

@@ -1,0 +1,30 @@
+# Few-shot example plan — Chinese cross-border e-commerce into Switzerland.
+# Used as (a) prompt few-shot and (b) last-resort instruction fallback.
+id: swiss_ecommerce_zh
+language: zh
+gold_standard: true
+topic_example: 中国商品卖到瑞士的跨境电商机会
+# Every group must have at least one keyword hit for the example to apply.
+match:
+  - ["跨境", "电商", "ecommerce", "e-commerce", "temu", "galaxus", "aliexpress"]
+  - ["瑞士", "switzerland", "swiss"]
+seed_queries:
+  - Switzerland cross-border e-commerce market size China
+  - Galaxus Temu AliExpress Switzerland Chinese sellers
+  - Switzerland MWST import VAT China FTA customs
+  - TWINT Switzerland online payment last mile delivery
+directions:
+  - phase_id: industry_structure
+    detail: 调研瑞士跨境电商市场规模、消费习惯及对中国商品的总体需求与买家偏好。
+  - phase_id: demand_segments
+    detail: 梳理适合中国商品出口瑞士的高潜力品类，如消费电子、家居用品、户外运动装备和时尚服饰等。
+  - phase_id: opportunities
+    detail: 评估中国卖家进入瑞士的主要销售渠道，包括本土平台（如 Galaxus）、国际电商平台（如 Temu、AliExpress、Amazon）及 DTC 独立站模式。
+  - phase_id: regulation
+    detail: 研究中瑞贸易政策与法规，包括中瑞自贸协定关税优惠、瑞士工业品关税政策、增值税（MWST）及合规认证要求。
+  - phase_id: own_capabilities
+    detail: 探索跨境物流与交付方案，分析最后一公里配送、退换货流程及瑞士本土主流支付方式（如 TWINT、账单支付）。
+  - phase_id: risks
+    detail: 综合分析中国商品在瑞士市场的核心竞争优势、潜在风险（如高标准服务需求、多语言运营）及落地建议。
+  - phase_id: sizing
+    detail: 粗估中国商品对瑞跨境电商的机会量级（GMV/品类增速区间，仅在有公开数据时），并明确标注数据缺口与不确定性。

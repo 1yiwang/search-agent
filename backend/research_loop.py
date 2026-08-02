@@ -132,6 +132,11 @@ async def _run_research_loop_body(
             "deprioritize": (brief.deprioritize or [])[:8],
             "problem_restatement": (brief.problem_restatement or "")[:300],
         })
+        if brief.fallback_direction_ids:
+            await emit("brief_fallback_used", {
+                "direction_ids": brief.fallback_direction_ids[:8],
+                "count": len(brief.fallback_direction_ids),
+            })
 
     candidates = filter_candidates(request.topic)
     await emit("catalog_filtered", {

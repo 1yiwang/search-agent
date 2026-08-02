@@ -73,6 +73,10 @@ export interface BriefDimension {
   priority: number;
   info_type: string;
   phase_id?: string;
+  direction_id?: string;
+  entities?: string[];
+  must_answer?: string[];
+  budget_weight?: number;
 }
 
 export interface ResearchBrief {
@@ -87,6 +91,7 @@ export interface ResearchBrief {
   success_criteria: string[];
   assumed_defaults: string[];
   overview_markdown: string;
+  fallback_direction_ids?: string[];
   confirmed: boolean;
 }
 

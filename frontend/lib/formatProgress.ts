@@ -74,6 +74,10 @@ export function formatProgressEvent(event: SSEEvent): string {
       return `Bound to brief: ${d.framework_id || ""}`;
     case "direction_plan":
       return `Directions: ${Array.isArray(d.directions) ? (d.directions as unknown[]).length : "?"} · seeds ${(d.seed_queries as string[])?.length || 0}`;
+    case "direction_budget":
+      return `Direction budget set (${(d.seed_query_count as number) || 0} seed queries)`;
+    case "brief_fallback_used":
+      return `模板补写方向 ${d.count || 0} 条：${((d.direction_ids as string[]) || []).slice(0, 3).join(", ")}`;
     case "draft_ready":
       return `Evidence draft: ${d.outline_id || "outline"} · ${d.filled_slots || 0}/${d.slot_count || "?"} slots · quarantine ${d.quarantine_count || 0}`;
     case "dimension_start":

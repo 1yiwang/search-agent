@@ -3,7 +3,7 @@
 > **Single source of truth** for implementation progress. Update this file at the end of each Step.
 
 **Current phase:** Wave 12g Signal Flag UI (red / white / yellow)  
-**Next step:** Wave 12h Step 87 — Brief rubric + targeted regenerate; examples YAML
+**Next step:** Wave 12h Step 88 — Report bilingual skeleton + thesis gate + arguments == directions
 
 ## Product constraints (personal use)
 
@@ -264,7 +264,7 @@
 | Step | Task | Status |
 |------|------|--------|
 | 86 | Direction budget + leftover queries + Chinese coverage tokens | Done |
-| 87 | Brief rubric + targeted regenerate; examples YAML (no hardcode) | Planned |
+| 87 | Brief rubric + targeted regenerate; examples YAML (no hardcode) | Done |
 | 88 | Report bilingual skeleton + thesis gate + args==directions | Planned |
 | 89 | Citation integrity gate + synthesis strong model + L1/L2 eval | Planned |
 
