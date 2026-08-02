@@ -2,6 +2,9 @@
 
 > 项目定义文档。技术架构随开发推进逐步细化。
 > 创建：2026-06-21
+>
+> **想快速了解现在做到哪一步，直接看文末的 [当前实现状态](#当前实现状态2026-08-02)。**
+> 本文前半部分是 2026-06-21 的原始愿景，刻意保持不改，用来对照「当初想做什么」与「后来实际做成什么」。
 
 ---
 
@@ -198,6 +201,87 @@ Reporter（确定性 + LLM 表达）
 | 3 | 是否需要前端，还是先 CLI | CLI 先跑通链路 | MVP 阶段 |
 | 4 | 单体 Agent 还是多 Agent 编排 | 先单 Agent 跑通，再拆多 Agent | 阶段 2 |
 | 5 | 是否需要 Sandbox（Docker 隔离浏览器） | 阶段 2 引入 | 安全需求出现时 |
+
+---
+
+## 当前实现状态（2026-08-02）
+
+> 这一节是给「三个月后回来看」的自己写的：产品已经跑通到什么程度、原始设计哪些成立哪些改道、
+> 现在的核心抽象是什么、以及下一步该从哪里接手。
+> 逐步进度看 [ROADMAP.md](ROADMAP.md)，工程细节看 [AGENTS.md](AGENTS.md)。
+
+### 一句话现状
+
+已经是**日常可用的个人深度研究工具**：本机 FastAPI + Next.js，输入选题 → 澄清 → 确认研究计划 →
+多跳搜索 → 事实提取与验证 → 生成带可点击引用的中文/英文报告，部署成静态 HTML。
+阶段 1（MVP）与阶段 2（多跳、交叉验证、置信度）已完成，阶段 3 完成了 Web UI 与增量追踪（Watchlist），
+未做用户偏好学习与公网部署。
+
+### 原始愿景 vs 实际落地
+
+| 原始设计 | 实际做成 | 为什么改 |
+|---|---|---|
+| Planner 自动拆解问题 | **Brief-first**：澄清提问 → LLM 生成研究计划 → 用户确认后才检索 | propose-only 的精神保留了，但「让用户看懂并改动计划」比「自动拆得更细」更有价值 |
+| Playwright + CDP 真实浏览器 | 分层抓取：httpx → Jina → Tavily，暂未启用浏览器层 | 前三层已能覆盖绝大多数目标站，浏览器层成本高，留给真正被墙的信源 |
+| Supabase + 事件溯源表 | 文件存储：`reports/`、`data/watchlists/`、JSONL 事件日志 | 个人自用，$0 成本优先；事件溯源的实质（append-only 可回放）保留了 |
+| Vercel / Railway 部署 | 本机 Mode B（可选隧道）+ 静态报告页 | PC 关机即停，省钱且攻击面最小 |
+| 多 Agent 编排 | 单管线 + 确定性路由（Source Router / coverage 驱动多跳） | 多 Agent 的收益在这里不明显，确定性编排更好调试 |
+| 通用搜索 | 通用 + 两个垂直增强（DACH 情报、私募债 investor brief） | 垂直信源目录（`sources/catalog/`）让召回质量拉开差距 |
+
+### 现在的核心抽象：两份契约
+
+这是 Wave 12h（Step 86–89）确立的骨架，也是理解当前代码的最短路径。原来的问题是
+「用户批准的研究计划，和最后写出来的报告，中间没有强绑定」——方向会丢、结论会跑题、引用是摆设。
+解法是把两端都变成可校验的契约。
+
+**Direction Contract（方向契约）** — 批准的每条研究方向都必须被真正执行：
+
+- 方向由 LLM 生成，但由代码判定质量（`brief_rubric.py`：动词开头、点名具名实体、语言与选题一致）；
+  不合格的方向单条重写，而不是整份重来。
+- 领域范文放在 `frameworks/examples/*.yaml`，作为 few-shot 与兜底，代码里不再硬编码中文模板。
+- 每条方向带 `direction_id` / `entities` / `must_answer` / `budget_weight`，检索预算按方向分配，
+  未执行的 query 回填到下一跳，不会静默丢弃。
+
+**Report Contract（报告契约）** — 报告结构由批准的方向决定，每句话可回溯：
+
+- 章节数严格等于方向数，顺序一致；没有证据的方向不是消失，而是诚实产出
+  「已执行哪些检索 / 可能原因 / 建议补什么信源」。
+- 结论（thesis）必须过门禁：是判断而非过程说明、语言与选题一致、含量化锚点与限定条件。
+  不过则定向重写一次，再不过落到确定性判断模板。
+- 引用是硬门禁（`citation_integrity.py`）：`[n]` 必须属于该章节分配到的证据，越界的剔除；
+  缺引用不自动补齐，改为降级；正文数字必须能在被引原文里找到。
+- 报告骨架按选题语言渲染（`report_labels.yaml`），中文报告不出现英文标题；
+  过程指标（多少条事实、多少个来源）移到文末附录——情报简报不该以过程开场。
+
+### 模块地图（按数据流）
+
+| 阶段 | 模块 | 职责 |
+|---|---|---|
+| 澄清与计划 | `meta.py` `brief.py` `brief_rubric.py` `frameworks/` | 澄清问题 → ResearchBrief → 方向质量判定与重写 |
+| 检索 | `research_loop.py` `query_expand.py` `sources/` `providers/` | coverage 驱动多跳、方向分预算扩维、信源路由与降级 |
+| 理解 | `extraction.py` `dedup.py` `verifier` | LLM 提取结构化事实 → 去重 → 跨源验证与置信度 |
+| 成文 | `report_synthesis.py` `report_outlines/` `citation_integrity.py` `reporter.py` | 两阶段成文（证据归槽 → 长论述）+ 三道门禁 + Markdown |
+| 交付 | `deploy.py` `frontend/` | 静态报告页 + SSE 实时进度 + 引文侧栏高亮 |
+| 追踪 | `watchlist` `delta` | 同一选题再跑并对比增量 |
+
+分工原则始终是原始设计那条：**代码不该替 LLM 写字，LLM 不该替代码做账。**
+预算、停止条件、事实归属、引用校验由代码定；网页理解、方向文案、正文表达交给 LLM，
+且用强模型（`llm_context.get_strong_model()`），降级时明确告知而不是悄悄换弱模型。
+
+### 质量门禁
+
+| 层 | 内容 | 是否联网 | 命令 |
+|---|---|---|---|
+| L1 | 方向 rubric、实体密度、`direction_id` 唯一 | 否 | `python -m eval.offline --layer l1` |
+| L2 | 固定 facts + brief → thesis / 章节数 / 引用完整性 / 双语骨架 | 否 | `python -m eval.offline --layer l2` |
+| L3 | golden case 端到端召回与覆盖度 | 是 | `python -m eval.run` |
+
+### 当前边界（想清楚了但还没做）
+
+- 事实在检索阶段就打 `direction_id`，让归槽从「Pass A 猜」变成确定性落槽。
+- 第二搜索源 failover 与早停策略。
+- market_entry 类选题去掉 signal ledger 这个从私募债借来的错误抽象。
+- 公网 always-on 部署与用户偏好学习——个人自用场景下优先级都不高。
 
 ---
 
