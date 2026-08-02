@@ -70,7 +70,7 @@ export function CitationPanel({
     <div className={shell}>
       <div className="flex items-start justify-between gap-3 px-5 pt-5 pb-3 shrink-0 border-b border-[var(--border)]">
         <div className="min-w-0 flex-1">
-          <p className="text-[10px] uppercase tracking-wider text-[var(--accent)] mb-1">
+          <p className="text-[10px] uppercase tracking-wider text-[var(--signal)] mb-1">
             Source [{citation.index}]
           </p>
           <h3
@@ -104,7 +104,7 @@ export function CitationPanel({
             anchor={citation.highlight_anchor}
           />
         ) : (
-          <blockquote className="border-l-2 border-[var(--accent)] pl-3 text-[var(--muted)] italic text-sm">
+          <blockquote className="border-l-2 border-[var(--signal)] pl-3 text-[var(--muted)] italic text-sm">
             &ldquo;{citation.quoted_text}&rdquo;
           </blockquote>
         )}
@@ -117,7 +117,7 @@ export function CitationPanel({
               href={highlightUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center justify-center rounded-md border border-[var(--accent)]/40 bg-[var(--accent)]/10 px-3 py-2 text-[var(--accent)] hover:bg-[var(--accent)]/20 transition-colors"
+              className="inline-flex items-center justify-center rounded-md border border-[var(--signal)]/40 bg-[var(--signal)]/10 px-3 py-2 text-[var(--signal)] hover:bg-[var(--signal)]/15 transition-colors"
             >
               新标签页打开并高亮
             </a>

@@ -37,9 +37,9 @@ function firstSentence(text: string): string {
 
 function confidenceBadge(conf: string) {
   const styles: Record<string, string> = {
-    high: "bg-[var(--verify)]/15 text-[var(--verify)] border-[var(--verify)]/30",
-    medium: "bg-[var(--accent)]/10 text-[var(--accent)] border-[var(--accent)]/30",
-    low: "bg-[var(--muted)]/10 text-[var(--muted)] border-[var(--border)]",
+    high: "bg-[var(--verify)]/15 text-[var(--verify)] border-[var(--verify)]/35",
+    medium: "bg-[var(--accent)]/25 text-[var(--ink)] border-[var(--accent)]/50",
+    low: "bg-[var(--muted)]/15 text-[var(--muted)] border-[var(--border)]",
   };
   return (
     <span
@@ -198,7 +198,7 @@ function ArgumentsList({
         const body = (arg.body || arg.detail || "").trim();
         return (
           <li key={`${i}-${arg.claim.slice(0, 24)}`} className="flex gap-4">
-            <span className="font-display text-2xl text-[var(--accent-dim)] shrink-0 w-8 text-right tabular-nums leading-none pt-1">
+            <span className="font-display text-2xl text-[var(--signal)] shrink-0 w-8 text-right tabular-nums leading-none pt-1">
               {i + 1}
             </span>
             <div className="min-w-0 border-l-2 border-[var(--border)] pl-4 flex-1">
@@ -424,7 +424,7 @@ export function ReportView({
 
       <div className={`${PAGE_GUTTER} py-12 sm:py-14`}>
         <header className="mb-2">
-          <p className="text-xs uppercase tracking-[0.22em] text-[var(--accent-dim)] mb-3">
+          <p className="text-xs uppercase tracking-[0.22em] text-[var(--signal)] mb-3">
             {briefLabel}
           </p>
           <h1 className="font-display brief-title text-[var(--ink)]">{report.topic}</h1>

@@ -74,13 +74,13 @@ export function SettingsSheet() {
         aria-label="Close settings"
         onClick={closeSettings}
       />
-      <aside className="relative z-10 flex h-full w-full max-w-md flex-col border-l border-[var(--border)] bg-[var(--surface)] shadow-none">
+      <aside className="relative z-10 flex h-full w-full max-w-md flex-col border-l border-[var(--border)] bg-[var(--bg)] shadow-none">
         <div className="flex items-center justify-between border-b border-[var(--border)] px-5 py-4">
           <h2 className="font-display text-xl text-[var(--ink)]">Settings</h2>
           <button
             type="button"
             onClick={closeSettings}
-            className="text-sm text-[var(--muted)] hover:text-[var(--ink)]"
+            className="text-sm text-[var(--muted)] hover:text-[var(--signal)]"
           >
             Close
           </button>
@@ -96,7 +96,7 @@ export function SettingsSheet() {
                 ? "text-[var(--muted)]"
                 : apiOnline
                   ? "text-[var(--verify)]"
-                  : "text-amber-700"
+                  : "text-[var(--signal)]"
             }`}
           >
             {apiOnline === null

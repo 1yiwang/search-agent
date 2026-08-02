@@ -29,7 +29,7 @@ export function OfflineBanner() {
 
   return (
     <div
-      className="border-b border-amber-700/40 bg-amber-950/40 px-4 py-2 text-center text-xs text-amber-100"
+      className="border-b border-[var(--signal)]/30 bg-[var(--accent)]/35 px-4 py-2 text-center text-xs text-[var(--ink)]"
       role="status"
     >
       API offline — run{" "}

@@ -9,18 +9,21 @@ export function AppChrome() {
   const { openSettings } = useSettingsUi();
   const isHome = pathname === "/";
   const isLogin = pathname === "/login";
-  const libraryActive = pathname.startsWith("/library") || pathname.startsWith("/history") || pathname.startsWith("/watchlist");
+  const libraryActive =
+    pathname.startsWith("/library") ||
+    pathname.startsWith("/history") ||
+    pathname.startsWith("/watchlist");
 
   if (isLogin) return null;
 
   return (
-    <header className="sticky top-0 z-40 border-b border-[var(--border)]/60 bg-[var(--bg)]/90 backdrop-blur-sm">
+    <header className="sticky top-0 z-40 border-b border-[var(--border)] bg-[var(--bg)]/92 backdrop-blur-sm">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-2.5">
         <div className="min-w-0">
           {!isHome ? (
             <Link
               href="/"
-              className="font-display text-lg text-[var(--ink)] hover:text-[var(--accent)] transition-colors"
+              className="font-display brand-title text-lg text-[var(--ink)] hover:opacity-90 transition-opacity"
             >
               Search Agent
             </Link>

@@ -181,7 +181,7 @@ export default function PlanWizardPage() {
             type="button"
             onClick={handleClarify}
             disabled={loading || !topic.trim()}
-            className="rounded-lg bg-[var(--accent)] px-6 py-2.5 font-semibold text-[#1a1408] disabled:opacity-40"
+            className="rounded-lg bg-[var(--accent)] px-6 py-2.5 font-semibold text-[var(--cta-ink)] disabled:opacity-40"
           >
             {loading ? "Thinking…" : "Continue → clarify"}
           </button>
@@ -219,7 +219,7 @@ export default function PlanWizardPage() {
               type="button"
               onClick={handleGeneratePlan}
               disabled={loading}
-              className="rounded-lg bg-[var(--accent)] px-6 py-2.5 font-semibold text-[#1a1408] disabled:opacity-40"
+              className="rounded-lg bg-[var(--accent)] px-6 py-2.5 font-semibold text-[var(--cta-ink)] disabled:opacity-40"
             >
               {loading ? "Researching & planning…" : "Generate plan →"}
             </button>
@@ -258,7 +258,7 @@ export default function PlanWizardPage() {
             <button
               type="button"
               onClick={() => setStep(4)}
-              className="rounded-lg bg-[var(--accent)] px-6 py-2.5 font-semibold text-[#1a1408]"
+              className="rounded-lg bg-[var(--accent)] px-6 py-2.5 font-semibold text-[var(--cta-ink)]"
             >
               Review plan →
             </button>
@@ -292,7 +292,7 @@ export default function PlanWizardPage() {
                 type="button"
                 onClick={handleRevisePlan}
                 disabled={loading}
-                className="rounded-lg bg-[var(--accent)] px-6 py-2.5 font-semibold text-[#1a1408] disabled:opacity-40"
+                className="rounded-lg bg-[var(--accent)] px-6 py-2.5 font-semibold text-[var(--cta-ink)] disabled:opacity-40"
               >
                 {loading ? "Revising…" : "Revise plan"}
               </button>

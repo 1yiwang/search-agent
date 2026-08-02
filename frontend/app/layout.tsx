@@ -1,18 +1,19 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
-import { DM_Sans, Instrument_Serif } from "next/font/google";
+import { Fraunces, Schibsted_Grotesk } from "next/font/google";
 import { isPrivateAppHost } from "@/lib/hosts";
 import { AppShell } from "@/components/AppShell";
 import "./globals.css";
 
-const display = Instrument_Serif({
+const display = Fraunces({
   subsets: ["latin"],
-  weight: "400",
+  weight: ["500", "600"],
   variable: "--font-display",
 });
 
-const body = DM_Sans({
+const body = Schibsted_Grotesk({
   subsets: ["latin"],
+  weight: ["400", "500", "600"],
   variable: "--font-body",
 });
 

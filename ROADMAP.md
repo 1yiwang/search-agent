@@ -2,8 +2,8 @@
 
 > **Single source of truth** for implementation progress. Update this file at the end of each Step.
 
-**Current phase:** Wave 12f App chrome UX (Library + Settings sheet)  
-**Next step:** Live verify homepage / brief chrome; brief direction quality if API restarted
+**Current phase:** Wave 12g Signal Flag UI (red / white / yellow)  
+**Next step:** Live verify Vercel restyle; brief direction quality if needed
 
 ## Product constraints (personal use)
 
@@ -250,6 +250,12 @@
 |------|------|--------|
 | 83 | Global AppChrome: Library + Settings gear; Settings sheet; offline banner only | Done |
 | 84 | `/library` tabs (Saved / Watching); `/history` `/watchlist` redirect | Done |
+
+## Wave 12g — Signal Flag UI (红白黄)
+
+| Step | Task | Status |
+|------|------|--------|
+| 85 | Restyle app to paper / signal-red / flag-yellow + Fraunces | Done |
 
 ## Phase 3 — Watchlist + weekly delta (Mode B)
 

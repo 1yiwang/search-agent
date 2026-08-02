@@ -116,7 +116,7 @@ export default function SearchPage() {
         <p className="mb-2 text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
           Verifiable research
         </p>
-        <h1 className="font-display text-4xl md:text-5xl text-[var(--ink)]">
+        <h1 className="font-display brand-title text-4xl md:text-5xl text-[var(--ink)]">
           Search Agent
         </h1>
         <p className="mt-3 text-[var(--muted)] max-w-md mx-auto">
@@ -133,7 +133,7 @@ export default function SearchPage() {
           className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)]
                      px-5 py-4 text-lg text-[var(--ink)]
                      placeholder:text-[var(--muted)] focus:border-[var(--accent-dim)]
-                     focus:outline-none focus:ring-1 focus:ring-[var(--accent-dim)]"
+                     focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
           disabled={loading}
         />
 
@@ -213,8 +213,8 @@ export default function SearchPage() {
           <button
             type="submit"
             disabled={loading || !topic.trim()}
-            className="rounded-lg bg-[var(--accent)] px-10 py-3 font-semibold text-[#1a1408]
-                       hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed
+            className="rounded-lg bg-[var(--accent)] px-10 py-3 font-semibold text-[var(--cta-ink)]
+                       hover:brightness-[0.97] disabled:opacity-40 disabled:cursor-not-allowed
                        transition-all"
           >
             {loading

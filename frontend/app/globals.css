@@ -1,34 +1,73 @@
-/* Search Agent — evidence dossier theme */
+/* Search Agent — Signal Flag (red / white / yellow) */
 @import "tailwindcss";
 
 :root {
-  --bg: #0a0c10;
-  --surface: #12151c;
-  --surface-raised: #181c26;
-  --border: #2a3040;
-  --ink: #e8e6e1;
-  --muted: #8a909c;
-  --accent: #d4a05c;
-  --accent-dim: #9a7340;
-  --verify: #6ba88a;
-  --link: #7eb8da;
+  --bg: #fffefa;
+  --surface: #fff8f0;
+  --surface-raised: #fff1e0;
+  --border: #e8e2d8;
+  --ink: #1a1210;
+  --muted: #6b6560;
+  --accent: #f5c518; /* flag yellow — CTA / active */
+  --accent-dim: #c9a012;
+  --signal: #e23b2f; /* brand / citations */
+  --verify: #2f6b4f;
+  --link: #e23b2f;
+  --cta-ink: #1a1210;
 }
 
 body {
   font-family: var(--font-body), system-ui, sans-serif;
   background: var(--bg);
   color: var(--ink);
-  background-image:
-    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(212, 160, 92, 0.08), transparent),
-    linear-gradient(180deg, var(--bg) 0%, #0d1016 100%);
+  padding-left: 7px;
+}
+
+/* Signature: left signal bar */
+body::before {
+  content: "";
+  position: fixed;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 7px;
+  background: linear-gradient(
+    180deg,
+    var(--signal) 0 48px,
+    var(--accent) 48px 100%
+  );
+  z-index: 50;
+  pointer-events: none;
 }
 
 .font-display {
   font-family: var(--font-display), Georgia, serif;
 }
 
+.brand-title {
+  display: inline-block;
+  border-bottom: 3px solid var(--signal);
+  padding-bottom: 0.12rem;
+  letter-spacing: -0.02em;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .brand-title {
+    animation: brand-underline 0.45s ease-out both;
+  }
+}
+
+@keyframes brand-underline {
+  from {
+    border-bottom-color: transparent;
+  }
+  to {
+    border-bottom-color: var(--signal);
+  }
+}
+
 .citation-mark {
-  color: var(--accent);
+  color: var(--signal);
   font-weight: 600;
 }
 
@@ -41,9 +80,9 @@ body {
   border-left-color: var(--accent);
 }
 
-/* Report document — editorial dossier */
+/* Report document */
 .report-doc {
-  --report-rule: color-mix(in srgb, var(--border) 85%, transparent);
+  --report-rule: color-mix(in srgb, var(--border) 90%, transparent);
 }
 
 .report-doc .brief-title {
@@ -96,12 +135,12 @@ body {
   font-weight: 600;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: var(--accent);
+  color: var(--signal);
   margin-bottom: 0.75rem;
 }
 
 .report-lead {
-  border-left: 3px solid var(--accent);
+  border-left: 3px solid var(--signal);
   padding: 0.25rem 0 0.25rem 1.25rem;
   margin-top: 0.5rem;
 }
@@ -118,7 +157,6 @@ body {
   margin: 1.5rem 0 0;
 }
 
-/* Citation reader (markdown in sidebar) */
 .citation-reader {
   font-size: 14px;
   line-height: 1.65;
@@ -142,6 +180,7 @@ body {
 .citation-reader a {
   color: var(--link);
   text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .citation-reader ul,
@@ -151,7 +190,7 @@ body {
 }
 
 .citation-reader mark {
-  background: color-mix(in srgb, var(--accent) 30%, transparent);
+  background: color-mix(in srgb, var(--accent) 45%, transparent);
   color: var(--ink);
   border-radius: 2px;
   padding: 0 2px;

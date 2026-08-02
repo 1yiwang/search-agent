@@ -223,7 +223,7 @@ function BriefWizardInner() {
               type="button"
               onClick={handleClarify}
               disabled={loading || !topic.trim()}
-              className="rounded-lg bg-[var(--accent)] px-6 py-2.5 font-semibold text-[#1a1408] disabled:opacity-40"
+              className="rounded-lg bg-[var(--accent)] px-6 py-2.5 font-semibold text-[var(--cta-ink)] disabled:opacity-40"
             >
               {loading ? "Thinking…" : "Continue → clarify"}
             </button>
@@ -300,7 +300,7 @@ function BriefWizardInner() {
               type="button"
               onClick={handleGenerateBrief}
               disabled={loading}
-              className="rounded-lg bg-[var(--accent)] px-6 py-2.5 font-semibold text-[#1a1408] disabled:opacity-40"
+              className="rounded-lg bg-[var(--accent)] px-6 py-2.5 font-semibold text-[var(--cta-ink)] disabled:opacity-40"
             >
               {loading ? "Building directions…" : "Generate directions →"}
             </button>
@@ -355,7 +355,7 @@ function BriefWizardInner() {
                 className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-4"
               >
                 <p className="text-[var(--ink)] leading-relaxed">
-                  <span className="text-[var(--accent-dim)] font-medium mr-1">
+                  <span className="text-[var(--signal)] font-medium mr-1">
                     ({i + 1})
                   </span>
                   {instruction}
@@ -388,7 +388,7 @@ function BriefWizardInner() {
             <button
               type="button"
               onClick={() => setStep(4)}
-              className="rounded-lg bg-[var(--accent)] px-6 py-2.5 font-semibold text-[#1a1408]"
+              className="rounded-lg bg-[var(--accent)] px-6 py-2.5 font-semibold text-[var(--cta-ink)]"
             >
               Review & confirm →
             </button>
@@ -422,7 +422,7 @@ function BriefWizardInner() {
                 type="button"
                 onClick={handleRevise}
                 disabled={loading}
-                className="rounded-lg bg-[var(--accent)] px-6 py-2.5 font-semibold text-[#1a1408] disabled:opacity-40"
+                className="rounded-lg bg-[var(--accent)] px-6 py-2.5 font-semibold text-[var(--cta-ink)] disabled:opacity-40"
               >
                 {loading ? "Revising…" : "Revise brief"}
               </button>

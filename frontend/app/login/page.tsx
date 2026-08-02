@@ -52,7 +52,7 @@ function LoginForm() {
       <button
         type="submit"
         disabled={loading || !password}
-        className="w-full rounded-lg bg-[var(--accent)] py-3 font-semibold text-[#1a1408] disabled:opacity-40"
+        className="w-full rounded-lg bg-[var(--accent)] py-3 font-semibold text-[var(--cta-ink)] disabled:opacity-40"
       >
         {loading ? "…" : "Enter"}
       </button>
@@ -63,7 +63,7 @@ function LoginForm() {
 export default function LoginPage() {
   return (
     <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-4">
-      <h1 className="font-display text-3xl text-[var(--ink)] mb-2">Search Agent</h1>
+      <h1 className="font-display brand-title text-3xl text-[var(--ink)] mb-2">Search Agent</h1>
       <p className="text-sm text-[var(--muted)] mb-8">Personal research — enter site password</p>
       <Suspense fallback={<p className="text-sm text-[var(--muted)]">Loading…</p>}>
         <LoginForm />
